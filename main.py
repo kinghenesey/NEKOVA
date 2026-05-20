@@ -131,7 +131,7 @@ def parse_args(argv: list) -> dict:
                     "info", "clean", "export",
                     "package", "publish", "deploy",
                     "repl", "marketplace", "debug",
-                    "ide", "format"}
+                    "ide", "format", "notebook"}
     if values and values[0] in commands:
         args["command"] = values[0]
         if len(values) > 1:
@@ -267,6 +267,12 @@ def main():
                 count = format_directory("examples")
                 print_success(
                     f"Formatted {count} files")
+            sys.exit(0)
+        
+        if cmd == "notebook":
+            from notebook import start_notebook
+            port = 4000
+            start_notebook(filepath=arg, port=port)
             sys.exit(0)
 
         if cmd == "marketplace":
