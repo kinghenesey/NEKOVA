@@ -1,0 +1,7 @@
+.vscodeignore
+create_icon.py
+**/__pycache__/
+**/*.pyc
+*.py
+I'
+IIBBBBB'
