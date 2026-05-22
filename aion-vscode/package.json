@@ -2,7 +2,7 @@
   "name": "aion-language",
   "displayName": "AION - AI Native Programming Language",
   "description": "Syntax highlighting for the AION AI-Native Programming Language",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "emmanuel-king-christopher",
   "engines": {
     "vscode": "^1.60.0"
