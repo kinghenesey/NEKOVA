@@ -1,0 +1,22 @@
+# Test 1: Voice Speak
+show "=== Test 1: Voice Speak ==="
+use voice
+voice_speak("Hello! I am AION, an AI-native programming language.")
+show "Speech complete!"
+
+# Test 2: Save audio file
+show "=== Test 2: Voice Save ==="
+voice_save("AION can speak, listen, and see the world.", "examples/aion_voice.mp3")
+show "Audio saved!"
+
+# Test 3: Vision — scan the AION icon
+show "=== Test 3: Vision Scan (AION icon) ==="
+use vision
+description = vision_scan("aion-vscode/icon.png")
+show "Vision result:"
+show description
+
+# Test 4: Vision — scan a real photo
+show "=== Test 4: Vision Scan (real photo) ==="
+result = vision_scan("C:/Users/HomePC/Pictures/Saved Pictures/king_on_a_chair.jpeg")
+show result

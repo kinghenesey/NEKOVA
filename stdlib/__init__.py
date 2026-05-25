@@ -15,6 +15,8 @@ from stdlib import (
     files_module,
     datetime_module,
     collections_module,
+    vision_module,
+    voice_module,
 )
 
 from ai import ai_module
@@ -37,6 +39,8 @@ MODULES = {
     "ui":          ui_module,
     "web":         web_module,
     "database":    db_module,
+    "vision":      vision_module,
+    "voice":       voice_module,
 }
 
 
