@@ -17,7 +17,7 @@ from parser.nodes import (
     Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
-    ShowStatement, ThinkStatement, PipelineStatement, ModelStatement,
+    ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
     IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
@@ -81,6 +81,9 @@ class Parser:
         
         if token.type == TokenType.MODEL:
             return self._parse_model()
+        
+        if token.type == TokenType.AUTONOMOUS:
+            return self._parse_autonomous()
         
         if token.type == TokenType.STRING:
             # Could be a pipeline: "prompt" -> agent1 -> agent2
@@ -174,6 +177,21 @@ class Parser:
 
         self._expect_newline_or_eof()
         return PipelineStatement(steps=steps, line=line)
+    
+    def _parse_autonomous(self):
+        """
+        Parse:
+            autonomous parallel:
+                <body>
+        """
+        line = self._current().line
+        self._consume(TokenType.AUTONOMOUS)
+        self._consume(TokenType.PARALLEL)
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+        body = self._parse_block()
+        return ParallelStatement(body=body, line=line)
 
     def _parse_if(self):
         """
@@ -354,6 +372,12 @@ class Parser:
             # Captured think: thought = think "prompt"
             if self._current().type == TokenType.THINK:
                 node = self._parse_think()
+                node.variable = name
+                return node
+            
+            # Captured parallel: results = autonomous parallel:
+            if self._current().type == TokenType.AUTONOMOUS:
+                node = self._parse_autonomous()
                 node.variable = name
                 return node
 

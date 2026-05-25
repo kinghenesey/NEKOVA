@@ -259,6 +259,29 @@ class ModelStatement:
     provider: any
     line: int = 0
 
+@dataclass
+class ParallelStatement:
+    """
+    Represents an autonomous parallel execution block.
+    All statements in the body run simultaneously.
+
+    Simple:
+        autonomous parallel:
+            think "Research market"
+            think "Analyze competitors"
+
+    Captured:
+        results = autonomous parallel:
+            think "Task one"
+            think "Task two"
+
+    'body' is a list of statements to run in parallel.
+    'variable' is None for standalone usage.
+    """
+    body: list
+    variable: str = None
+    line: int = 0
+
 class IfStatement(Node):
     """
     A conditional block.

@@ -1,0 +1,24 @@
+# Test 1: Simple parallel think statements
+show "=== Test 1: Parallel Think ==="
+autonomous parallel:
+    think "What is the capital of Nigeria?"
+    think "What is the capital of Ghana?"
+    think "What is the capital of Kenya?"
+
+# Test 2: Parallel with timing comparison
+show "=== Test 2: Parallel AI Tasks ==="
+autonomous parallel:
+    think "Give me one fact about African fintech in one sentence"
+    think "Give me one fact about Nigerian startups in one sentence"
+    think "Give me one fact about Lagos tech hub in one sentence"
+
+# Test 3: Captured parallel results
+show "=== Test 3: Captured Results ==="
+results = autonomous parallel:
+    think "Name one African unicorn startup"
+    think "Name one Nigerian tech founder"
+    think "Name one African programming language"
+
+show "Results collected!"
+for result in results:
+    show result

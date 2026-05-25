@@ -42,6 +42,8 @@ class TokenType(Enum):
     NOT         = auto()   # not
     THINK       = auto()   # think (agent reasoning)
     MODEL       = auto()   # model (specify LLM for a think step)
+    AUTONOMOUS  = auto()   # autonomous
+    PARALLEL    = auto()   # parallel
 
     # ── Operators ─────────────────────────────────────────────
     PLUS        = auto()   # +
@@ -106,5 +108,7 @@ KEYWORDS = {
     "false":  TokenType.BOOLEAN,
     "null":   TokenType.NULL,
     "think":  TokenType.THINK,
-    "model":  TokenType.MODEL
+    "model":  TokenType.MODEL,
+    "autonomous": TokenType.AUTONOMOUS,
+    "parallel": TokenType.PARALLEL,
 }

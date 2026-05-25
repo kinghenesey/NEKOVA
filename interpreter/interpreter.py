@@ -16,7 +16,7 @@ from parser.nodes import (
     Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
-    ShowStatement, ThinkStatement, PipelineStatement, ModelStatement,
+    ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
     IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
@@ -250,6 +250,63 @@ class Interpreter:
             print(f"{Fore.GREEN}✓ Model switched to '{provider_name}'{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}✗ Could not switch to '{provider_name}': {e}{Style.RESET_ALL}")
+    
+    def _exec_ParallelStatement(self, node: ParallelStatement):
+        """
+        Execute all statements in the body simultaneously
+        using threads. Collects and returns all results.
+
+        autonomous parallel:
+            think "Research market"
+            think "Analyze competitors"
+            think "Generate report"
+        """
+        from colorama import Fore, Style, init
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        import threading
+        init(autoreset=True)
+
+        print(f"{Fore.YELLOW}⚡ Running {len(node.body)} tasks in parallel...{Style.RESET_ALL}")
+
+        results = [None] * len(node.body)
+        lock = threading.Lock()
+
+        def run_task(index, stmt):
+            """Run a single statement and capture its result."""
+            try:
+                # Each thread gets its own environment snapshot
+                result = self._execute_node(stmt)
+                with lock:
+                    results[index] = result
+                return index, result
+            except Exception as e:
+                with lock:
+                    results[index] = f"[parallel error: {e}]"
+                return index, None
+
+        # Run all tasks simultaneously
+        with ThreadPoolExecutor(max_workers=len(node.body)) as executor:
+            futures = {
+                executor.submit(run_task, i, stmt): i
+                for i, stmt in enumerate(node.body)
+            }
+
+            completed = 0
+            for future in as_completed(futures):
+                completed += 1
+                index, result = future.result()
+                print(
+                    f"{Fore.YELLOW}⚡ Task {index + 1} of "
+                    f"{len(node.body)} complete{Style.RESET_ALL}"
+                )
+
+        print(f"{Fore.GREEN}✓ All {len(node.body)} parallel tasks done{Style.RESET_ALL}")
+
+        # Store results list if captured
+        if node.variable:
+            self.env.set(node.variable, results)
+
+        return results
 
     def _exec_IfStatement(self, node: IfStatement):
         """

@@ -6,9 +6,9 @@
 
 from parser.parser import Parser, ParseError
 from parser.nodes import (
-    Program, IntegerLiteral, FloatLiteral, StringLiteral,
+    IfStatement, Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, Identifier, BinaryOp,
-    UnaryOp, AssignStatement, ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, IfStatement,
+    UnaryOp, AssignStatement, ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement, IfStatement,
     RepeatStatement, TaskStatement, ReturnStatement,
     UseStatement, CallExpression
 )
