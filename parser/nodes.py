@@ -225,6 +225,22 @@ class ThinkStatement:
     variable: str = None
     line: int = 0
 
+@dataclass
+class PipelineStatement:
+    """
+    Represents an agent communication pipeline.
+    
+    Simple:    researcher -> marketer -> reporter
+    With seed: "Analyze this" -> researcher -> writer
+    Captured:  report = "Analyze this" -> researcher -> writer
+    
+    'steps' is a list of expressions (identifiers or string literals).
+    'variable' is None for standalone usage.
+    """
+    steps: list
+    variable: str = None
+    line: int = 0
+
 
 class IfStatement(Node):
     """

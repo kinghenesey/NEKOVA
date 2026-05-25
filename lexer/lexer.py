@@ -244,6 +244,8 @@ class Lexer:
             self._add_token(TokenType.GREATER_EQ, ">="); self._advance(); self._advance(); return
         if two == "**":
             self._add_token(TokenType.POWER,       "**"); self._advance(); self._advance(); return
+        if two == "->":
+            self._add_token(TokenType.ARROW,       "->"); self._advance(); self._advance(); return
 
         # ── Single-character operators ────────────────────────
         single = {
@@ -263,7 +265,8 @@ class Lexer:
             "]": TokenType.RBRACKET,
             "{": TokenType.LBRACE,
             "}": TokenType.RBRACE,
-            ".": TokenType.DOT
+            ".": TokenType.DOT,
+            "->": TokenType.ARROW
         }
 
         if char in single:

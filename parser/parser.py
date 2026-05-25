@@ -17,7 +17,8 @@ from parser.nodes import (
     Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
-    ShowStatement, ThinkStatement, IfStatement, RepeatStatement,
+    ShowStatement, ThinkStatement, PipelineStatement,
+    IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
@@ -77,6 +78,19 @@ class Parser:
         
         if token.type == TokenType.THINK:
             return self._parse_think()
+        
+        if token.type == TokenType.STRING:
+            # Could be a pipeline: "prompt" -> agent1 -> agent2
+            first = self._parse_primary()
+            if self._current().type == TokenType.ARROW:
+                return self._parse_pipeline(first)
+            raise ParseError(
+                f"Unexpected string — did you mean to use 'show' or '->'?",
+                token.line
+            )
+
+        if token.type == TokenType.ARROW:
+            return self._parse_pipeline(self._parse_primary())
 
         if token.type == TokenType.IF:
             return self._parse_if()
@@ -132,6 +146,23 @@ class Parser:
         prompt = self._parse_expression()
         self._expect_newline_or_eof()
         return ThinkStatement(prompt, line=line)
+    
+    def _parse_pipeline(self, first_step):
+        """
+        Parse: step -> step -> step
+        'first_step' is already parsed — we continue from ->
+        """
+        line = self._current().line
+        steps = [first_step]
+
+        while self._current().type == TokenType.ARROW:
+            self._consume(TokenType.ARROW)
+            # Each step is an identifier or expression
+            step = self._parse_primary()
+            steps.append(step)
+
+        self._expect_newline_or_eof()
+        return PipelineStatement(steps=steps, line=line)
 
     def _parse_if(self):
         """
@@ -316,14 +347,28 @@ class Parser:
                 return node
 
             value = self._parse_expression()
+
+            # Captured pipeline: report = "prompt" -> agent1 -> agent2
+            if self._current().type == TokenType.ARROW:
+                node = self._parse_pipeline(value)
+                node.variable = name
+                return node
+
             self._expect_newline_or_eof()
             return AssignStatement(name, value)
 
         # Function call
         if token.type == TokenType.LPAREN:
             call = self._finish_call(name)
+            # Pipeline starting with a function call result
+            if self._current().type == TokenType.ARROW:
+                return self._parse_pipeline(call)
             self._expect_newline_or_eof()
             return call
+
+        # Standalone pipeline: researcher -> marketer -> reporter
+        if token.type == TokenType.ARROW:
+            return self._parse_pipeline(Identifier(name))
 
         raise ParseError(
             f"Expected '=' or '(' after '{name}'.",

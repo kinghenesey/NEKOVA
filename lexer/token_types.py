@@ -49,6 +49,7 @@ class TokenType(Enum):
     DIVIDE      = auto()   # /
     MODULO      = auto()   # %
     POWER       = auto()   # **
+    ARROW       = auto()   # -> (used in function definitions)
 
     # ── Comparison ────────────────────────────────────────────
     EQUALS      = auto()   # ==

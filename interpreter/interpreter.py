@@ -12,13 +12,12 @@
 # This is called a "tree-walk interpreter" — the simplest
 # and most readable interpreter architecture possible.
 
-from platform import node
-
 from parser.nodes import (
     Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
-    ShowStatement, ThinkStatement, IfStatement, RepeatStatement,
+    ShowStatement, ThinkStatement, PipelineStatement,
+    IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
@@ -151,6 +150,85 @@ class Interpreter:
             self.env.set(node.variable, response)
 
         return response
+    
+    def _exec_PipelineStatement(self, node: PipelineStatement):
+        """
+        Execute an agent communication pipeline.
+        Output flows left to right through each step.
+
+        researcher -> marketer -> reporter
+        "Analyze this" -> researcher -> writer
+        """
+        from colorama import Fore, Style, init
+        from parser.nodes import Identifier
+        init(autoreset=True)
+
+        try:
+            from ai.providers import get_provider
+            provider = get_provider()
+        except Exception as e:
+            print(f"{Fore.RED}Pipeline error: could not load AI provider: {e}{Style.RESET_ALL}")
+            return None
+
+        current_output = None
+
+        for i, step in enumerate(node.steps):
+            # Safely evaluate the step —
+            # undefined identifiers become agent role names
+            if isinstance(step, Identifier):
+                try:
+                    value = self._execute_node(step)
+                except (AIONNameError, NameError, KeyError):
+                    value = step.name
+            else:
+                value = self._execute_node(step)
+
+            # First step: only treat as seed if it came from a string literal
+            from parser.nodes import StringLiteral
+            if i == 0 and isinstance(step, StringLiteral) and len(node.steps) > 1:
+                current_output = value
+                print(f"{Fore.YELLOW}⟶ Seed: {current_output}{Style.RESET_ALL}")
+                continue
+
+            # Determine the agent role name
+            if hasattr(value, 'run'):
+                role = getattr(value, 'name', str(value))
+            elif isinstance(value, str):
+                role = value
+            elif isinstance(step, Identifier):
+                role = step.name
+            else:
+                role = str(value)
+
+            # Build the prompt for this agent
+            if current_output:
+                agent_prompt = (
+                    f"You are a {role}. "
+                    f"Here is the input from the previous step:\n\n"
+                    f"{current_output}\n\n"
+                    f"Respond as a {role} would."
+                )
+            else:
+                agent_prompt = f"You are a {role}. Begin your work."
+
+            # Call the AI provider
+            try:
+                response = provider.ask(agent_prompt)
+            except Exception as e:
+                response = f"[{role} error: {e}]"
+
+            current_output = response
+
+            # Print with pipeline formatting
+            print(f"{Fore.MAGENTA}🤖 [{role}]{Style.RESET_ALL}")
+            print(f"{Fore.WHITE}{current_output}{Style.RESET_ALL}")
+            print(f"{Style.DIM}{'─' * 50}{Style.RESET_ALL}")
+
+        # Store final output if captured
+        if node.variable:
+            self.env.set(node.variable, current_output)
+
+        return current_output
 
     def _exec_IfStatement(self, node: IfStatement):
         """
