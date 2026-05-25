@@ -8,7 +8,8 @@ from parser.parser import Parser, ParseError
 from parser.nodes import (
     IfStatement, Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, Identifier, BinaryOp,
-    UnaryOp, AssignStatement, ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement, IfStatement,
+    UnaryOp, AssignStatement, ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
+    MemoryStatement, IfStatement,
     RepeatStatement, TaskStatement, ReturnStatement,
     UseStatement, CallExpression
 )

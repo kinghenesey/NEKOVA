@@ -44,6 +44,7 @@ class TokenType(Enum):
     MODEL       = auto()   # model (specify LLM for a think step)
     AUTONOMOUS  = auto()   # autonomous
     PARALLEL    = auto()   # parallel
+    MEMORY      = auto()   # memory (agent memory access)
 
     # ── Operators ─────────────────────────────────────────────
     PLUS        = auto()   # +
@@ -111,4 +112,5 @@ KEYWORDS = {
     "model":  TokenType.MODEL,
     "autonomous": TokenType.AUTONOMOUS,
     "parallel": TokenType.PARALLEL,
+    "memory": TokenType.MEMORY,
 }

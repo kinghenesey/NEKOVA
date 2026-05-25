@@ -1,33 +1,30 @@
-# Test AI Memory
+# Test 1: Basic memory block
+show "=== Test 1: Basic Memory ==="
+memory user_profile:
+    name = "Emmanuel"
+    language = "AION"
+    version = "1.0.0"
 
-use ai
+show user_profile["name"]
+show user_profile["language"]
 
-show "=== AI Memory Test ==="
-show ""
+# Test 2: Memory with a counter
+show "=== Test 2: Run Counter ==="
+memory stats:
+    run_count = 0
+    last_topic = "none"
 
-# Give AI some facts to remember
-ai_remember("My name is Emmanuel")
-ai_remember("I am building AION programming language")
-ai_remember("I am from Nigeria")
-ai_remember("I love coding and AI")
+show "Run count from memory:"
+show stats["run_count"]
 
-show "Facts stored in AI memory."
-show ""
+# Test 3: Update memory and save
+show "=== Test 3: Update Memory ==="
+memory settings:
+    theme = "dark"
+    ai_model = "gemini"
+    debug = false
 
-# Now ask questions that need memory
-show "Question 1:"
-answer1 = ai_ask("What is my name and where am I from?")
-show answer1
-
-show ""
-show "Question 2:"
-answer2 = ai_ask("What project am I working on?")
-show answer2
-
-show ""
-show "Question 3:"
-answer3 = ai_ask("Give me advice based on what you know about me")
-show answer3
-
-show ""
-show "=== Memory Test Complete ==="
+show "Theme:"
+show settings["theme"]
+show "AI Model:"
+show settings["ai_model"]

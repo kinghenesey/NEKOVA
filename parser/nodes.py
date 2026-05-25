@@ -282,6 +282,28 @@ class ParallelStatement:
     variable: str = None
     line: int = 0
 
+@dataclass
+class MemoryStatement:
+    """
+    Represents a persistent memory block.
+    Data is saved to disk and reloaded between runs.
+
+    Usage:
+        memory user_profile:
+            name = "Emmanuel"
+            language = "AION"
+            run_count = 0
+
+        show user_profile["name"]
+
+    'name' is the memory block identifier.
+    'body' is a list of AssignStatements defining the data.
+    'persistent' means data survives between program runs.
+    """
+    name: str
+    body: list
+    line: int = 0
+
 class IfStatement(Node):
     """
     A conditional block.

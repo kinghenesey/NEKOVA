@@ -17,7 +17,7 @@ from parser.nodes import (
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
-    IfStatement, RepeatStatement,
+    MemoryStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
@@ -307,6 +307,76 @@ class Interpreter:
             self.env.set(node.variable, results)
 
         return results
+    
+    def _exec_MemoryStatement(self, node: MemoryStatement):
+        """
+        Execute a persistent memory block.
+        Data is saved to disk and reloaded between runs.
+
+        memory user_profile:
+            name = "Emmanuel"
+            run_count = 0
+        """
+        import json
+        import os
+        from colorama import Fore, Style, init
+        init(autoreset=True)
+
+        # Memory files stored in .aionmem/ folder
+        mem_dir = ".aionmem"
+        os.makedirs(mem_dir, exist_ok=True)
+        mem_file = os.path.join(mem_dir, f"{node.name}.json")
+
+        # Step 1: Load existing data from disk if it exists
+        saved_data = {}
+        if os.path.isfile(mem_file):
+            try:
+                with open(mem_file, "r", encoding="utf-8") as f:
+                    saved_data = json.load(f)
+                print(
+                    f"{Fore.DIM}💾 memory '{node.name}' "
+                    f"loaded from disk{Style.RESET_ALL}"
+                )
+            except Exception:
+                saved_data = {}
+
+        # Step 2: Execute body statements to get default values
+        # Use a temporary environment to capture assignments
+        from interpreter.environment import Environment
+        temp_env = Environment(parent=self.env)
+        prev_env = self.env
+        self.env = temp_env
+
+        try:
+            for stmt in node.body:
+                self._execute_node(stmt)
+        finally:
+            self.env = prev_env
+
+        # Step 3: Build final data —
+        # saved values take priority over defaults
+        default_data = {}
+        for key in temp_env.variables:
+            default_data[key] = temp_env.variables[key]
+
+        # Merge: saved data wins over defaults
+        final_data = {**default_data, **saved_data}
+
+        # Step 4: Save back to disk
+        try:
+            with open(mem_file, "w", encoding="utf-8") as f:
+                json.dump(final_data, f, indent=2,
+                          default=str)
+        except Exception as e:
+            print(
+                f"{Fore.RED}💾 memory save error: "
+                f"{e}{Style.RESET_ALL}"
+            )
+
+        # Step 5: Store in environment as a dict
+        self.env.set(node.name, final_data)
+
+        return final_data
 
     def _exec_IfStatement(self, node: IfStatement):
         """

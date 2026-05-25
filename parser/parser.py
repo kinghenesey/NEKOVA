@@ -17,7 +17,7 @@ from parser.nodes import (
     Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
-    ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
+    ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement, MemoryStatement,
     IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
@@ -84,6 +84,9 @@ class Parser:
         
         if token.type == TokenType.AUTONOMOUS:
             return self._parse_autonomous()
+        
+        if token.type == TokenType.MEMORY:
+            return self._parse_memory()
         
         if token.type == TokenType.STRING:
             # Could be a pipeline: "prompt" -> agent1 -> agent2
@@ -192,6 +195,22 @@ class Parser:
         self._skip_newlines()
         body = self._parse_block()
         return ParallelStatement(body=body, line=line)
+    
+    def _parse_memory(self):
+        """
+        Parse:
+            memory <name>:
+                <key> = <value>
+                <key> = <value>
+        """
+        line = self._current().line
+        self._consume(TokenType.MEMORY)
+        name = self._consume(TokenType.IDENTIFIER).value
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+        body = self._parse_block()
+        return MemoryStatement(name=name, body=body, line=line)
 
     def _parse_if(self):
         """
