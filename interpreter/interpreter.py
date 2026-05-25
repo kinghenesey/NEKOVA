@@ -16,7 +16,7 @@ from parser.nodes import (
     Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
-    ShowStatement, ThinkStatement, PipelineStatement,
+    ShowStatement, ThinkStatement, PipelineStatement, ModelStatement,
     IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
@@ -229,6 +229,27 @@ class Interpreter:
             self.env.set(node.variable, current_output)
 
         return current_output
+    
+    def _exec_ModelStatement(self, node: ModelStatement):
+        """
+        Execute:  model "gemini" / model "claude" / model "mock"
+        Switches the active AI provider for all subsequent
+        think and pipeline calls.
+        """
+        from colorama import Fore, Style, init
+        init(autoreset=True)
+
+        # Evaluate the provider name expression
+        provider_name = self._execute_node(node.provider)
+        provider_name = str(provider_name).strip().lower()
+
+        # Attempt to switch the provider
+        try:
+            from ai.providers import set_provider
+            set_provider(provider_name)
+            print(f"{Fore.GREEN}✓ Model switched to '{provider_name}'{Style.RESET_ALL}")
+        except Exception as e:
+            print(f"{Fore.RED}✗ Could not switch to '{provider_name}': {e}{Style.RESET_ALL}")
 
     def _exec_IfStatement(self, node: IfStatement):
         """

@@ -17,13 +17,23 @@ PROVIDERS = [
     MockProvider,
 ]
 
+# Holds the user-selected provider name (set via `model "..."`)
+# None means auto-detect from available API keys
+_active_provider = None
+
 
 def get_provider():
     """
-    Return the best available AI provider.
-    Automatically picks Gemini if key exists,
-    then Claude, then Mock.
+    Return the active AI provider.
+    If the user has called `model "..."`, use that.
+    Otherwise auto-detect from available API keys:
+      Gemini → Claude → Mock
     """
+    global _active_provider
+
+    if _active_provider is not None:
+        return get_provider_by_name(_active_provider)
+
     for ProviderClass in PROVIDERS:
         provider = ProviderClass()
         if provider.is_available:
@@ -32,12 +42,46 @@ def get_provider():
     return MockProvider()
 
 
+def set_provider(name: str):
+    """
+    Set the active provider by name.
+    Called by the `model` keyword in AION programs.
+    Raises ValueError if the name is not recognized.
+    """
+    global _active_provider
+
+    providers = {
+        "mock":     MockProvider,
+        "claude":   AnthropicProvider,
+        "anthropic": AnthropicProvider,
+        "gemini":   GeminiProvider,
+    }
+
+    if name not in providers:
+        available = ", ".join(providers.keys())
+        raise ValueError(
+            f"Unknown provider '{name}'.\n"
+            f"  Available providers: {available}"
+        )
+
+    # Validate the provider is actually available
+    provider = providers[name]()
+    if not provider.is_available and name != "mock":
+        raise ValueError(
+            f"Provider '{name}' is not available.\n"
+            f"  Make sure the API key is set in your .env file."
+        )
+
+    _active_provider = name
+
+
 def get_provider_by_name(name: str):
     """Get a specific provider by name."""
     providers = {
-        "mock":   MockProvider,
-        "claude": AnthropicProvider,
-        "gemini": GeminiProvider,
+        "mock":      MockProvider,
+        "claude":    AnthropicProvider,
+        "anthropic": AnthropicProvider,
+        "gemini":    GeminiProvider,
     }
 
     if name not in providers:
@@ -48,3 +92,12 @@ def get_provider_by_name(name: str):
         )
 
     return providers[name]()
+
+
+def reset_provider():
+    """
+    Reset to auto-detection mode.
+    Useful for testing or after a program finishes.
+    """
+    global _active_provider
+    _active_provider = None

@@ -1,0 +1,18 @@
+# Test 1: Default provider (auto-detect)
+show "=== Test 1: Default Provider ==="
+think "Say exactly: I am using the default provider"
+
+# Test 2: Switch to mock
+show "=== Test 2: Mock Provider ==="
+model "mock"
+think "Say exactly: I am using the mock provider"
+
+# Test 3: Switch back to gemini
+show "=== Test 3: Gemini Provider ==="
+model "gemini"
+think "Say exactly: I am using Gemini"
+
+# Test 4: Model in a pipeline
+show "=== Test 4: Mock Pipeline ==="
+model "mock"
+"Analyze AION language" -> researcher -> writer

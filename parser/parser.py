@@ -17,7 +17,7 @@ from parser.nodes import (
     Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
-    ShowStatement, ThinkStatement, PipelineStatement,
+    ShowStatement, ThinkStatement, PipelineStatement, ModelStatement,
     IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
@@ -78,6 +78,9 @@ class Parser:
         
         if token.type == TokenType.THINK:
             return self._parse_think()
+        
+        if token.type == TokenType.MODEL:
+            return self._parse_model()
         
         if token.type == TokenType.STRING:
             # Could be a pipeline: "prompt" -> agent1 -> agent2
@@ -146,7 +149,15 @@ class Parser:
         prompt = self._parse_expression()
         self._expect_newline_or_eof()
         return ThinkStatement(prompt, line=line)
-    
+
+    def _parse_model(self):
+        """Parse:  model "provider-name" """
+        line = self._current().line
+        self._consume(TokenType.MODEL)
+        provider = self._parse_expression()
+        self._expect_newline_or_eof()
+        return ModelStatement(provider=provider, line=line)
+
     def _parse_pipeline(self, first_step):
         """
         Parse: step -> step -> step

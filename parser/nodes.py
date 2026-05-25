@@ -241,6 +241,23 @@ class PipelineStatement:
     variable: str = None
     line: int = 0
 
+@dataclass
+class ModelStatement:
+    """
+    Represents a model switching statement.
+    
+    Changes the active AI provider for all subsequent
+    think and pipeline calls.
+    
+    Usage:
+        model "gemini"
+        model "claude"
+        model "mock"
+    
+    'provider' is a string expression (the provider name).
+    """
+    provider: any
+    line: int = 0
 
 class IfStatement(Node):
     """
