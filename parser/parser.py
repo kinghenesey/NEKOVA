@@ -17,7 +17,7 @@ from parser.nodes import (
     Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
-    ShowStatement, IfStatement, RepeatStatement,
+    ShowStatement, ThinkStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
@@ -74,6 +74,9 @@ class Parser:
 
         if token.type == TokenType.SHOW:
             return self._parse_show()
+        
+        if token.type == TokenType.THINK:
+            return self._parse_think()
 
         if token.type == TokenType.IF:
             return self._parse_if()
@@ -121,6 +124,14 @@ class Parser:
         expr = self._parse_expression()
         self._expect_newline_or_eof()
         return ShowStatement(expr)
+
+    def _parse_think(self):
+        """Parse:  think <prompt>"""
+        line = self._current().line
+        self._consume(TokenType.THINK)
+        prompt = self._parse_expression()
+        self._expect_newline_or_eof()
+        return ThinkStatement(prompt, line=line)
 
     def _parse_if(self):
         """
@@ -294,9 +305,16 @@ class Parser:
         name  = self._consume(TokenType.IDENTIFIER).value
         token = self._current()
 
-        # Assignment
+       # Assignment
         if token.type == TokenType.ASSIGN:
             self._consume(TokenType.ASSIGN)
+
+            # Captured think: thought = think "prompt"
+            if self._current().type == TokenType.THINK:
+                node = self._parse_think()
+                node.variable = name
+                return node
+
             value = self._parse_expression()
             self._expect_newline_or_eof()
             return AssignStatement(name, value)

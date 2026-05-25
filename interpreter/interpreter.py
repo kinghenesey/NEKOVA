@@ -12,11 +12,13 @@
 # This is called a "tree-walk interpreter" — the simplest
 # and most readable interpreter architecture possible.
 
+from platform import node
+
 from parser.nodes import (
     Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
-    ShowStatement, IfStatement, RepeatStatement,
+    ShowStatement, ThinkStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
@@ -123,6 +125,32 @@ class Interpreter:
         value = self._execute_node(node.expression)
         print(self._to_string(value))
         return value
+    
+    def _exec_ThinkStatement(self, node):
+        """Execute a think statement — calls the active AI provider."""
+        from colorama import Fore, Style, init
+        init(autoreset=True)
+
+        # Step 1: Evaluate the prompt
+        prompt = self._execute_node(node.prompt)
+        prompt = str(prompt)
+
+        # Step 2: Call the AI provider
+        try:
+            from ai.providers import get_provider
+            provider = get_provider()
+            response = provider.ask(prompt)
+        except Exception as e:
+            response = f"[think error: {e}]"
+
+        # Step 3: Print with cyan formatting
+        print(f"{Fore.CYAN}🧠 {response}{Style.RESET_ALL}")
+
+        # Step 4: Store in variable if captured
+        if node.variable:
+            self.env.set(node.variable, response)
+
+        return response
 
     def _exec_IfStatement(self, node: IfStatement):
         """

@@ -72,7 +72,7 @@
                 },
                 {
                     "name": "support.function.aion",
-                    "match": "\\b(show)\\b"
+                    "match": "\\b(show|think)\\b"
                 }
             ]
         },

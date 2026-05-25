@@ -8,6 +8,9 @@
 # Think of nodes like LEGO pieces — each one represents one
 # concept in your program.
 
+from dataclasses import dataclass
+
+
 class Node:
     """Base class for all AST nodes."""
     pass
@@ -206,6 +209,21 @@ class ShowStatement(Node):
 
     def __repr__(self):
         return f"Show({self.expression})"
+    
+@dataclass
+class ThinkStatement:
+    """
+    Represents a think statement — calls the AI provider inline.
+    
+    Standalone:  think "What should I build?"
+    Captured:    thought = think "Analyze this market"
+    
+    'variable' is None for standalone usage.
+    'prompt' is any expression (string literal, variable, f-string, etc.)
+    """
+    prompt: any
+    variable: str = None
+    line: int = 0
 
 
 class IfStatement(Node):

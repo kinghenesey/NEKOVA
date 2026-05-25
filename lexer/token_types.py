@@ -40,6 +40,7 @@ class TokenType(Enum):
     AND         = auto()   # and
     OR          = auto()   # or
     NOT         = auto()   # not
+    THINK       = auto()   # think (agent reasoning)
 
     # ── Operators ─────────────────────────────────────────────
     PLUS        = auto()   # +
@@ -102,4 +103,5 @@ KEYWORDS = {
     "true":   TokenType.BOOLEAN,
     "false":  TokenType.BOOLEAN,
     "null":   TokenType.NULL,
+    "think":  TokenType.THINK,
 }
