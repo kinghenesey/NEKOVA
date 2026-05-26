@@ -63,6 +63,7 @@ v{AION_VERSION} · {AION_CODENAME}
   python main.py format --check <file>     Check formatting
 
 {Color.BOLD}Deployment:{Color.RESET}
+  python main.py compile <file.aion>      Compile to native/Python
   python main.py export <file.aion>       Export to HTML/script
   python main.py package <dir>            Package a project
   python main.py publish <pkg.aionpkg>    Publish to registry
@@ -128,10 +129,11 @@ def parse_args(argv: list) -> dict:
 
     # Handle subcommands: run, test, build, new, info, clean
     commands = {"run", "test", "build", "new",
-                    "info", "clean", "export",
-                    "package", "publish", "deploy",
-                    "repl", "marketplace", "debug",
-                    "ide", "format", "notebook"}
+                        "info", "clean", "export",
+                        "package", "publish", "deploy",
+                        "repl", "marketplace", "debug",
+                        "ide", "format", "notebook",
+                        "compile"}
     if values and values[0] in commands:
         args["command"] = values[0]
         if len(values) > 1:
@@ -304,6 +306,24 @@ def main():
             from cli.deploy import cmd_deploy
             success = cmd_deploy(arg)
             sys.exit(0 if success else 1)
+        
+        if cmd == "compile":
+            if not arg:
+                print_error(
+                    "Please provide a file to compile.\n"
+                    "  Usage: python main.py compile app.aion"
+                )
+                sys.exit(1)
+            from compiler.llvm_backend import LLVMCompiler
+            compiler = LLVMCompiler()
+            print_info(f"Compiling '{arg}'...")
+            try:
+                output = compiler.compile(arg)
+                print_success(f"Compiled → {output}")
+            except Exception as e:
+                print_error(f"Compile error: {e}")
+                sys.exit(1)
+            sys.exit(0)
 
     # ── Direct file execution ─────────────────────────────────
 
