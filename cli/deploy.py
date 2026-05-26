@@ -188,3 +188,59 @@ def cmd_deploy(filepath: str) -> bool:
     print(f"  {Color.DIM}Output directory: dist/{Color.RESET}")
     print()
     return True
+
+def cmd_deploy_cloud(filepath: str) -> bool:
+    """
+    Deploy an AION app to the cloud.
+    Usage: python main.py deploy cloud app.aion
+    """
+    if not filepath:
+        print_error(
+            "Please provide a file to deploy.\n"
+            "  Usage: python main.py deploy cloud app.aion"
+        )
+        return False
+
+    if not os.path.isfile(filepath):
+        print_error(f"File not found: '{filepath}'")
+        return False
+
+    print()
+    print(f"{Color.CYAN}{Color.BOLD}"
+          f"  AION Cloud Deployment{Color.RESET}")
+    print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
+    print()
+
+    try:
+        from deploy.cloud import CloudDeployer
+        deployer = CloudDeployer()
+        result   = deployer.deploy(filepath)
+
+        print()
+        print_separator()
+
+        if result["status"] == "success":
+            print_success("App deployed successfully!")
+            print()
+            print(f"  {Color.CYAN}🌐 URL: "
+                  f"{result['url']}{Color.RESET}")
+
+        elif result["status"] == "bundled":
+            print_success("Deployment bundle created!")
+            print()
+            print(f"  {Color.CYAN}📦 Bundle: "
+                  f"{result['bundle_path']}{Color.RESET}")
+            print(f"  {Color.CYAN}📄 Instructions: "
+                  f"{result['instructions']}{Color.RESET}")
+            print()
+            print(f"  {Color.DIM}Next steps:{Color.RESET}")
+            print(f"  {Color.DIM}1. Open the instructions file{Color.RESET}")
+            print(f"  {Color.DIM}2. Follow the Railway or Render steps{Color.RESET}")
+            print(f"  {Color.DIM}3. Your app will be live in minutes{Color.RESET}")
+
+        print()
+        return True
+
+    except Exception as e:
+        print_error(f"Cloud deployment failed: {e}")
+        return False

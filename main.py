@@ -303,8 +303,15 @@ def main():
             sys.exit(0 if success else 1)
 
         if cmd == "deploy":
-            from cli.deploy import cmd_deploy
-            success = cmd_deploy(arg)
+            # Check for: deploy cloud app.aion
+            values = [a for a in argv
+                      if not a.startswith("--")]
+            if len(values) >= 3 and values[1] == "cloud":
+                from cli.deploy import cmd_deploy_cloud
+                success = cmd_deploy_cloud(values[2])
+            else:
+                from cli.deploy import cmd_deploy
+                success = cmd_deploy(arg)
             sys.exit(0 if success else 1)
         
         if cmd == "compile":
