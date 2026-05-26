@@ -1,0 +1,20 @@
+# Test 1: Define and run a simple pipeline
+show "=== Test 1: Simple Pipeline ==="
+pipeline summarizer:
+    collect "The history of artificial intelligence in Africa"
+    process with ai
+    generate report
+
+run pipeline summarizer
+
+# Test 2: Captured pipeline result
+show "=== Test 2: Captured Result ==="
+pipeline researcher:
+    collect "Top 3 programming languages in 2025"
+    process with ai
+    generate report
+    save to database
+
+result = run pipeline researcher
+show "Pipeline result captured!"
+show result

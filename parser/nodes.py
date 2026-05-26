@@ -327,6 +327,40 @@ class SandboxStatement:
     body: list
     line: int = 0
 
+@dataclass
+class PipelineDefStatement:
+    """
+    Represents a named neural pipeline definition.
+
+    pipeline market_analysis:
+        collect "Nigerian fintech trends"
+        process with ai
+        generate report
+        save to database
+
+    'name' is the pipeline identifier.
+    'steps' is a list of step dicts describing each stage.
+    """
+    name: str
+    steps: list
+    line: int = 0
+
+
+@dataclass
+class RunPipelineStatement:
+    """
+    Represents a pipeline execution statement.
+
+    run pipeline market_analysis
+    result = run pipeline market_analysis
+
+    'name' is the pipeline to run.
+    'variable' is None for standalone usage.
+    """
+    name: str
+    variable: str = None
+    line: int = 0
+
 class IfStatement(Node):
     """
     A conditional block.

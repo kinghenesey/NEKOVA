@@ -18,7 +18,7 @@ from parser.nodes import (
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement, MemoryStatement,
-    SandboxStatement, IfStatement, RepeatStatement,
+    SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
@@ -81,6 +81,12 @@ class Parser:
         
         if token.type == TokenType.MODEL:
             return self._parse_model()
+        
+        if token.type == TokenType.PIPELINE_DEF:
+            return self._parse_pipeline_def()
+        
+        if token.type == TokenType.RUN:
+            return self._parse_run_pipeline()
         
         if token.type == TokenType.AUTONOMOUS:
             return self._parse_autonomous()
@@ -246,6 +252,96 @@ class Parser:
         self._skip_newlines()
         body = self._parse_block()
         return SandboxStatement(mode=mode, body=body, line=line)
+    
+    def _parse_pipeline_def(self):
+        """
+        Parse:
+            pipeline <name>:
+                collect <expression>
+                process with ai
+                generate report
+                save to database
+        """
+        line = self._current().line
+        self._consume(TokenType.PIPELINE_DEF)
+        name = self._consume(TokenType.IDENTIFIER).value
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+
+        steps = []
+        self._consume(TokenType.INDENT)
+        self._skip_newlines()
+
+        while (not self._at_end() and
+            self._current().type != TokenType.DEDENT):
+
+            token = self._current()
+
+            # collect "prompt" or collect variable
+            if token.type == TokenType.COLLECT:
+                self._consume(TokenType.COLLECT)
+                expr = self._parse_expression()
+                steps.append({"type": "collect", "expr": expr})
+
+            # process with ai
+            elif (token.type == TokenType.IDENTIFIER and
+                token.value == "process"):
+                self._advance()  # consume 'process'
+                if self._current().type == TokenType.WITH:
+                    self._consume(TokenType.WITH)
+                if self._current().type == TokenType.IDENTIFIER:
+                    provider = self._advance().value
+                else:
+                    provider = "ai"
+                steps.append({"type": "process",
+                            "provider": provider})
+
+            # generate report
+            elif token.type == TokenType.GENERATE:
+                self._consume(TokenType.GENERATE)
+                if self._current().type == TokenType.IDENTIFIER:
+                    format_name = self._advance().value
+                else:
+                    format_name = "report"
+                steps.append({"type": "generate",
+                            "format": format_name})
+
+            # save to database
+            elif token.type == TokenType.SAVE:
+                self._consume(TokenType.SAVE)
+                if self._current().type == TokenType.IDENTIFIER:
+                    self._advance()  # consume 'to'
+                if self._current().type == TokenType.IDENTIFIER:
+                    target = self._advance().value
+                else:
+                    target = "database"
+                steps.append({"type": "save",
+                            "target": target})
+
+            else:
+                self._advance()  # skip unknown tokens
+
+            self._skip_newlines()
+
+        if self._current().type == TokenType.DEDENT:
+            self._consume(TokenType.DEDENT)
+
+        return PipelineDefStatement(
+            name=name, steps=steps, line=line)
+    
+    def _parse_run_pipeline(self):
+        """
+        Parse:
+            run pipeline <name>
+            result = run pipeline <name>
+        """
+        line = self._current().line
+        self._consume(TokenType.RUN)
+        self._consume(TokenType.PIPELINE_DEF)
+        name = self._consume(TokenType.IDENTIFIER).value
+        self._expect_newline_or_eof()
+        return RunPipelineStatement(name=name, line=line)
 
     def _parse_if(self):
         """
@@ -432,6 +528,12 @@ class Parser:
             # Captured parallel: results = autonomous parallel:
             if self._current().type == TokenType.AUTONOMOUS:
                 node = self._parse_autonomous()
+                node.variable = name
+                return node
+            
+            # Captured pipeline run: result = run pipeline name
+            if self._current().type == TokenType.RUN:
+                node = self._parse_run_pipeline()
                 node.variable = name
                 return node
 

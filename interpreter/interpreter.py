@@ -17,7 +17,7 @@ from parser.nodes import (
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
-    MemoryStatement, SandboxStatement, IfStatement, RepeatStatement,
+    MemoryStatement, SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
@@ -334,7 +334,7 @@ class Interpreter:
                 with open(mem_file, "r", encoding="utf-8") as f:
                     saved_data = json.load(f)
                 print(
-                    f"{Fore.DIM}💾 memory '{node.name}' "
+                    f"{Style.DIM}💾 memory '{node.name}' "
                     f"loaded from disk{Style.RESET_ALL}"
                 )
             except Exception:
@@ -462,6 +462,143 @@ class Interpreter:
                     self.env.set(func_name, original)
                     
         return None
+    
+    def _exec_PipelineDefStatement(self, node: PipelineDefStatement):
+        """
+        Execute a pipeline definition — stores it for later use.
+
+        pipeline market_analysis:
+            collect "Nigerian fintech"
+            process with ai
+            generate report
+            save to database
+        """
+        # Store the pipeline definition in the environment
+        self.env.set(f"__pipeline_{node.name}__", node)
+        from colorama import Fore, Style, init
+        init(autoreset=True)
+        print(f"{Fore.CYAN}⚡ Pipeline '{node.name}' defined "
+              f"({len(node.steps)} steps){Style.RESET_ALL}")
+        return node
+
+    def _exec_RunPipelineStatement(self, node: RunPipelineStatement):
+        """
+        Execute a named pipeline.
+
+        run pipeline market_analysis
+        result = run pipeline market_analysis
+        """
+        from colorama import Fore, Style, init
+        init(autoreset=True)
+
+        # Look up the pipeline definition
+        try:
+            pipeline = self.env.get(
+                f"__pipeline_{node.name}__")
+        except Exception:
+            raise RuntimeError(
+                f"Pipeline '{node.name}' is not defined.\n"
+                f"  Define it first with:  pipeline {node.name}:"
+            )
+
+        print(f"{Fore.CYAN}🧠 Running pipeline "
+              f"'{node.name}'...{Style.RESET_ALL}")
+
+        current_data = None
+        final_result = None
+
+        for i, step in enumerate(pipeline.steps):
+            step_type = step["type"]
+            step_num  = i + 1
+            total     = len(pipeline.steps)
+
+            print(f"{Style.DIM}  Step {step_num}/{total}: "
+                  f"{step_type}...{Style.RESET_ALL}")
+
+            # ── collect ───────────────────────────────────────
+            if step_type == "collect":
+                current_data = self._execute_node(
+                    step["expr"])
+                current_data = str(current_data)
+                print(f"{Style.DIM}  📥 Collected: "
+                      f"{current_data[:80]}..."
+                      if len(str(current_data)) > 80
+                      else f"{Style.DIM}  📥 Collected: "
+                           f"{current_data}{Style.RESET_ALL}")
+
+            # ── process with ai ───────────────────────────────
+            elif step_type == "process":
+                try:
+                    from ai.providers import get_provider
+                    provider = get_provider()
+                    prompt = (
+                        f"Analyze and process the following:\n\n"
+                        f"{current_data}\n\n"
+                        f"Provide a detailed analysis."
+                    )
+                    current_data = provider.ask(prompt)
+                    print(f"{Fore.GREEN}  🤖 AI processed "
+                          f"({len(current_data)} chars)"
+                          f"{Style.RESET_ALL}")
+                except Exception as e:
+                    current_data = f"[process error: {e}]"
+                    print(f"{Fore.RED}  ✗ Process failed: "
+                          f"{e}{Style.RESET_ALL}")
+
+            # ── generate report ───────────────────────────────
+            elif step_type == "generate":
+                fmt = step.get("format", "report")
+                try:
+                    from ai.providers import get_provider
+                    provider = get_provider()
+                    prompt = (
+                        f"Format the following as a professional "
+                        f"{fmt}:\n\n{current_data}"
+                    )
+                    current_data = provider.ask(prompt)
+                    print(f"{Fore.GREEN}  📄 Generated "
+                          f"{fmt} ({len(current_data)} chars)"
+                          f"{Style.RESET_ALL}")
+                except Exception as e:
+                    print(f"{Fore.RED}  ✗ Generate failed: "
+                          f"{e}{Style.RESET_ALL}")
+
+            # ── save to database ──────────────────────────────
+            elif step_type == "save":
+                target = step.get("target", "database")
+                try:
+                    import json
+                    import os
+                    os.makedirs(".aionmem", exist_ok=True)
+                    save_path = os.path.join(
+                        ".aionmem",
+                        f"pipeline_{node.name}.json"
+                    )
+                    save_data = {
+                        "pipeline": node.name,
+                        "result":   current_data,
+                        "target":   target,
+                    }
+                    with open(save_path, "w",
+                              encoding="utf-8") as f:
+                        json.dump(save_data, f, indent=2)
+                    print(f"{Fore.GREEN}  💾 Saved to "
+                          f"'{save_path}'"
+                          f"{Style.RESET_ALL}")
+                except Exception as e:
+                    print(f"{Fore.RED}  ✗ Save failed: "
+                          f"{e}{Style.RESET_ALL}")
+
+            final_result = current_data
+
+        print(f"{Fore.CYAN}✓ Pipeline '{node.name}' "
+              f"complete{Style.RESET_ALL}")
+
+        # Store result if captured
+        if node.variable:
+            self.env.set(node.variable, final_result)
+
+        return final_result
 
     def _exec_IfStatement(self, node: IfStatement):
         """
