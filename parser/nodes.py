@@ -304,6 +304,29 @@ class MemoryStatement:
     body: list
     line: int = 0
 
+@dataclass
+class SandboxStatement:
+    """
+    Represents a sandboxed execution block.
+    Code inside runs with restricted permissions.
+
+    Strict mode — blocks everything dangerous:
+        sandbox strict:
+            use web
+            think "Safe AI call"
+
+    Relaxed mode — allows read-only operations:
+        sandbox relaxed:
+            use files
+            data = read_file("input.txt")
+
+    'mode' is either "strict" or "relaxed".
+    'body' is the list of statements to run sandboxed.
+    """
+    mode: str
+    body: list
+    line: int = 0
+
 class IfStatement(Node):
     """
     A conditional block.

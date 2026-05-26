@@ -18,7 +18,7 @@ from parser.nodes import (
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement, MemoryStatement,
-    IfStatement, RepeatStatement,
+    SandboxStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
@@ -87,6 +87,9 @@ class Parser:
         
         if token.type == TokenType.MEMORY:
             return self._parse_memory()
+        
+        if token.type == TokenType.SANDBOX:
+            return self._parse_sandbox()
         
         if token.type == TokenType.STRING:
             # Could be a pipeline: "prompt" -> agent1 -> agent2
@@ -211,6 +214,38 @@ class Parser:
         self._skip_newlines()
         body = self._parse_block()
         return MemoryStatement(name=name, body=body, line=line)
+    
+    def _parse_sandbox(self):
+        """
+        Parse:
+            sandbox strict:
+                <body>
+            sandbox relaxed:
+                <body>
+        """
+        line = self._current().line
+        self._consume(TokenType.SANDBOX)
+
+        # Parse the mode — strict or relaxed
+        mode_token = self._current()
+        if mode_token.type == TokenType.STRICT:
+            mode = "strict"
+            self._consume(TokenType.STRICT)
+        elif mode_token.type == TokenType.RELAXED:
+            mode = "relaxed"
+            self._consume(TokenType.RELAXED)
+        else:
+            raise ParseError(
+                f"Expected 'strict' or 'relaxed' after 'sandbox', "
+                f"got '{mode_token.value}'.",
+                mode_token.line
+            )
+
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+        body = self._parse_block()
+        return SandboxStatement(mode=mode, body=body, line=line)
 
     def _parse_if(self):
         """

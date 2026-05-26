@@ -45,6 +45,9 @@ class TokenType(Enum):
     AUTONOMOUS  = auto()   # autonomous
     PARALLEL    = auto()   # parallel
     MEMORY      = auto()   # memory (agent memory access)
+    SANDBOX     = auto()   # sandbox (execute code in a safe environment)
+    STRICT      = auto()   # strict (enforce stricter rules for a block)
+    RELAXED     = auto()   # relaxed (enforce looser rules for a block)
 
     # ── Operators ─────────────────────────────────────────────
     PLUS        = auto()   # +
@@ -113,4 +116,7 @@ KEYWORDS = {
     "autonomous": TokenType.AUTONOMOUS,
     "parallel": TokenType.PARALLEL,
     "memory": TokenType.MEMORY,
+    "sandbox": TokenType.SANDBOX,
+    "strict": TokenType.STRICT,
+    "relaxed": TokenType.RELAXED
 }

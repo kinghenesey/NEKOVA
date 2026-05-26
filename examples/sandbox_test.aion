@@ -1,0 +1,33 @@
+# Test 1: Strict sandbox — blocks file access
+show "=== Test 1: Strict Sandbox ==="
+sandbox strict:
+    show "Inside strict sandbox"
+    think "What is 2 + 2? Answer in one word."
+    show "AI call worked inside sandbox!"
+
+# Test 2: Strict sandbox — blocks file writes
+show "=== Test 2: Strict Blocks Files ==="
+use files
+sandbox strict:
+    show "Trying to read a file..."
+    data = read_file("examples/hello.aion")
+    show data
+
+# Test 3: Relaxed sandbox — allows file reads
+show "=== Test 3: Relaxed Allows Reads ==="
+sandbox relaxed:
+    show "Inside relaxed sandbox"
+    data = read_file("examples/hello.aion")
+    show "File read successfully!"
+    show data
+
+# Test 4: Relaxed sandbox — blocks file writes
+show "=== Test 4: Relaxed Blocks Writes ==="
+sandbox relaxed:
+    show "Trying to write a file..."
+    write_file("examples/hack.txt", "should be blocked")
+    show "This should not print"
+
+# Test 5: Normal code after sandbox
+show "=== Test 5: Normal After Sandbox ==="
+show "Back to normal execution"

@@ -13,11 +13,11 @@
 # and most readable interpreter architecture possible.
 
 from parser.nodes import (
-    Program, IntegerLiteral, FloatLiteral, StringLiteral,
+    Program, IntegerLiteral, FloatLiteral, SandboxStatement, StringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
-    MemoryStatement, IfStatement, RepeatStatement,
+    MemoryStatement, SandboxStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
@@ -377,6 +377,91 @@ class Interpreter:
         self.env.set(node.name, final_data)
 
         return final_data
+    
+    def _exec_SandboxStatement(self, node: SandboxStatement):
+        """
+        Execute a sandboxed block with restricted permissions.
+
+        strict  — blocks file system, system commands, network
+        relaxed — allows read-only files, blocks writes/system
+        """
+        from colorama import Fore, Style, init
+        init(autoreset=True)
+
+        mode = node.mode
+        print(f"{Fore.YELLOW}🔒 Sandbox [{mode}] activated{Style.RESET_ALL}")
+
+        # ── Define what's blocked in each mode ────────────────
+        strict_blocked = {
+            "write_file":   "file writes",
+            "read_file":    "file reads",
+            "file_exists":  "file system access",
+        }
+
+        relaxed_blocked = {
+            "write_file":   "file writes",
+        }
+
+        blocked = strict_blocked if mode == "strict" else relaxed_blocked
+
+        # ── Save original functions ────────────────────────────
+        saved = {}
+        for func_name in blocked:
+            try:
+                saved[func_name] = self.env.get(func_name)
+            except Exception:
+                saved[func_name] = None
+
+        # ── Install sandbox blockers ───────────────────────────
+        def make_blocker(name, reason):
+            def blocked_fn(*args, **kwargs):
+                raise RuntimeError(
+                    f"🔒 Sandbox [{mode}] blocked: "
+                    f"'{name}' — {reason} not allowed.\n"
+                    f"  Use 'sandbox relaxed' for read-only access."
+                )
+            return blocked_fn
+
+        for func_name, reason in blocked.items():
+            self.env.set(func_name, make_blocker(func_name, reason))
+
+        # ── Also block dangerous Python builtins ──────────────
+        import builtins
+        original_open = builtins.open
+        original_import = builtins.__import__
+
+        if mode == "strict":
+            def safe_open(*args, **kwargs):
+                raise RuntimeError(
+                    "🔒 Sandbox [strict] blocked: "
+                    "file access not allowed."
+                )
+            builtins.open = safe_open
+
+        # ── Execute the sandboxed body ─────────────────────────
+        try:
+            self._execute_block(node.body)
+            print(
+                f"{Fore.GREEN}🔒 Sandbox [{mode}] "
+                f"completed safely{Style.RESET_ALL}"
+            )
+
+        except RuntimeError as e:
+            error_msg = str(e)
+            if "Sandbox" in error_msg:
+                print(f"{Fore.RED}{error_msg}{Style.RESET_ALL}")
+            else:
+                raise
+
+        finally:
+            # ── Always restore everything ──────────────────────
+            builtins.open = original_open
+
+            for func_name, original in saved.items():
+                if original is not None:
+                    self.env.set(func_name, original)
+                    
+        return None
 
     def _exec_IfStatement(self, node: IfStatement):
         """

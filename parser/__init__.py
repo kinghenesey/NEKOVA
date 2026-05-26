@@ -9,7 +9,7 @@ from parser.nodes import (
     IfStatement, Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, Identifier, BinaryOp,
     UnaryOp, AssignStatement, ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
-    MemoryStatement, IfStatement,
+    MemoryStatement, SandboxStatement, IfStatement,
     RepeatStatement, TaskStatement, ReturnStatement,
     UseStatement, CallExpression
 )
