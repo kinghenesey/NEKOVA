@@ -1,8 +1,8 @@
 {
   "name": "aion-language",
   "displayName": "AION - AI Native Programming Language",
-  "description": "Syntax highlighting for the AION AI-Native Programming Language",
-  "version": "1.0.1",
+  "description": "Syntax highlighting for the AION AI-Native Programming Language — think, pipelines, vision, voice, memory, sandbox and more",
+  "version": "1.0.2",
   "publisher": "emmanuel-king-christopher",
   "engines": {
     "vscode": "^1.60.0"
@@ -15,7 +15,11 @@
     "ai",
     "programming language",
     "nigeria",
-    "syntax highlighting"
+    "syntax highlighting",
+    "think",
+    "neural pipeline",
+    "multimodal",
+    "agent"
   ],
   "repository": {
     "type": "git",

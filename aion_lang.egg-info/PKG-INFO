@@ -1,21 +1,29 @@
 Metadata-Version: 2.4
 Name: aion-lang
-Version: 1.0.0
-Summary: AION - AI-Native Programming Language
+Version: 1.1.0
+Summary: AION - AI-Native Programming Language with think, pipelines, vision, voice, memory and sandboxing
 Home-page: https://github.com/kinghenesey/AION
 Author: Emmanuel King Christopher
 Author-email: emmanuelkingchristopher@gmail.com
 Project-URL: Bug Tracker, https://github.com/kinghenesey/AION/issues
 Project-URL: Documentation, https://github.com/kinghenesey/AION#readme
-Keywords: programming language,ai,interpreter,compiler
+Keywords: programming language,ai,interpreter,compiler,think,neural pipeline,multimodal,agent,vision,voice
 Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.11
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Classifier: Topic :: Software Development :: Interpreters
 Classifier: Topic :: Software Development :: Compilers
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
+Requires-Dist: colorama>=0.4.0
+Requires-Dist: python-dotenv>=0.19.0
+Requires-Dist: requests>=2.27.0
+Requires-Dist: flask>=2.0.0
+Requires-Dist: google-genai>=2.0.0
+Requires-Dist: edge-tts>=6.0.0
+Requires-Dist: pyttsx3>=2.90
 
 <div align="center">
 

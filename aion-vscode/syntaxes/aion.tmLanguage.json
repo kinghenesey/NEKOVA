@@ -64,25 +64,29 @@
                 },
                 {
                     "name": "keyword.declaration.aion",
-                    "match": "\\b(task|use|import)\\b"
+                    "match": "\\b(task|use|import|pipeline|memory|sandbox)\\b"
                 },
                 {
                     "name": "keyword.operator.logical.aion",
                     "match": "\\b(and|or|not)\\b"
                 },
                 {
+                    "name": "keyword.ai.aion",
+                    "match": "\\b(think|model|autonomous|parallel|collect|generate|save|with|run|strict|relaxed)\\b"
+                },
+                {
                     "name": "support.function.aion",
-                    "match": "\\b(show|think)\\b"
+                    "match": "\\b(show)\\b"
                 }
             ]
         },
         "builtins": {
             "name": "support.function.builtin.aion",
-            "match": "\\b(to_text|to_number|length|ask|clear|sleep|type_of|random_num|sqrt|floor|ceil|abs|round|upper|lower|trim|replace|contains|split|join|today|now|year|month|day|ai_ask|ai_summarize|ai_generate|ai_classify|ai_stream|ai_remember|ai_forget|ai_image|db_connect|db_create|db_insert|db_find|db_update|db_delete|db_count|db_close|web_app|web_route|web_start|ui_app|ui_page|ui_title|ui_text|ui_button|ui_save|agent_create|agent_run|agent_tool|workflow_create|workflow_run)\\b"
+            "match": "\\b(to_text|to_number|length|ask|clear|sleep|type_of|random_num|sqrt|floor|ceil|abs|round|upper|lower|trim|replace|contains|split|join|today|now|year|month|day|ai_ask|ai_summarize|ai_generate|ai_classify|ai_stream|ai_remember|ai_forget|ai_image|db_connect|db_create|db_insert|db_find|db_update|db_delete|db_count|db_close|web_app|web_route|web_start|ui_app|ui_page|ui_title|ui_text|ui_button|ui_save|agent_create|agent_run|agent_tool|workflow_create|workflow_run|vision_scan|vision_compare|voice_speak|voice_listen|voice_save)\\b"
         },
         "modules": {
             "name": "entity.name.namespace.aion",
-            "match": "(?<=use )\\b(math|text|files|datetime|collections|ai|agents|ui|web|database)\\b"
+            "match": "(?<=use )\\b(math|text|files|datetime|collections|ai|agents|ui|web|database|vision|voice)\\b"
         },
         "numbers": {
             "patterns": [
@@ -113,6 +117,10 @@
                 {
                     "name": "keyword.operator.arithmetic.aion",
                     "match": "(\\+|-|\\*\\*|\\*|/|%)"
+                },
+                {
+                    "name": "keyword.operator.pipeline.aion",
+                    "match": "->"
                 }
             ]
         },
