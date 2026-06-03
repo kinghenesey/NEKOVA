@@ -109,8 +109,7 @@ def _db_create(table: str, schema: str):
 
     _query.create_table(table, columns)
 
-    from config import Color
-    print(f"{Color.GREEN}✓ Table '{table}' ready{Color.RESET}")
+    print(f"✓ Table '{table}' ready")
     return table
 
 

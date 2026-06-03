@@ -2,7 +2,7 @@
 # AION Language — Configuration & Version Info
 # =============================================================
 
-AION_VERSION = "1.1.0"
+AION_VERSION = "1.1.1"
 AION_CODENAME  = "Genesis"
 AION_EXTENSION = ".aion"
 

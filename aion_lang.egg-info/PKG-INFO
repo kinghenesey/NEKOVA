@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: aion-lang
-Version: 1.1.0
+Version: 1.1.1
 Summary: AION - AI-Native Programming Language with think, pipelines, vision, voice, memory and sandboxing
 Home-page: https://github.com/kinghenesey/AION
 Author: Emmanuel King Christopher
@@ -29,16 +29,17 @@ Requires-Dist: pyttsx3>=2.90
 
 # AION Programming Language
 
-### AI-Native Programming Language built with Python
+### The AI-Native Programming Language
 
-![Version](https://img.shields.io/badge/version-1.0.0-00d4ff)
+![Version](https://img.shields.io/badge/version-1.1.1-00d4ff)
+![PyPI](https://img.shields.io/pypi/v/aion-lang)
 ![Python](https://img.shields.io/badge/python-3.11+-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Tests](https://img.shields.io/badge/tests-147%20passing-success)
 
-*"Giving instructions to an intelligent operating system."*
+*"The first programming language where AI is syntax, not a library."*
 
-[Quick Start](#quick-start) · [Features](#features) · [Examples](#examples) · [Docs](#documentation) · [Roadmap](#roadmap)
+[Install](#installation) · [Features](#features) · [Examples](#examples) · [Community](#community) · [Docs](#cli-commands)
 
 </div>
 
@@ -46,149 +47,229 @@ Requires-Dist: pyttsx3>=2.90
 
 ## What is AION?
 
-AION is an **AI-native programming language** built with Python. It combines the simplicity of Python, the readability of natural language, and native AI capabilities — making it the first programming language where AI is a first-class citizen.
+AION is an **AI-native programming language** built with Python. It's the first language where `think` is syntax — AI isn't a library you import, it's part of the language itself.
 
 ```aion
-use ai
-use database
+# AI is just syntax
+think "What should I build today?"
 
-name = "Emmanuel"
-show "Hello {name}!"
+# Chain AI agents with ->
+"Nigerian fintech trends" -> researcher -> analyst -> writer
 
-answer = ai_ask("What should I build today?")
-show answer
+# Neural pipeline
+pipeline market_analysis:
+    collect "African tech ecosystem"
+    process with ai
+    generate report
+    save to database
 
-db_connect("myapp.db")
-db_create("ideas", "title text, created text")
-db_insert("ideas", "My first AION app, 2026-01-01")
+run pipeline market_analysis
 ```
 
 ---
 
-## Quick Start
+## Installation
 
-### 1. Clone the repository
+### Option 1 — pip (recommended)
+
+```bash
+pip install aion-lang
+```
+
+Add your API key to a `.env` file:
+GEMINI_API_KEY=your_key_here
+
+Get a free key at [ai.google.dev](https://ai.google.dev)
+
+Run your first program:
+```bash
+aion hello.aion
+```
+
+### Option 2 — Clone from GitHub
 
 ```bash
 git clone https://github.com/kinghenesey/AION.git
 cd AION
-```
-
-### 2. Install dependencies
-
-```bash
 pip install -r requirements.txt
 ```
 
-### 3. Run your first AION program
-
+Run a program:
 ```bash
 python main.py examples/hello.aion
-```
-
-### 4. Start the interactive shell
-
-```bash
-python main.py repl
-```
-
-### 5. Launch the Web IDE
-
-```bash
-python main.py ide
-# Open http://localhost:3000
 ```
 
 ---
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| 🧠 **AI Runtime** | Native AI with Google Gemini and Claude |
-| 🌐 **Web Framework** | Build real HTTP servers |
-| 🗄️ **Database** | Full CRUD with SQLite |
-| 🎨 **UI Framework** | Generate real HTML apps |
-| 📦 **Package Manager** | Install and manage packages |
-| 🏪 **Marketplace** | 12+ community packages |
-| 🔄 **REPL** | Interactive shell |
-| 🐛 **Debugger** | Visual step-through debugger |
-| 💻 **Web IDE** | Browser-based code editor |
-| 🤖 **AI Agents** | Autonomous AI agents |
-| 🔁 **Workflows** | AI automation pipelines |
-| 📂 **Multi-file** | Import between .aion files |
-| ⚡ **Compiler** | Bytecode compiler + VM |
+| Feature | Syntax | Description |
+|---------|--------|-------------|
+| 🧠 **Think** | `think "prompt"` | Call AI directly — no imports needed |
+| 🔗 **Pipelines** | `researcher -> writer` | Chain AI agents with `->` |
+| 🔀 **Model Routing** | `model "gemini"` | Switch AI providers at runtime |
+| 👁️ **Vision** | `vision_scan("img.png")` | Analyze images with Gemini |
+| 🎙️ **Voice** | `voice_speak("Hello!")` | Text-to-speech built in |
+| ⚡ **Parallel** | `autonomous parallel:` | Run AI tasks simultaneously |
+| 💾 **Memory** | `memory profile:` | Persistent data between runs |
+| 🔒 **Sandbox** | `sandbox strict:` | Secure execution environment |
+| 🧬 **Neural Pipeline** | `pipeline name:` | Full AI workflow in one block |
+| 🏗️ **Compiler** | `aion compile app.aion` | Compile to standalone Python |
+| ☁️ **Deploy** | `aion deploy cloud app.aion` | Deploy to cloud with one command |
+| 🌐 **Web** | `use web` | Build real HTTP servers |
+| 🗄️ **Database** | `use database` | Full SQLite CRUD |
+| 🎨 **UI** | `use ui` | Generate HTML apps |
 
 ---
 
 ## Examples
 
-### Variables & Output
+### Hello World
 ```aion
 name = "Emmanuel"
-age  = 20
-show "Hello {name}! You are {age} years old."
+show "Hello {name}!"
+show "Welcome to AION — where AI is syntax."
 ```
 
-### Conditions & Loops
+### Think (AI as syntax)
 ```aion
+# Standalone think
+think "What is the capital of Nigeria?"
+
+# Captured think
+idea = think "Give me one startup idea in one sentence"
+show "AI said: {idea}"
+
+# Think with variables
+topic = "African fintech"
+result = think "Analyze {topic} in 2025"
+show result
+```
+
+### Agent Pipeline
+```aion
+# Chain agents — output flows left to right
+"Analyze Nigerian tech ecosystem" -> researcher -> marketer -> reporter
+
+# Captured result
+report = "Future of AI in Africa" -> analyst -> writer
+show report
+```
+
+### Neural Pipeline
+```aion
+pipeline market_research:
+    collect "Nigerian startup ecosystem 2025"
+    process with ai
+    generate report
+    save to database
+
+run pipeline market_research
+result = run pipeline market_research
+show result
+```
+
+### Parallel Execution
+```aion
+# All three run simultaneously
+autonomous parallel:
+    think "Capital of Nigeria?"
+    think "Capital of Ghana?"
+    think "Capital of Kenya?"
+
+# Captured results
+results = autonomous parallel:
+    think "Name one African unicorn"
+    think "Name one Nigerian founder"
+```
+
+### Vision + Voice
+```aion
+use vision
+use voice
+
+# Analyze an image
+description = vision_scan("photo.png")
+show "AI sees: {description}"
+
+# Speak the result
+voice_speak("Analysis complete!")
+
+# Listen for input
+transcript = voice_listen()
+show "You said: {transcript}"
+```
+
+### Persistent Memory
+```aion
+memory user_profile:
+    name = "Emmanuel"
+    language = "AION"
+    run_count = 0
+
+show user_profile["name"]
+show user_profile["language"]
+```
+
+### Sandbox
+```aion
+sandbox strict:
+    show "Running in secure mode"
+    think "What is 2 + 2?"
+
+sandbox relaxed:
+    use files
+    data = read_file("input.txt")
+    show data
+```
+
+### Model Routing
+```aion
+model "gemini"
+think "Using Gemini now"
+
+model "mock"
+think "Using mock provider"
+```
+
+### Variables, Loops & Tasks
+```aion
+# Variables
+name = "Emmanuel"
+age  = 20
+items = [1, 2, 3]
+
+# Conditions
 if age >= 18:
     show "Adult"
 else:
     show "Minor"
 
+# Loops
 repeat 5:
     show "AION!"
 
-count = 0
-while count < 3:
-    show count
-    count = count + 1
-```
+for item in items:
+    show item
 
-### Tasks (Functions)
-```aion
+# Tasks (functions)
 task greet(name):
     show "Hello {name}!"
+    return "Done"
 
-greet("Emmanuel")
-greet("World")
+result = greet("World")
+show result
 ```
 
 ### Standard Library
 ```aion
 use math
 use text
-use datetime
+use database
+use web
 
 show sqrt(144)
 show upper("hello aion")
-show today()
-```
-
-### AI Integration
-```aion
-use ai
-
-answer  = ai_ask("What is the capital of Nigeria?")
-summary = ai_summarize("Long text here...")
-poem    = ai_generate("Write a poem about coding")
-show answer
-```
-
-### Web Server
-```aion
-use web
-
-web_app("My Server")
-web_route("/", "Welcome to AION!")
-web_route("/hello", "Hello World!")
-web_start(8000)
-```
-
-### Database
-```aion
-use database
 
 db_connect("myapp.db")
 db_create("users", "name text, age integer")
@@ -197,101 +278,61 @@ results = db_find("users", "all")
 show results
 ```
 
-### AI Agents
-```aion
-use agents
-
-agent_create("researcher", "Research topics")
-agent_tool("researcher", "search", "Search the web")
-result = agent_run("researcher", "Tell me about Python")
-show result
-```
-
-### Multi-file Projects
-```aion
-# main.aion
-import "utils.aion"
-import "greetings.aion"
-
-greet("Emmanuel")
-result = calculate(10, 20)
-show result
-```
-
 ---
 
 ## CLI Commands
 
 ```bash
 # Run files
-python main.py app.aion
-python main.py app.aion --debug
-python main.py app.aion --compile
+aion hello.aion
+aion app.aion --debug
+
+# Using python directly
+python main.py hello.aion
+python main.py repl
+python main.py ide
 
 # Developer tools
-python main.py repl              # Interactive shell
-python main.py ide               # Web IDE
-python main.py debug app.aion    # Visual debugger
-python main.py test              # Run all tests
-python main.py build app.aion    # Validate file
-python main.py new myproject     # Create project
-python main.py info              # System info
+aion repl                    # Interactive shell
+aion ide                     # Web IDE at localhost:3000
+aion compile app.aion        # Compile to Python
+aion deploy cloud app.aion   # Deploy to cloud
+aion --version               # Show version
+aion --help                  # Show help
 
 # Package manager
 python main.py --install charts
-python main.py --uninstall charts
 python main.py --packages
-
-# Marketplace
 python main.py marketplace
-python main.py marketplace search nigeria
-python main.py marketplace install aion-naira
-
-# Deployment
-python main.py export app.aion
-python main.py deploy app.aion
 ```
 
 ---
 
 ## Standard Library
 
-| Module | Functions |
-|--------|-----------|
-| `use math` | sqrt, floor, ceil, abs, pi, pow, sin, cos |
-| `use text` | upper, lower, trim, replace, contains, split |
-| `use files` | read_file, write_file, file_exists, delete_file |
-| `use datetime` | today, now, year, month, day, hour |
-| `use collections` | make_list, list_get, list_join, list_sort |
-| `use ai` | ai_ask, ai_summarize, ai_generate, ai_classify |
-| `use agents` | agent_create, agent_run, workflow_create |
-| `use ui` | ui_app, ui_page, ui_title, ui_button, ui_save |
+| Module | Key Functions |
+|--------|--------------|
+| `use math` | sqrt, floor, ceil, abs, pi |
+| `use text` | upper, lower, trim, replace, split |
+| `use files` | read_file, write_file, file_exists |
+| `use datetime` | today, now, year, month, day |
+| `use ai` | ai_ask, ai_summarize, ai_generate |
+| `use vision` | vision_scan, vision_compare |
+| `use voice` | voice_speak, voice_listen, voice_save |
+| `use agents` | agent_create, agent_run |
 | `use web` | web_app, web_route, web_start |
 | `use database` | db_connect, db_create, db_insert, db_find |
-
----
-
-## Marketplace Packages
-
-```bash
-python main.py marketplace install aion-ui-pro
-python main.py marketplace install aion-charts-pro
-python main.py marketplace install aion-nlp
-python main.py marketplace install aion-orm
-python main.py marketplace install aion-naira
-python main.py marketplace install aion-crypto
-```
+| `use ui` | ui_app, ui_page, ui_title, ui_button |
 
 ---
 
 ## Project Structure
-
 aion/
 ├── main.py              ← Entry point
 ├── runner.py            ← Pipeline orchestrator
 ├── config.py            ← Version & constants
 ├── repl.py              ← Interactive shell
-├── debugger.py          ← Visual debugger
+├── aion_cli.py          ← pip CLI entry point
 ├── lexer/               ← Tokenizer
 ├── parser/              ← AST builder
 ├── interpreter/         ← Execution engine
@@ -301,44 +342,52 @@ aion/
 ├── web/                 ← Web framework
 ├── database/            ← Database system
 ├── ui/                  ← UI framework
-├── marketplace/         ← Package marketplace
 ├── web_ide/             ← Browser-based IDE
 ├── deploy/              ← Deployment tools
-├── packages/            ← Installed packages
 ├── examples/            ← Example programs
 └── tests/               ← Test suite (147 tests)
 
 ---
 
+## Community
+
+**AION Connect** — Share your AION projects with the community.
+
+- Browse projects built with AION
+- Share your own programs
+- World chat with other developers
+- Run projects live in the browser
+
+---
+
 ## Roadmap
 
-- [x] Phase 1  — Foundation
-- [x] Phase 2  — Lexer
-- [x] Phase 3  — Parser
-- [x] Phase 4  — Interpreter
-- [x] Phase 5  — Standard Library
-- [x] Phase 6  — Error System
-- [x] Phase 7  — AI Runtime
-- [x] Phase 8  — Package Manager
-- [x] Phase 9  — Professional CLI
-- [x] Phase 10 — UI Framework
-- [x] Phase 11 — Web Framework
-- [x] Phase 12 — Database System
-- [x] Phase 13 — Compiler
-- [x] Phase 14 — AI Ecosystem
-- [x] Phase 15 — Deployment
-- [x] Phase 16 — Language Improvements
-- [x] Phase 17 — Multi-file Projects
-- [x] Phase 18 — Marketplace
-- [x] Phase 19 — Visual Debugger
-- [x] Phase 20 — Web IDE
-- [x] Phase 21 — Polish & Publish
+- [x] Core language (lexer, parser, interpreter)
+- [x] Standard library (math, text, files, datetime)
+- [x] AI runtime (Gemini, Claude, Mock)
+- [x] `think` keyword — AI as syntax
+- [x] Agent pipelines (`->` operator)
+- [x] Model routing (`model "gemini"`)
+- [x] Multimodal (vision + voice)
+- [x] Parallel execution (`autonomous parallel`)
+- [x] Persistent memory blocks
+- [x] Sandboxing (`sandbox strict/relaxed`)
+- [x] Neural pipelines (`pipeline name:`)
+- [x] LLVM compiler backend
+- [x] Cloud deployment
+- [x] Web IDE
+- [x] VS Code extension
+- [x] PyPI package
+- [x] AION Connect community
+- [ ] LLVM native compilation
+- [ ] Language server (LSP)
+- [ ] AION package registry
 
 ---
 
 ## Built By
 
-**Emmanuel** — Built from scratch with dedication and vision.
+**Emmanuel King Christopher** — Built from scratch with Python 3.11.
 
 > *"I didn't just learn to code. I built the tools other people use to code."*
 
@@ -354,6 +403,6 @@ MIT License — free to use, modify, and distribute.
 
 **Star ⭐ this repo if AION inspired you!**
 
-[github.com/kinghenesey/AION](https://github.com/kinghenesey/AION)
+[github.com/kinghenesey/AION](https://github.com/kinghenesey/AION) · [PyPI](https://pypi.org/project/aion-lang/) · [AION Connect](https://github.com/kinghenesey/AION)
 
 </div>
