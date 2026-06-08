@@ -1,7 +1,7 @@
+﻿# =============================================================
+# NEKOVA Parser — AST Nodes
 # =============================================================
-# AION Parser — AST Nodes
-# =============================================================
-# Every possible structure in AION code is represented as a
+# Every possible structure in NEKOVA code is represented as a
 # Node. The Parser builds a tree of these nodes. The
 # Interpreter then walks the tree and executes each node.
 #
@@ -20,7 +20,7 @@ class Node:
 
 class Program(Node):
     """
-    The root node — represents the entire AION program.
+    The root node — represents the entire NEKOVA program.
     Every other node lives inside this one.
     """
     def __init__(self, statements: list):
@@ -155,7 +155,7 @@ class BinaryOp(Node):
     An operation between two values.
     Examples:
         age + 1
-        name == "AION"
+        name == "NEKOVA"
         x >= 18
     """
     def __init__(self, left: Node, operator: str, right: Node):
@@ -291,7 +291,7 @@ class MemoryStatement:
     Usage:
         memory user_profile:
             name = "Emmanuel"
-            language = "AION"
+            language = "NEKOVA"
             run_count = 0
 
         show user_profile["name"]

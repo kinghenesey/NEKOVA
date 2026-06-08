@@ -1,5 +1,5 @@
-# =============================================================
-# AION UI Framework — HTML Renderer
+﻿# =============================================================
+# NEKOVA UI Framework — HTML Renderer
 # =============================================================
 # Converts a UIApp component tree into a full HTML file.
 #

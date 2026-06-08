@@ -1,8 +1,8 @@
+﻿# =============================================================
+# NEKOVA Database — Query Builder
 # =============================================================
-# AION Database — Query Builder
-# =============================================================
-# Builds SQL queries from simple AION-friendly commands.
-# Hides the complexity of SQL from AION programmers.
+# Builds SQL queries from simple NEKOVA-friendly commands.
+# Hides the complexity of SQL from NEKOVA programmers.
 #
 # Example:
 #   query.insert("users", {"name": "Emmanuel", "age": 20})

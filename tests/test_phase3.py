@@ -1,5 +1,5 @@
-# =============================================================
-# AION — Phase 3 Tests (Parser)
+﻿# =============================================================
+# NEKOVA — Phase 3 Tests (Parser)
 # =============================================================
 # Run with: python tests/test_phase3.py
 
@@ -110,7 +110,7 @@ class TestBinaryOp(unittest.TestCase):
         self.assertEqual(op.operator, ">=")
 
     def test_equality(self):
-        program = parse('x = name == "AION"')
+        program = parse('x = name == "NEKOVA"')
         op = program.statements[0].value
         self.assertIsInstance(op, BinaryOp)
         self.assertEqual(op.operator, "==")
@@ -210,6 +210,6 @@ class TestMultipleStatements(unittest.TestCase):
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("  AION Phase 3 — Parser Test Suite")
+    print("  NEKOVA Phase 3 — Parser Test Suite")
     print("=" * 50)
     unittest.main(verbosity=2)

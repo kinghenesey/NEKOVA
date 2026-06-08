@@ -1,10 +1,10 @@
-# =============================================================
-# AION AI Ecosystem — Agent Class
+﻿# =============================================================
+# NEKOVA AI Ecosystem — Agent Class
 # =============================================================
 # An Agent is an AI entity with a goal, tools, and memory.
 # It can plan, execute tasks, and remember past interactions.
 #
-# Agents are the foundation of AI automation in AION.
+# Agents are the foundation of AI automation in NEKOVA.
 # They can search, summarize, write files, and chain tasks.
 
 from dataclasses import dataclass, field

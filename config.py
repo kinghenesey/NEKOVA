@@ -1,10 +1,10 @@
-# =============================================================
-# AION Language — Configuration & Version Info
+﻿# =============================================================
+# NEKOVA Language — Configuration & Version Info
 # =============================================================
 
-AION_VERSION = "1.1.1"
-AION_CODENAME  = "Genesis"
-AION_EXTENSION = ".aion"
+NEKOVA_VERSION = "1.1.1"
+NEKOVA_CODENAME  = "Genesis"
+NEKOVA_EXTENSION = ".aion"
 
 class Color:
     RESET   = "\033[0m"

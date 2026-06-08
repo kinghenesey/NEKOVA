@@ -1,10 +1,10 @@
+﻿# =============================================================
+# NEKOVA AI Ecosystem — Agents Module
 # =============================================================
-# AION AI Ecosystem — Agents Module
-# =============================================================
-# This is what gets loaded when you write "use agents" in AION.
+# This is what gets loaded when you write "use agents" in NEKOVA.
 # It exposes all agent and workflow functions.
 #
-# Usage in AION:
+# Usage in NEKOVA:
 #   use agents
 #   agent_create("researcher", "Research topics")
 #   agent_tool("researcher", "search", "Search the web")
@@ -26,7 +26,7 @@ _runner    = None
 def load() -> dict:
     """
     Returns all agent functions to be loaded
-    into the AION environment when 'use agents' is called.
+    into the NEKOVA environment when 'use agents' is called.
     """
     return {
         # Agent management

@@ -1,5 +1,5 @@
-# =============================================================
-# AION Marketplace — Search System
+﻿# =============================================================
+# NEKOVA Marketplace — Search System
 # =============================================================
 # Searches the package catalog by name, description,
 # category, tags, and author.

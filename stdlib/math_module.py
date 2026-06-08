@@ -1,7 +1,7 @@
+﻿# =============================================================
+# NEKOVA Standard Library — Math Module
 # =============================================================
-# AION Standard Library — Math Module
-# =============================================================
-# Usage in AION:
+# Usage in NEKOVA:
 #   use math
 #   show sqrt(16)      → 4.0
 #   show pi            → 3.14159...
@@ -16,7 +16,7 @@ import math
 def load() -> dict:
     """
     Returns all math functions and constants
-    to be loaded into the AION environment.
+    to be loaded into the NEKOVA environment.
     """
     return {
         # Constants

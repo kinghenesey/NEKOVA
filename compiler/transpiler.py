@@ -1,11 +1,11 @@
-# =============================================================
-# AION Compiler — Python Transpiler
+﻿# =============================================================
+# NEKOVA Compiler — Python Transpiler
 # =============================================================
 import os
 import sys
 
 
-class AIONTranspiler:
+class NEKOVATranspiler:
 
     def __init__(self):
         self.indent_level = 0
@@ -41,7 +41,7 @@ class AIONTranspiler:
         safe_root = aion_root.replace("\\", "/")
         lines = [
             "#!/usr/bin/env python3",
-            "# Compiled AION Program — AION Compiler v1.0.0",
+            "# Compiled NEKOVA Program — NEKOVA Compiler v1.0.0",
             "import os, sys, re, time, random",
             "",
             "_aion_root = " + repr(safe_root),

@@ -1,7 +1,7 @@
+﻿# =============================================================
+# NEKOVA Deployment — Exporter
 # =============================================================
-# AION Deployment — Exporter
-# =============================================================
-# Exports AION apps to different formats:
+# Exports NEKOVA apps to different formats:
 #   - HTML  (web apps, UI apps)
 #   - Script (standalone Python)
 #   - Package (shareable zip)
@@ -11,12 +11,12 @@ import json
 import shutil
 import zipfile
 from datetime import datetime
-from config import AION_VERSION, Color
+from config import NEKOVA_VERSION, Color
 
 
 class Exporter:
     """
-    Exports AION programs to distributable formats.
+    Exports NEKOVA programs to distributable formats.
 
     Usage:
         exporter = Exporter("myapp.aion")
@@ -33,7 +33,7 @@ class Exporter:
         self._load_source()
 
     def _load_source(self):
-        """Load the AION source file."""
+        """Load the NEKOVA source file."""
         if not os.path.isfile(self.filepath):
             raise FileNotFoundError(
                 f"File not found: '{self.filepath}'"
@@ -45,14 +45,14 @@ class Exporter:
     def to_html(self, output_dir: str = "dist") -> str:
         """
         Export a UI app to a standalone HTML file.
-        Runs the AION file and captures HTML output.
+        Runs the NEKOVA file and captures HTML output.
         """
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(
             output_dir, f"{self.name}.html")
 
         try:
-            # Run the AION file to generate HTML
+            # Run the NEKOVA file to generate HTML
             from lexer import Lexer
             from parser.parser import Parser
             from interpreter.interpreter import Interpreter
@@ -91,7 +91,7 @@ class Exporter:
         Includes source, metadata, and dependencies.
         """
         os.makedirs(output_dir, exist_ok=True)
-        pkg_name    = f"{self.name}-{AION_VERSION}"
+        pkg_name    = f"{self.name}-{NEKOVA_VERSION}"
         pkg_path    = os.path.join(
             output_dir, f"{pkg_name}.aionpkg")
 
@@ -121,7 +121,7 @@ class Exporter:
                   output_dir: str = "dist") -> str:
         """
         Export as a standalone Python script that
-        bundles the AION runtime and source together.
+        bundles the NEKOVA runtime and source together.
         """
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(
@@ -129,7 +129,7 @@ class Exporter:
 
         script = f'''#!/usr/bin/env python3
 """
-{self.name} — Built with AION v{AION_VERSION}
+{self.name} — Built with NEKOVA v{NEKOVA_VERSION}
 Generated on {datetime.now().strftime("%Y-%m-%d %H:%M")}
 """
 
@@ -140,9 +140,9 @@ SOURCE = """
 import sys
 import os
 
-# Add AION to path
-AION_PATH = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, AION_PATH)
+# Add NEKOVA to path
+NEKOVA_PATH = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, NEKOVA_PATH)
 
 try:
     from lexer import Lexer
@@ -155,8 +155,8 @@ try:
     interpreter.execute(program)
 
 except ImportError:
-    print("Error: AION runtime not found.")
-    print("Make sure the AION folder is in your path.")
+    print("Error: NEKOVA runtime not found.")
+    print("Make sure the NEKOVA folder is in your path.")
     sys.exit(1)
 '''
 
@@ -173,7 +173,7 @@ except ImportError:
         return {
             "name":       self.name,
             "version":    "1.0.0",
-            "aion":       AION_VERSION,
+            "aion":       NEKOVA_VERSION,
             "created":    datetime.now().isoformat(),
             "main":       f"{self.name}.aion",
             "type":       "aion-package",
@@ -183,7 +183,7 @@ except ImportError:
         """Generate a README for the package."""
         return f"""# {self.name}
 
-An AION language package.
+An NEKOVA language package.
 
 ## Run
 
@@ -193,7 +193,7 @@ python main.py {self.name}.aion
 
 ## Built with
 
-AION v{AION_VERSION}
+NEKOVA v{NEKOVA_VERSION}
 Generated on {datetime.now().strftime("%Y-%m-%d")}
 """
 
@@ -219,7 +219,7 @@ Generated on {datetime.now().strftime("%Y-%m-%d")}
 </head>
 <body>
     <h1>{self.name}</h1>
-    <p>Built with AION v{AION_VERSION}</p>
+    <p>Built with NEKOVA v{NEKOVA_VERSION}</p>
     <pre>{self.source}</pre>
 </body>
 </html>"""

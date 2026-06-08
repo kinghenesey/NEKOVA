@@ -1,7 +1,7 @@
+﻿# =============================================================
+# NEKOVA Standard Library — Datetime Module
 # =============================================================
-# AION Standard Library — Datetime Module
-# =============================================================
-# Usage in AION:
+# Usage in NEKOVA:
 #   use datetime
 #   show today()         → 2026-05-13
 #   show now()           → 2026-05-13 22:30:00
@@ -18,7 +18,7 @@ from datetime import datetime, date
 def load() -> dict:
     """
     Returns all datetime functions to be loaded
-    into the AION environment.
+    into the NEKOVA environment.
     """
     return {
         # Current date and time

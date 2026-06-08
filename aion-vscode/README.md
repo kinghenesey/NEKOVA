@@ -1,6 +1,6 @@
-# AION Language — VS Code Extension
+﻿# NEKOVA Language — VS Code Extension
 
-Syntax highlighting and language support for the AION AI-Native Programming Language.
+Syntax highlighting and language support for the NEKOVA AI-Native Programming Language.
 
 ## Features
 
@@ -8,8 +8,8 @@ Syntax highlighting and language support for the AION AI-Native Programming Lang
 - ✅ Comment toggling with `#`
 - ✅ Auto-closing brackets and quotes
 - ✅ Smart indentation for blocks
-- ✅ Run AION files from VS Code
-- ✅ Open AION REPL from VS Code
+- ✅ Run NEKOVA files from VS Code
+- ✅ Open NEKOVA REPL from VS Code
 
 ## Usage
 
@@ -19,8 +19,8 @@ Syntax highlighting and language support for the AION AI-Native Programming Lang
 
 ## Commands
 
-- `AION: Run File` — Run the current `.aion` file
-- `AION: Open REPL` — Open the interactive shell
+- `NEKOVA: Run File` — Run the current `.aion` file
+- `NEKOVA: Open REPL` — Open the interactive shell
 
 ## Syntax Highlighting
 
@@ -34,5 +34,5 @@ file from GitHub.
 
 ## Links
 
-- [GitHub](https://github.com/kinghenesey/AION)
+- [GitHub](https://github.com/kinghenesey/NEKOVA)
 - [PyPI](https://pypi.org/project/aion-lang/)

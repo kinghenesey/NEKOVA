@@ -1,28 +1,29 @@
 # =============================================================
-# AION Language — CLI Module
+# NEKOVA Language — CLI Module
 # =============================================================
 # Handles all terminal output formatting.
 # Kept separate so the interpreter never depends on colors.
 
 import sys
-from config import Color, AION_VERSION, AION_CODENAME
+from config import Color, NEKOVA_VERSION, NEKOVA_CODENAME
 
 
 def print_banner():
-    """Print the AION startup banner."""
+    """Print the NEKOVA startup banner."""
     art = (
-        r"    ___    ____  ____  _   __"         "\n"
-        r"   /   |  /  _/ / __ \/ | / /"        "\n"
-        r"  / /| |  / /  / / / /  |/ / "        "\n"
-        r" / ___ |_/ /  / /_/ / /|  /  "        "\n"
-        r"/_/  |_/___/  \____/_/ |_/   "
+        "  _   _ _____  _  ______  _    __ \n"
+        " | \\ | | ____|| |/ / __ \\| |   \\ \\\n"
+        " |  \\| |  _|  | ' / |  | | |    \\ \\\n"
+        " | |\\  | |___ | . \\ |__| | |___ / /\n"
+        " |_| \\_|_____||_|\\_\\____/|_____/_/ "
     )
     banner = (
         f"\n{Color.CYAN}{Color.BOLD}\n"
         f"{art}\n"
         f"{Color.RESET}\n"
         f"  {Color.DIM}AI-Native Programming Language{Color.RESET}\n"
-        f"  {Color.YELLOW}Version {AION_VERSION} · {AION_CODENAME}{Color.RESET}\n"
+        f"  {Color.DIM}Connected Forge · by SYNEKCOT Tech{Color.RESET}\n"
+        f"  {Color.YELLOW}Version {NEKOVA_VERSION} · {NEKOVA_CODENAME}{Color.RESET}\n"
         f"  {Color.DIM}{'─' * 40}{Color.RESET}\n"
     )
     print(banner)

@@ -1,5 +1,5 @@
-# =============================================================
-# AION — Phase 7 Tests (AI Runtime)
+﻿# =============================================================
+# NEKOVA — Phase 7 Tests (AI Runtime)
 # =============================================================
 # Run with: python tests/test_phase7.py
 
@@ -18,7 +18,7 @@ from interpreter.interpreter import Interpreter
 
 
 def run(source: str) -> str:
-    """Helper — run AION source and capture printed output."""
+    """Helper — run NEKOVA source and capture printed output."""
     tokens      = Lexer(source).tokenize()
     program     = Parser(tokens).parse()
     interpreter = Interpreter()
@@ -47,7 +47,7 @@ class TestMockProvider(unittest.TestCase):
         self.assertTrue(self.provider.is_available)
 
     def test_ask_returns_string(self):
-        result = self.provider.ask("What is AION?")
+        result = self.provider.ask("What is NEKOVA?")
         self.assertIsInstance(result, str)
         self.assertGreater(len(result), 0)
 
@@ -61,7 +61,7 @@ class TestMockProvider(unittest.TestCase):
         self.assertGreater(len(result), 0)
 
     def test_summarize_returns_string(self):
-        result = self.provider.summarize("This is a long text about AION.")
+        result = self.provider.summarize("This is a long text about NEKOVA.")
         self.assertIsInstance(result, str)
         self.assertGreater(len(result), 0)
 
@@ -80,7 +80,7 @@ class TestMockProvider(unittest.TestCase):
 
     def test_classify_positive(self):
         result = self.provider.classify(
-            "I love AION!", ["positive", "negative"]
+            "I love NEKOVA!", ["positive", "negative"]
         )
         self.assertEqual(result, "positive")
 
@@ -113,7 +113,7 @@ class TestProviderRegistry(unittest.TestCase):
             get_provider_by_name("invalid_provider")
 
 
-class TestAIInAION(unittest.TestCase):
+class TestAIInNEKOVA(unittest.TestCase):
 
     def test_ai_ask(self):
         source = (
@@ -136,7 +136,7 @@ class TestAIInAION(unittest.TestCase):
     def test_ai_summarize(self):
         source = (
             'use ai\n'
-            'summary = ai_summarize("Hello world this is AION")\n'
+            'summary = ai_summarize("Hello world this is NEKOVA")\n'
             'show summary'
         )
         output = run(source)
@@ -165,6 +165,6 @@ class TestAIInAION(unittest.TestCase):
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("  AION Phase 7 — AI Runtime Test Suite")
+    print("  NEKOVA Phase 7 — AI Runtime Test Suite")
     print("=" * 50)
     unittest.main(verbosity=2)

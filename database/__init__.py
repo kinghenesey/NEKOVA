@@ -1,5 +1,5 @@
 # =============================================================
-# AION Database — Package Init
+# NEKOVA Database — Package Init
 # =============================================================
 # Makes the database module importable from anywhere like:
 #   from database import load_db_module
@@ -10,5 +10,5 @@ from database.query import QueryBuilder
 
 
 def load_db_module() -> dict:
-    """Load all database functions into the AION environment."""
+    """Load all database functions into the NEKOVA environment."""
     return load()

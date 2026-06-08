@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AION IDE — AI-Native Programming</title>
+<title>NEKOVA IDE — AI-Native Programming</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -670,7 +670,7 @@ body::before{
 <!-- Header -->
 <div class="header">
   <div class="logo">
-    AION
+    NEKOVA
     <div class="logo-badge">IDE</div>
   </div>
 
@@ -727,7 +727,7 @@ body::before{
       <div class="toolbar-sep"></div>
       <button class="btn-sm" onclick="newFile()">+ New</button>
       <div class="toolbar-right">
-        <div class="lang-indicator">AION</div>
+        <div class="lang-indicator">NEKOVA</div>
         <span style="font-size:0.65rem;color:var(--text2)" id="cursor-pos">Ln 1, Col 1</span>
       </div>
     </div>
@@ -749,7 +749,7 @@ body::before{
             spellcheck="false"
             autocorrect="off"
             autocapitalize="off"
-            placeholder="# Write AION code here...
+            placeholder="# Write NEKOVA code here...
 think &quot;What should I build today?&quot;"
           ></textarea>
 
@@ -776,7 +776,7 @@ think &quot;What should I build today?&quot;"
         </div>
         <div id="output">
           <span class="out-dim">┌─────────────────────────────────┐
-│  AION IDE  ·  AI-Native Language │
+│  NEKOVA IDE  ·  AI-Native Language │
 │  Press ▶ Run or Ctrl+Enter       │
 └─────────────────────────────────┘
 
@@ -789,7 +789,7 @@ think &quot;What should I build today?&quot;"
 
 <!-- Status Bar -->
 <div class="statusbar">
-  <div class="status-item">⬡ AION</div>
+  <div class="status-item">⬡ NEKOVA</div>
   <div class="status-item" id="status-msg">Ready</div>
   <div class="status-right">
     <div class="status-item" id="status-encoding">UTF-8</div>
@@ -814,7 +814,7 @@ let acVisible = false;
 let findMatches = [];
 let findMatchIndex = 0;
 
-// ── AION Keywords for syntax-aware features ─────────────────────
+// ── NEKOVA Keywords for syntax-aware features ─────────────────────
 const AI_KEYWORDS = new Set(['think','model','autonomous','parallel','memory','sandbox','strict','relaxed','pipeline','collect','generate','save','with','run']);
 const CTRL_KEYWORDS = new Set(['if','else','repeat','while','for','in','return','try','catch']);
 const DECL_KEYWORDS = new Set(['task','use','import']);
@@ -831,11 +831,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function loadStarterCode() {
-  const code = `# Welcome to AION Web IDE v2.0
+  const code = `# Welcome to NEKOVA Web IDE v2.0
 # The AI-Native Programming Language
 
 name = "Emmanuel"
-language = "AION"
+language = "NEKOVA"
 
 show "Hello, {name}!"
 show "Welcome to {language} — where AI is syntax."
@@ -922,7 +922,7 @@ async function runCode() {
 
   } catch(err) {
     append('\n✗ Server error: ' + err.message + '\n', 'out-error');
-    append('Is the AION server running?\n', 'out-dim');
+    append('Is the NEKOVA server running?\n', 'out-dim');
   }
 
   isRunning = false;

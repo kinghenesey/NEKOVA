@@ -1,7 +1,7 @@
+﻿# =============================================================
+# NEKOVA Compiler — LLVM Backend
 # =============================================================
-# AION Compiler — LLVM Backend
-# =============================================================
-# Compiles AION AST nodes to native machine code via LLVM.
+# Compiles NEKOVA AST nodes to native machine code via LLVM.
 # Falls back to Python transpiler for unsupported features.
 #
 # Usage:
@@ -15,7 +15,7 @@ import sys
 
 class LLVMCompiler:
     """
-    Compiles AION programs to native executables.
+    Compiles NEKOVA programs to native executables.
     Uses llvmlite for numeric code, transpiler for everything else.
     """
 
@@ -38,7 +38,7 @@ class LLVMCompiler:
     def compile(self, source_path: str,
                 output_path: str = None) -> str:
         """
-        Compile an AION source file to a native executable.
+        Compile an NEKOVA source file to a native executable.
         Returns the path to the compiled output.
         """
         if not os.path.isfile(source_path):
@@ -205,9 +205,9 @@ class LLVMCompiler:
     def _compile_transpiler(self, program, source: str,
                              output_path: str) -> str:
         """
-        Compile AION to a standalone Python script.
-        Works for all AION features.
+        Compile NEKOVA to a standalone Python script.
+        Works for all NEKOVA features.
         """
-        from compiler.transpiler import AIONTranspiler
-        transpiler = AIONTranspiler()
+        from compiler.transpiler import NEKOVATranspiler
+        transpiler = NEKOVATranspiler()
         return transpiler.compile(source, output_path)

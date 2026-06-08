@@ -1,7 +1,7 @@
+﻿# =============================================================
+# NEKOVA Language — Visual Debugger
 # =============================================================
-# AION Language — Visual Debugger
-# =============================================================
-# Step through AION code line by line.
+# Step through NEKOVA code line by line.
 # See variables, current line, and execution flow.
 #
 # Usage:
@@ -9,12 +9,12 @@
 
 import os
 import sys
-from config import Color, AION_VERSION
+from config import Color, NEKOVA_VERSION
 
 
 class Debugger:
     """
-    Visual step-through debugger for AION programs.
+    Visual step-through debugger for NEKOVA programs.
 
     Features:
         - Step through code line by line
@@ -302,8 +302,8 @@ class Debugger:
     def _print_header(self):
         """Print the debugger header."""
         print(f"""
-{Color.CYAN}{Color.BOLD}  AION Visual Debugger{Color.RESET}
-  {Color.DIM}Version {AION_VERSION}{Color.RESET}
+{Color.CYAN}{Color.BOLD}  NEKOVA Visual Debugger{Color.RESET}
+  {Color.DIM}Version {NEKOVA_VERSION}{Color.RESET}
   {Color.DIM}File: {self.filepath}{Color.RESET}
   {Color.DIM}Lines: {len(self.lines)}{Color.RESET}
   {Color.DIM}{'─' * 40}{Color.RESET}

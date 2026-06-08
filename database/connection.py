@@ -1,5 +1,5 @@
-# =============================================================
-# AION Database — Connection Manager
+﻿# =============================================================
+# NEKOVA Database — Connection Manager
 # =============================================================
 # Manages SQLite database connections.
 # SQLite is built into Python — no installation needed.

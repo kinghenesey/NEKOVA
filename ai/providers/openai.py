@@ -1,15 +1,15 @@
+﻿# =============================================================
+# NEKOVA AI Runtime — OpenAI / GPT Provider
 # =============================================================
-# AION AI Runtime — OpenAI / GPT Provider
-# =============================================================
-# Connects AION to OpenAI's GPT models.
+# Connects NEKOVA to OpenAI's GPT models.
 # Get an API key at: https://platform.openai.com
 #
 # To activate:
 #   1. Get an API key from https://platform.openai.com
-#   2. Open (or create) the .env file in your AION folder
+#   2. Open (or create) the .env file in your NEKOVA folder
 #   3. Add this line:  OPENAI_API_KEY=sk-your-key-here
 #
-# AION will automatically detect your key and use GPT.
+# NEKOVA will automatically detect your key and use GPT.
 # Priority order: Gemini → Claude → OpenAI → Mock
 
 import os
@@ -18,7 +18,7 @@ from ai.providers.base import BaseProvider
 
 class OpenAIProvider(BaseProvider):
     """
-    Connects AION to OpenAI's GPT models.
+    Connects NEKOVA to OpenAI's GPT models.
     Requires OPENAI_API_KEY environment variable.
     """
 

@@ -1,11 +1,11 @@
-# =============================================================
-# AION Marketplace — Main Engine
+﻿# =============================================================
+# NEKOVA Marketplace — Main Engine
 # =============================================================
 # Core marketplace operations:
 #   browse, search, install, uninstall, publish, info
 
 import os
-from config import Color, AION_VERSION
+from config import Color, NEKOVA_VERSION
 from marketplace.registry import (
     get_catalog, get_package, load_installed,
     is_installed, mark_installed, mark_uninstalled
@@ -17,7 +17,7 @@ from marketplace.search import (
 
 class Marketplace:
     """
-    Main AION Marketplace engine.
+    Main NEKOVA Marketplace engine.
 
     Usage:
         mp = Marketplace()
@@ -34,7 +34,7 @@ class Marketplace:
         """Display the full marketplace catalog."""
         print()
         print(f"{Color.CYAN}{Color.BOLD}"
-              f"  AION Marketplace{Color.RESET}")
+              f"  NEKOVA Marketplace{Color.RESET}")
         print(f"  {Color.DIM}{'─' * 50}{Color.RESET}")
         print(f"  {Color.DIM}"
               f"{len(self.catalog)} packages available"
@@ -216,7 +216,7 @@ class Marketplace:
         """Publish a package to the marketplace."""
         print()
         print(f"{Color.CYAN}{Color.BOLD}"
-              f"  Publish to AION Marketplace"
+              f"  Publish to NEKOVA Marketplace"
               f"{Color.RESET}")
         print(f"  {Color.DIM}{'─' * 50}{Color.RESET}")
         print()
@@ -240,7 +240,7 @@ class Marketplace:
               f"✓ Package '{name}' submitted for review"
               f"{Color.RESET}")
         print(f"  {Color.DIM}"
-              f"The AION team will review and publish "
+              f"The NEKOVA team will review and publish "
               f"within 24 hours{Color.RESET}")
         print()
 

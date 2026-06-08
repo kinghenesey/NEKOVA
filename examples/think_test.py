@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
-# Compiled AION Program — AION Compiler v1.0.0
+﻿#!/usr/bin/env python3
+# Compiled NEKOVA Program — NEKOVA Compiler v1.0.0
 import os, sys, re, time, random
 
-_aion_root = 'C:/Users/HomePC/Desktop/AION'
+_aion_root = 'C:/Users/HomePC/Desktop/NEKOVA'
 if _aion_root not in sys.path:
     sys.path.insert(0, _aion_root)
 

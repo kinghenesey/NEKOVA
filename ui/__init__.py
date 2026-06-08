@@ -1,5 +1,5 @@
-# =============================================================
-# AION UI Framework — Package Init
+﻿# =============================================================
+# NEKOVA UI Framework — Package Init
 # =============================================================
 # Makes the UI module importable from anywhere like:
 #   from ui import load_ui_module
@@ -13,5 +13,5 @@ from ui.renderer import HTMLRenderer
 
 
 def load_ui_module() -> dict:
-    """Load all UI functions into the AION environment."""
+    """Load all UI functions into the NEKOVA environment."""
     return load()

@@ -1,17 +1,17 @@
+﻿# =============================================================
+# NEKOVA Web Framework — Web Module
 # =============================================================
-# AION Web Framework — Web Module
-# =============================================================
-# This is what gets loaded when you write "use web" in AION.
-# It exposes all web functions to your AION programs.
+# This is what gets loaded when you write "use web" in NEKOVA.
+# It exposes all web functions to your NEKOVA programs.
 #
-# Usage in AION:
+# Usage in NEKOVA:
 #   use web
 #   web_route("/", "Hello World!")
 #   web_route("/about", "About page")
 #   web_start(8000)
 
-from web.server import AIONServer
-from web.request import AIONRequest
+from web.server import NEKOVAServer
+from web.request import NEKOVARequest
 from web.response import (
     text_response, json_response,
     html_response, error_response
@@ -25,7 +25,7 @@ _server = None
 def load() -> dict:
     """
     Returns all web functions to be loaded
-    into the AION environment when 'use web' is called.
+    into the NEKOVA environment when 'use web' is called.
     """
     return {
         # Server management
@@ -51,10 +51,10 @@ def load() -> dict:
 # Server management
 # ----------------------------------------------------------
 
-def _web_app(name: str = "AION Web App"):
+def _web_app(name: str = "NEKOVA Web App"):
     """Create and configure the web server."""
     global _server
-    _server = AIONServer(name=str(name))
+    _server = NEKOVAServer(name=str(name))
     return name
 
 
@@ -63,7 +63,7 @@ def _web_start(port: int = 8000):
     global _server
 
     if _server is None:
-        _server = AIONServer("AION Web App")
+        _server = NEKOVAServer("NEKOVA Web App")
 
     _server.start(port=int(port))
 
@@ -77,14 +77,14 @@ def _web_route(path: str, response,
     """
     Register a route with a static or dynamic response.
 
-    Usage in AION:
+    Usage in NEKOVA:
         web_route("/", "Welcome!")
         web_route("/hello", "Hello World!")
     """
     global _server
 
     if _server is None:
-        _server = AIONServer("AION Web App")
+        _server = NEKOVAServer("NEKOVA Web App")
 
     if methods is None:
         methods = ["GET"]
@@ -92,17 +92,17 @@ def _web_route(path: str, response,
     # If response is a string, wrap in a handler
     if isinstance(response, str):
         content = response
-        def handler(request: AIONRequest):
+        def handler(request: NEKOVARequest):
             return text_response(content)
     elif isinstance(response, dict):
         data = response
-        def handler(request: AIONRequest):
+        def handler(request: NEKOVARequest):
             return json_response(data)
     elif callable(response):
         handler = response
     else:
         content = str(response)
-        def handler(request: AIONRequest):
+        def handler(request: NEKOVARequest):
             return text_response(content)
 
     _server.router.add(path, handler, methods=methods)

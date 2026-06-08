@@ -1,5 +1,5 @@
-# =============================================================
-# AION Compiler — AST to Bytecode Compiler
+﻿# =============================================================
+# NEKOVA Compiler — AST to Bytecode Compiler
 # =============================================================
 # Walks the AST and emits bytecode instructions.
 #
@@ -30,7 +30,7 @@ class CompileError(Exception):
 
 class Compiler:
     """
-    Compiles an AION AST into bytecode.
+    Compiles an NEKOVA AST into bytecode.
 
     Usage:
         compiler = Compiler()

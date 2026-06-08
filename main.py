@@ -1,12 +1,12 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # =============================================================
-# AION Language — Main Entry Point
+# NEKOVA Language — Main Entry Point
 # =============================================================
 # Usage:
-#   python main.py <file.aion>              Run a file
-#   python main.py run <file.aion>          Run a file
+#   python main.py <file.nk>              Run a file
+#   python main.py run <file.nk>          Run a file
 #   python main.py test                     Run all tests
-#   python main.py build <file.aion>        Validate a file
+#   python main.py build <file.nk>        Validate a file
 #   python main.py new <project>            Create a project
 #   python main.py info                     System info
 #   python main.py clean                    Remove cache
@@ -34,40 +34,40 @@ _load_env()
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config import AION_VERSION, AION_CODENAME, Color
+from config import NEKOVA_VERSION, NEKOVA_CODENAME, Color
 from cli    import print_banner, print_error, print_info, print_success
-from runner import AIONRunner
+from runner import NEKOVARunner
 
 
 HELP_TEXT = f"""
-{Color.CYAN}{Color.BOLD}AION Programming Language{Color.RESET} \
-v{AION_VERSION} · {AION_CODENAME}
+{Color.CYAN}{Color.BOLD}NEKOVA Programming Language{Color.RESET} \
+v{NEKOVA_VERSION} · {NEKOVA_CODENAME}
 
 {Color.BOLD}Running files:{Color.RESET}
-  python main.py <file.aion>              Run an AION file
-  python main.py <file.aion> --debug      Run with debug output
-  python main.py <file.aion> --compile    Run using the compiler
-  python main.py run <file.aion>          Run an AION file
+  python main.py <file.nk>              Run an NEKOVA file
+  python main.py <file.nk> --debug      Run with debug output
+  python main.py <file.nk> --compile    Run using the compiler
+  python main.py run <file.nk>          Run an NEKOVA file
   python main.py repl                     Start interactive shell
 
 {Color.BOLD}Developer tools:{Color.RESET}
   python main.py test                     Run all test suites
-  python main.py build <file.aion>        Validate a file
+  python main.py build <file.nk>        Validate a file
   python main.py new <project-name>       Create a new project
   python main.py info                     Show system info
   python main.py clean                    Remove cache files
-  python main.py debug <file.aion>        Visual debugger
+  python main.py debug <file.nk>        Visual debugger
   python main.py repl                     Interactive shell
   python main.py ide                      Launch Web 
-  python main.py format <file.aion>        Format code style
+  python main.py format <file.nk>        Format code style
   python main.py format --check <file>     Check formatting
 
 {Color.BOLD}Deployment:{Color.RESET}
-  python main.py compile <file.aion>      Compile to native/Python
-  python main.py export <file.aion>       Export to HTML/script
+  python main.py compile <file.nk>      Compile to native/Python
+  python main.py export <file.nk>       Export to HTML/script
   python main.py package <dir>            Package a project
-  python main.py publish <pkg.aionpkg>    Publish to registry
-  python main.py deploy <file.aion>       Full deploy pipeline
+  python main.py publish <pkg.nkpkg>    Publish to registry
+  python main.py deploy <file.nk>       Full deploy pipeline
 
 {Color.BOLD}Marketplace:{Color.RESET}
   python main.py marketplace              Browse all packages
@@ -86,8 +86,8 @@ v{AION_VERSION} · {AION_CODENAME}
   python main.py --help                   Show this help
 
 {Color.BOLD}Examples:{Color.RESET}
-  python main.py examples/hello.aion
-  python main.py deploy examples/ui_demo.aion
+  python main.py examples/hello.nk
+  python main.py deploy examples/ui_demo.nk
   python main.py --install charts
   python main.py new myapp
   python main.py test
@@ -164,7 +164,7 @@ def main():
         sys.exit(0)
 
     if args["version"]:
-        print(f"AION v{AION_VERSION} · {AION_CODENAME}")
+        print(f"NEKOVA v{NEKOVA_VERSION} · {NEKOVA_CODENAME}")
         sys.exit(0)
 
     if args["help"]:
@@ -226,10 +226,10 @@ def main():
             if not arg:
                 print_error(
                     "Please provide a file to run.\n"
-                    "  Usage: python main.py run app.aion"
+                    "  Usage: python main.py run app.nk"
                 )
                 sys.exit(1)
-            runner    = AIONRunner(filepath=arg,
+            runner    = NEKOVARunner(filepath=arg,
                                    debug=args["debug"])
             exit_code = runner.run()
             sys.exit(exit_code)
@@ -244,7 +244,7 @@ def main():
             if not arg:
                 print_error(
                     "Please provide a file to debug.\n"
-                    "  Usage: python main.py debug app.aion"
+                    "  Usage: python main.py debug app.nk"
                 )
                 sys.exit(1)
             from debugger import Debugger
@@ -265,7 +265,7 @@ def main():
                 success = format_file(
                     arg, check_only=check_only)
             else:
-                print_info("Formatting all .aion files...")
+                print_info("Formatting all .nk files...")
                 count = format_directory("examples")
                 print_success(
                     f"Formatted {count} files")
@@ -303,7 +303,7 @@ def main():
             sys.exit(0 if success else 1)
 
         if cmd == "deploy":
-            # Check for: deploy cloud app.aion
+            # Check for: deploy cloud app.nk
             values = [a for a in argv
                       if not a.startswith("--")]
             if len(values) >= 3 and values[1] == "cloud":
@@ -318,7 +318,7 @@ def main():
             if not arg:
                 print_error(
                     "Please provide a file to compile.\n"
-                    "  Usage: python main.py compile app.aion"
+                    "  Usage: python main.py compile app.nk"
                 )
                 sys.exit(1)
             from compiler.llvm_backend import LLVMCompiler
@@ -336,7 +336,7 @@ def main():
 
     if args["file"]:
         print_banner()
-        runner    = AIONRunner(filepath=args["file"],
+        runner    = NEKOVARunner(filepath=args["file"],
                                debug=args["debug"],
                                compile_mode=args["compile"])
         exit_code = runner.run()

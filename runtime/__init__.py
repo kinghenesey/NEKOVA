@@ -1,5 +1,5 @@
-# =============================================================
-# AION Runtime — Return Value Handling
+﻿# =============================================================
+# NEKOVA Runtime — Return Value Handling
 # =============================================================
 # When a task executes a "return" statement we need a way
 # to stop execution immediately and pass the value back
@@ -18,7 +18,7 @@
 
 class ReturnSignal(Exception):
     """
-    Raised when AION executes a return statement.
+    Raised when NEKOVA executes a return statement.
     Carries the return value up the call stack.
     """
     def __init__(self, value):
@@ -27,7 +27,7 @@ class ReturnSignal(Exception):
 
 class BreakSignal(Exception):
     """
-    Raised when AION needs to break out of a loop.
+    Raised when NEKOVA needs to break out of a loop.
     Reserved for future use in Phase 5+.
     """
     pass

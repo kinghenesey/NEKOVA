@@ -1,9 +1,9 @@
+﻿# =============================================================
+# NEKOVA Package Manager — Package Registry
 # =============================================================
-# AION Package Manager — Package Registry
-# =============================================================
-# This module manages all installed AION packages.
+# This module manages all installed NEKOVA packages.
 # Packages are stored in the packages/ folder and made
-# available via "use <package>" in AION code.
+# available via "use <package>" in NEKOVA code.
 
 import os
 import json
@@ -14,7 +14,7 @@ REGISTRY_FILE = os.path.join(PACKAGES_DIR, "registry.json")
 
 
 # ── Built-in package registry ─────────────────────────────────
-# These are packages that come with AION out of the box.
+# These are packages that come with NEKOVA out of the box.
 # Future versions will download from a remote registry.
 
 BUILTIN_PACKAGES = {
@@ -22,14 +22,14 @@ BUILTIN_PACKAGES = {
         "name":        "charts",
         "version":     "1.0.0",
         "description": "Simple ASCII charts and graphs",
-        "author":      "AION Core Team",
+        "author":      "NEKOVA Core Team",
         "functions":   ["bar_chart", "line_chart", "pie_chart"],
     },
     "auth": {
         "name":        "auth",
         "version":     "1.0.0",
         "description": "Basic authentication utilities",
-        "author":      "AION Core Team",
+        "author":      "NEKOVA Core Team",
         "functions":   ["hash_password", "check_password",
                         "generate_token"],
     },
@@ -37,7 +37,7 @@ BUILTIN_PACKAGES = {
         "name":        "validation",
         "version":     "1.0.0",
         "description": "Input validation helpers",
-        "author":      "AION Core Team",
+        "author":      "NEKOVA Core Team",
         "functions":   ["is_email", "is_phone", "is_url",
                         "is_strong_password"],
     },
@@ -45,7 +45,7 @@ BUILTIN_PACKAGES = {
         "name":        "colors",
         "version":     "1.0.0",
         "description": "Terminal color and styling utilities",
-        "author":      "AION Core Team",
+        "author":      "NEKOVA Core Team",
         "functions":   ["red", "green", "blue", "yellow",
                         "bold", "dim"],
     },
@@ -53,7 +53,7 @@ BUILTIN_PACKAGES = {
         "name":        "random",
         "version":     "1.0.0",
         "description": "Random number and value generation",
-        "author":      "AION Core Team",
+        "author":      "NEKOVA Core Team",
         "functions":   ["random_int", "random_float",
                         "random_choice", "shuffle"],
     },

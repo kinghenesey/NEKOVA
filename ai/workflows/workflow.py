@@ -1,8 +1,8 @@
-# =============================================================
-# AION AI Ecosystem — Workflow System
+﻿# =============================================================
+# NEKOVA AI Ecosystem — Workflow System
 # =============================================================
 # A Workflow is a sequence of automated steps.
-# Each step can use AI, files, databases, or any AION module.
+# Each step can use AI, files, databases, or any NEKOVA module.
 #
 # Example:
 #   workflow daily_report:

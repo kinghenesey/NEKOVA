@@ -1,7 +1,7 @@
+﻿# =============================================================
+# NEKOVA Deployment — Packager
 # =============================================================
-# AION Deployment — Packager
-# =============================================================
-# Creates distributable AION project packages.
+# Creates distributable NEKOVA project packages.
 #
 # A package includes:
 #   - All .aion source files
@@ -15,12 +15,12 @@ import json
 import shutil
 import zipfile
 from datetime import datetime
-from config import AION_VERSION, Color
+from config import NEKOVA_VERSION, Color
 
 
 class Packager:
     """
-    Creates distributable AION packages from projects.
+    Creates distributable NEKOVA packages from projects.
 
     Usage:
         packager = Packager("myproject/")
@@ -155,7 +155,7 @@ class Packager:
         return {
             "name":      self.name,
             "version":   self.version,
-            "aion":      AION_VERSION,
+            "aion":      NEKOVA_VERSION,
             "built":     datetime.now().isoformat(),
             "type":      "aion-package",
             "main":      self.config.get(
@@ -168,7 +168,7 @@ class Packager:
         return {
             "name":     self.name,
             "version":  self.version,
-            "aion":     AION_VERSION,
+            "aion":     NEKOVA_VERSION,
             "files":    [
                 os.path.relpath(f, self.project_dir)
                 for f in files
@@ -180,7 +180,7 @@ class Packager:
         """Generate default README."""
         return f"""# {self.name}
 
-Version {self.version} — Built with AION v{AION_VERSION}
+Version {self.version} — Built with NEKOVA v{NEKOVA_VERSION}
 
 ## Run
 

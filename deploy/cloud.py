@@ -1,7 +1,7 @@
+﻿# =============================================================
+# NEKOVA Deploy — Cloud Deployment Engine
 # =============================================================
-# AION Deploy — Cloud Deployment Engine
-# =============================================================
-# Deploys AION apps to cloud providers.
+# Deploys NEKOVA apps to cloud providers.
 #
 # Supported targets:
 #   1. Railway  (railway.app — free tier)
@@ -23,7 +23,7 @@ from datetime import datetime
 
 class CloudDeployer:
     """
-    Deploys AION applications to cloud providers.
+    Deploys NEKOVA applications to cloud providers.
     """
 
     def __init__(self):
@@ -43,7 +43,7 @@ class CloudDeployer:
     def deploy(self, filepath: str,
                target: str = "auto") -> dict:
         """
-        Deploy an AION file to the cloud.
+        Deploy an NEKOVA file to the cloud.
         Returns a dict with deployment info.
         """
         if not os.path.isfile(filepath):
@@ -161,7 +161,7 @@ class CloudDeployer:
                                 bundle_path: str) -> str:
         """Generate deployment instructions."""
         return f"""
-AION App Deployment Instructions
+NEKOVA App Deployment Instructions
 =================================
 App: {app_name}
 Bundle: {bundle_path}
@@ -204,8 +204,8 @@ OPTION 3 — Run Locally:
    python main.py {app_name}.aion
 
 Bundle contents:
-- {app_name}.aion     Your AION application
-- main.py             AION runtime entry point
+- {app_name}.aion     Your NEKOVA application
+- main.py             NEKOVA runtime entry point
 - requirements.txt    Python dependencies
 - Procfile            Railway/Heroku process file
 - README.md           Setup instructions

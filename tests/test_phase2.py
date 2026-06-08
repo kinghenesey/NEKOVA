@@ -1,5 +1,5 @@
-# =============================================================
-# AION — Phase 2 Tests (Lexer)
+﻿# =============================================================
+# NEKOVA — Phase 2 Tests (Lexer)
 # =============================================================
 # Run with: python tests/test_phase2.py
 
@@ -153,6 +153,6 @@ class TestErrors(unittest.TestCase):
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("  AION Phase 2 — Lexer Test Suite")
+    print("  NEKOVA Phase 2 — Lexer Test Suite")
     print("=" * 50)
     unittest.main(verbosity=2)

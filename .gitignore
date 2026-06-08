@@ -7,7 +7,7 @@ __pycache__/
 # Virtual environment
 venv/
 
-# AION installed packages (generated files)
+# NEKOVA installed packages (generated files)
 packages/auth.py
 packages/random.py
 packages/validation.py
@@ -30,4 +30,4 @@ node_modules/
 *.vsix
 out/
 .vscode-test/
-"@ | Out-File -FilePath "aion-vscode\.gitignore" -Encoding utf8
+"@ | Out-File -FilePath "nekova-vscode\.gitignore" -Encoding utf8

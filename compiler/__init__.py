@@ -1,5 +1,5 @@
 # =============================================================
-# AION Compiler — Package Init
+# NEKOVA Compiler — Package Init
 # =============================================================
 # Makes the compiler importable from anywhere like:
 #   from compiler import Compiler, VirtualMachine

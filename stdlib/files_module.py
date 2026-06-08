@@ -1,11 +1,11 @@
+﻿# =============================================================
+# NEKOVA Standard Library — Files Module
 # =============================================================
-# AION Standard Library — Files Module
-# =============================================================
-# Usage in AION:
+# Usage in NEKOVA:
 #   use files
-#   write_file("hello.txt", "Hello AION")
+#   write_file("hello.txt", "Hello NEKOVA")
 #   content = read_file("hello.txt")
-#   show content                → Hello AION
+#   show content                → Hello NEKOVA
 #   show file_exists("hello.txt")  → true
 
 import os
@@ -14,7 +14,7 @@ import os
 def load() -> dict:
     """
     Returns all file functions to be loaded
-    into the AION environment.
+    into the NEKOVA environment.
     """
     return {
         # Reading

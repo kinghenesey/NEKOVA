@@ -1,11 +1,11 @@
-
-AION App Deployment Instructions
+ï»¿
+NEKOVA App Deployment Instructions
 =================================
 App: hello
 Bundle: deploy/output\hello_deploy_20260526_223002.zip
 Generated: 2026-05-26 22:30:03
 
-OPTION 1 — Deploy to Railway (Free):
+OPTION 1 ï¿½ Deploy to Railway (Free):
 --------------------------------------
 1. Install Railway CLI:
    npm install -g @railway/cli
@@ -24,7 +24,7 @@ OPTION 1 — Deploy to Railway (Free):
 
 6. Your app will be live at: https://your-app.railway.app
 
-OPTION 2 — Deploy to Render (Free):
+OPTION 2 ï¿½ Deploy to Render (Free):
 --------------------------------------
 1. Go to https://render.com and create an account
 2. Click "New Web Service"
@@ -33,7 +33,7 @@ OPTION 2 — Deploy to Render (Free):
 5. Set start command: python main.py app.aion
 6. Click "Create Web Service"
 
-OPTION 3 — Run Locally:
+OPTION 3 ï¿½ Run Locally:
 --------------------------------------
 1. Extract the bundle zip
 2. Install dependencies:
@@ -42,8 +42,8 @@ OPTION 3 — Run Locally:
    python main.py hello.aion
 
 Bundle contents:
-- hello.aion     Your AION application
-- main.py             AION runtime entry point
+- hello.aion     Your NEKOVA application
+- main.py             NEKOVA runtime entry point
 - requirements.txt    Python dependencies
 - Procfile            Railway/Heroku process file
 - README.md           Setup instructions

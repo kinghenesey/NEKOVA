@@ -1,15 +1,15 @@
-# =============================================================
-# AION Web Framework — Request Object
+﻿# =============================================================
+# NEKOVA Web Framework — Request Object
 # =============================================================
 # Represents an incoming HTTP request.
-# Wraps Flask's request object in an AION-friendly way.
+# Wraps Flask's request object in an NEKOVA-friendly way.
 
 from dataclasses import dataclass, field
 from typing import Dict, Any
 
 
 @dataclass
-class AIONRequest:
+class NEKOVARequest:
     """
     Represents an incoming HTTP request.
 
@@ -46,14 +46,14 @@ class AIONRequest:
         return f"Request({self.method} {self.path})"
 
 
-def from_flask_request(flask_request) -> AIONRequest:
-    """Convert a Flask request to an AIONRequest."""
+def from_flask_request(flask_request) -> NEKOVARequest:
+    """Convert a Flask request to an NEKOVARequest."""
     try:
         json_data = flask_request.get_json(silent=True) or {}
     except Exception:
         json_data = {}
 
-    return AIONRequest(
+    return NEKOVARequest(
         method=flask_request.method,
         path=flask_request.path,
         params=dict(flask_request.args),

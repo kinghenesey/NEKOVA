@@ -1,7 +1,7 @@
+﻿# =============================================================
+# NEKOVA UI Framework — Components
 # =============================================================
-# AION UI Framework — Components
-# =============================================================
-# Every UI element in AION is a Component.
+# Every UI element in NEKOVA is a Component.
 # Components form a tree that gets rendered to HTML.
 #
 # Example tree:
@@ -15,7 +15,7 @@ from typing import List, Optional
 
 
 class Component:
-    """Base class for all AION UI components."""
+    """Base class for all NEKOVA UI components."""
     pass
 
 
@@ -23,7 +23,7 @@ class Component:
 class Title(Component):
     """
     A large heading.
-    Usage in AION:  title "Welcome to AION"
+    Usage in NEKOVA:  title "Welcome to NEKOVA"
     """
     text: str
 
@@ -35,7 +35,7 @@ class Title(Component):
 class Text(Component):
     """
     A paragraph of text.
-    Usage in AION:  text "Hello world"
+    Usage in NEKOVA:  text "Hello world"
     """
     content: str
 
@@ -47,7 +47,7 @@ class Text(Component):
 class Button(Component):
     """
     A clickable button.
-    Usage in AION:
+    Usage in NEKOVA:
         button "Get Started":
             go Dashboard
     """
@@ -63,7 +63,7 @@ class Button(Component):
 class Input(Component):
     """
     A text input field.
-    Usage in AION:  input "Enter your name" as name
+    Usage in NEKOVA:  input "Enter your name" as name
     """
     placeholder: str
     name:        str = "input"
@@ -76,7 +76,7 @@ class Input(Component):
 class Image(Component):
     """
     An image.
-    Usage in AION:  image "logo.png" alt "AION Logo"
+    Usage in NEKOVA:  image "logo.png" alt "NEKOVA Logo"
     """
     src: str
     alt: str = ""
@@ -89,7 +89,7 @@ class Image(Component):
 class Divider(Component):
     """
     A horizontal divider line.
-    Usage in AION:  divider
+    Usage in NEKOVA:  divider
     """
     def __repr__(self):
         return "Divider()"
@@ -99,7 +99,7 @@ class Divider(Component):
 class Space(Component):
     """
     Vertical spacing.
-    Usage in AION:  space
+    Usage in NEKOVA:  space
     """
     size: int = 1
 
@@ -111,7 +111,7 @@ class Space(Component):
 class Card(Component):
     """
     A card container with children.
-    Usage in AION:
+    Usage in NEKOVA:
         card:
             title "Hello"
             text "World"
@@ -126,7 +126,7 @@ class Card(Component):
 class Row(Component):
     """
     A horizontal row of components.
-    Usage in AION:
+    Usage in NEKOVA:
         row:
             button "Yes"
             button "No"
@@ -141,7 +141,7 @@ class Row(Component):
 class Page(Component):
     """
     A full page — the top-level UI component.
-    Usage in AION:
+    Usage in NEKOVA:
         page Home:
             title "Welcome"
             text "Hello"

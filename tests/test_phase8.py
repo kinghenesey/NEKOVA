@@ -1,5 +1,5 @@
-# =============================================================
-# AION — Phase 8 Tests (Package Manager)
+﻿# =============================================================
+# NEKOVA — Phase 8 Tests (Package Manager)
 # =============================================================
 # Run with: python tests/test_phase8.py
 
@@ -23,7 +23,7 @@ from interpreter.interpreter import Interpreter
 
 
 def run(source: str) -> str:
-    """Helper — run AION source and capture printed output."""
+    """Helper — run NEKOVA source and capture printed output."""
     tokens      = Lexer(source).tokenize()
     program     = Parser(tokens).parse()
     interpreter = Interpreter()
@@ -111,7 +111,7 @@ class TestInstallUninstall(unittest.TestCase):
         self.assertFalse(success)
 
 
-class TestPackagesInAION(unittest.TestCase):
+class TestPackagesInNEKOVA(unittest.TestCase):
 
     def setUp(self):
         """Install packages needed for tests."""
@@ -192,7 +192,7 @@ class TestPackagesInAION(unittest.TestCase):
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("  AION Phase 8 — Package Manager Test Suite")
+    print("  NEKOVA Phase 8 — Package Manager Test Suite")
     print("=" * 50)
     unittest.main(verbosity=2)
     

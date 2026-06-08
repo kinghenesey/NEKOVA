@@ -1,10 +1,12 @@
+﻿# =============================================================
+# NEKOVA Database — DB Module
 # =============================================================
-# AION Database — DB Module
+# NEKOVA Database — DB Module
 # =============================================================
-# This is what gets loaded when you write "use database" in AION.
-# It exposes all database functions to your AION programs.
+# This is what gets loaded when you write "use database" in NEKOVA.
+# It exposes all database functions to your NEKOVA programs.
 #
-# Usage in AION:
+# Usage in NEKOVA:
 #   use database
 #   db_connect("myapp.db")
 #   db_create("users", "name text, age integer")
@@ -24,7 +26,7 @@ _query      = None
 def load() -> dict:
     """
     Returns all database functions to be loaded
-    into the AION environment when 'use database' is called.
+    into the NEKOVA environment when 'use database' is called.
     """
     return {
         # Connection

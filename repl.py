@@ -1,8 +1,8 @@
+﻿# =============================================================
+# NEKOVA Language — Interactive REPL
 # =============================================================
-# AION Language — Interactive REPL
-# =============================================================
-# Read-Eval-Print Loop for AION.
-# Type AION code interactively and see results immediately.
+# Read-Eval-Print Loop for NEKOVA.
+# Type NEKOVA code interactively and see results immediately.
 #
 # Usage:
 #   python main.py --repl
@@ -11,18 +11,18 @@
 import sys
 import os
 
-from config import Color, AION_VERSION, AION_CODENAME
+from config import Color, NEKOVA_VERSION, NEKOVA_CODENAME
 from interpreter.interpreter import Interpreter
 from interpreter.environment import Environment
 
 
 class REPL:
     """
-    Interactive AION shell.
+    Interactive NEKOVA shell.
     Maintains state between inputs so variables persist.
     """
 
-    PROMPT      = f"{Color.CYAN}AION>{Color.RESET} "
+    PROMPT      = f"{Color.CYAN}NEKOVA>{Color.RESET} "
     PROMPT_CONT = f"{Color.DIM}  ...>{Color.RESET} "
 
     def __init__(self):
@@ -46,7 +46,7 @@ class REPL:
                 if self._handle_command(source):
                     continue
 
-                # Execute the AION code
+                # Execute the NEKOVA code
                 self._execute(source)
 
             except KeyboardInterrupt:
@@ -135,7 +135,7 @@ class REPL:
         return ""
 
     def _execute(self, source: str):
-        """Execute AION source code in the REPL."""
+        """Execute NEKOVA source code in the REPL."""
         try:
             from lexer import Lexer, LexerError
             from parser.parser import Parser, ParseError
@@ -215,8 +215,8 @@ class REPL:
     def _print_welcome(self):
         """Print the REPL welcome message."""
         print(f"""
-{Color.CYAN}{Color.BOLD}AION Interactive Shell{Color.RESET}
-{Color.DIM}Version {AION_VERSION} · {AION_CODENAME}{Color.RESET}
+{Color.CYAN}{Color.BOLD}NEKOVA Interactive Shell{Color.RESET}
+{Color.DIM}Version {NEKOVA_VERSION} · {NEKOVA_CODENAME}{Color.RESET}
 {Color.DIM}Type 'help' for commands, 'exit' to quit{Color.RESET}
 {Color.DIM}{'─' * 40}{Color.RESET}
 """)
@@ -231,7 +231,7 @@ class REPL:
   {Color.BOLD}history{Color.RESET}   Show command history
   {Color.BOLD}reset{Color.RESET}     Reset the session
 
-{Color.CYAN}AION Examples:{Color.RESET}
+{Color.CYAN}NEKOVA Examples:{Color.RESET}
   {Color.DIM}name = "Emmanuel"{Color.RESET}
   {Color.DIM}show "Hello " + name{Color.RESET}
   {Color.DIM}show 2 + 3{Color.RESET}
@@ -265,6 +265,6 @@ class REPL:
     def _quit(self):
         """Exit the REPL."""
         print(f"\n{Color.CYAN}Goodbye! Keep building "
-              f"with AION. 🚀{Color.RESET}\n")
+              f"with NEKOVA. 🚀{Color.RESET}\n")
         self.running = False
         sys.exit(0)

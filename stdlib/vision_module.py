@@ -1,5 +1,5 @@
-# =============================================================
-# AION Standard Library — Vision Module
+﻿# =============================================================
+# NEKOVA Standard Library — Vision Module
 # =============================================================
 import os
 import base64
@@ -24,7 +24,7 @@ def vision_scan(filepath: str, prompt: str = None) -> str:
     """
     Analyze an image file using Gemini's vision API.
 
-    Usage in AION:
+    Usage in NEKOVA:
         description = vision_scan("photo.png")
         detail = vision_scan("chart.png", "What data does this show?")
     """
@@ -78,7 +78,7 @@ def vision_compare(filepath1: str, filepath2: str) -> str:
     """
     Compare two images.
 
-    Usage in AION:
+    Usage in NEKOVA:
         result = vision_compare("before.png", "after.png")
     """
     try:
@@ -127,7 +127,7 @@ def vision_compare(filepath1: str, filepath2: str) -> str:
 
 
 def load() -> dict:
-    """Return all vision functions for AION's use statement."""
+    """Return all vision functions for NEKOVA's use statement."""
     return {
         "vision_scan":    vision_scan,
         "vision_compare": vision_compare,

@@ -1,5 +1,5 @@
-# =============================================================
-# AION CLI — Enhanced Error Display System
+﻿# =============================================================
+# NEKOVA CLI — Enhanced Error Display System
 # =============================================================
 # Transforms raw errors into beautiful, helpful messages
 # with source context, suggestions, and did-you-mean hints.
@@ -21,7 +21,7 @@ ERROR_HINTS = {
     },
     "ParseError": {
         "title":   "Parse Error",
-        "hint":    "AION couldn't understand the structure of your code.",
+        "hint":    "NEKOVA couldn't understand the structure of your code.",
         "example": "Check your indentation and statement structure.",
     },
     "RuntimeError": {
@@ -41,7 +41,7 @@ ERROR_HINTS = {
     },
     "ImportError": {
         "title":   "Module Not Found",
-        "hint":    "This module doesn't exist in AION's standard library.",
+        "hint":    "This module doesn't exist in NEKOVA's standard library.",
         "example": "Available: math, text, files, datetime, collections, ai, agents, ui, web, database",
     },
     "IndexError": {
@@ -66,7 +66,7 @@ def display_error(
     variables: dict = None,
 ):
     """
-    Display a beautifully formatted AION error message
+    Display a beautifully formatted NEKOVA error message
     with source context, suggestions and did-you-mean hints.
     """
     info = ERROR_HINTS.get(error_type, {
@@ -81,7 +81,7 @@ def display_error(
     print()
     print(f"{Color.RED}{'━' * width}{Color.RESET}")
     print(f"{Color.RED}{Color.BOLD}"
-          f"  AION Error — {info['title']}"
+          f"  NEKOVA Error — {info['title']}"
           f"{Color.RESET}")
 
     if filepath and line:

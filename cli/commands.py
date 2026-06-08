@@ -1,11 +1,11 @@
+﻿# =============================================================
+# NEKOVA CLI — Commands
 # =============================================================
-# AION CLI — Commands
-# =============================================================
-# Implements all AION developer commands:
+# Implements all NEKOVA developer commands:
 #   run     — execute an .aion file
 #   test    — run all test suites
-#   new     — create a new AION project
-#   info    — show AION system information
+#   new     — create a new NEKOVA project
+#   info    — show NEKOVA system information
 #   build   — check and validate an .aion file
 #   clean   — remove cache files
 
@@ -14,19 +14,19 @@ import sys
 import time
 import subprocess
 
-from config import Color, AION_VERSION, AION_CODENAME
+from config import Color, NEKOVA_VERSION, NEKOVA_CODENAME
 from cli import (print_success, print_error,
                  print_info, print_warning, print_separator)
 
 
 def cmd_info():
-    """Show AION system information."""
+    """Show NEKOVA system information."""
     print()
-    print(f"{Color.CYAN}{Color.BOLD}  AION System Information{Color.RESET}")
+    print(f"{Color.CYAN}{Color.BOLD}  NEKOVA System Information{Color.RESET}")
     print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
-    print(f"  {'Language':<20} AION")
-    print(f"  {'Version':<20} {AION_VERSION}")
-    print(f"  {'Codename':<20} {AION_CODENAME}")
+    print(f"  {'Language':<20} NEKOVA")
+    print(f"  {'Version':<20} {NEKOVA_VERSION}")
+    print(f"  {'Codename':<20} {NEKOVA_CODENAME}")
     print(f"  {'Python':<20} {sys.version.split()[0]}")
     print(f"  {'Platform':<20} {sys.platform}")
     print(f"  {'Location':<20} {os.getcwd()}")
@@ -46,7 +46,7 @@ def cmd_info():
 
 
 def cmd_new(project_name: str):
-    """Create a new AION project with starter files."""
+    """Create a new NEKOVA project with starter files."""
     if not project_name:
         print_error("Please provide a project name.")
         print_info("Usage:  python main.py new myproject")
@@ -72,12 +72,12 @@ def cmd_new(project_name: str):
     # Create main.aion
     main_aion = os.path.join(project_name, "src", "main.aion")
     with open(main_aion, "w", encoding="utf-8") as f:
-        f.write(f'''# {project_name} — AION Project
-# Created with AION v{AION_VERSION}
+        f.write(f'''# {project_name} — NEKOVA Project
+# Created with NEKOVA v{NEKOVA_VERSION}
 
 name = "{project_name}"
 show "Welcome to " + name
-show "Built with AION {AION_VERSION}"
+show "Built with NEKOVA {NEKOVA_VERSION}"
 ''')
 
     # Create README
@@ -85,7 +85,7 @@ show "Built with AION {AION_VERSION}"
     with open(readme, "w", encoding="utf-8") as f:
         f.write(f'''# {project_name}
 
-An AION language project.
+An NEKOVA language project.
 
 ## Run
 
@@ -95,7 +95,7 @@ python main.py src/main.aion
 
 ## Built with
 
-AION v{AION_VERSION} · {AION_CODENAME}
+NEKOVA v{NEKOVA_VERSION} · {NEKOVA_CODENAME}
 ''')
 
     # Create project config
@@ -106,7 +106,7 @@ AION v{AION_VERSION} · {AION_CODENAME}
             "name":    project_name,
             "version": "1.0.0",
             "main":    "src/main.aion",
-            "aion":    AION_VERSION,
+            "aion":    NEKOVA_VERSION,
         }, f, indent=2)
 
     print_success(f"Project '{project_name}' created!")
@@ -126,9 +126,9 @@ AION v{AION_VERSION} · {AION_CODENAME}
 
 
 def cmd_test():
-    """Run all AION test suites."""
+    """Run all NEKOVA test suites."""
     print()
-    print(f"{Color.CYAN}{Color.BOLD}  AION Test Runner{Color.RESET}")
+    print(f"{Color.CYAN}{Color.BOLD}  NEKOVA Test Runner{Color.RESET}")
     print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
     print()
 

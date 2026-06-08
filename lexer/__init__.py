@@ -1,5 +1,5 @@
-# =============================================================
-# AION Lexer — Package Init
+﻿# =============================================================
+# NEKOVA Lexer — Package Init
 # =============================================================
 # This makes the lexer importable from anywhere like:
 #   from lexer import Lexer

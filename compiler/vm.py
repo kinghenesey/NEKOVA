@@ -1,5 +1,5 @@
-# =============================================================
-# AION Compiler — Virtual Machine
+﻿# =============================================================
+# NEKOVA Compiler — Virtual Machine
 # =============================================================
 # Executes bytecode instructions produced by the Compiler.
 #
@@ -27,7 +27,7 @@ class VMError(Exception):
 
 class VirtualMachine:
     """
-    Executes AION bytecode.
+    Executes NEKOVA bytecode.
 
     Usage:
         vm = VirtualMachine()
@@ -237,7 +237,7 @@ class VirtualMachine:
             except Exception as e:
                 raise VMError(f"Error in '{name}': {e}")
 
-        # AION task (name, params, code_object)
+        # NEKOVA task (name, params, code_object)
         if isinstance(callee, tuple):
             task_name, params, code_obj = callee
 
@@ -310,7 +310,7 @@ class VirtualMachine:
     # ----------------------------------------------------------
 
     def _is_truthy(self, value) -> bool:
-        """Determine if a value is truthy in AION."""
+        """Determine if a value is truthy in NEKOVA."""
         if value is None:   return False
         if value is False:  return False
         if value == 0:      return False
@@ -328,6 +328,6 @@ class VirtualMachine:
         """Register built-in functions."""
         self.globals.set("type_of",   lambda x: type(x).__name__)
         self.globals.set("to_number", lambda x: float(x)
-                         if "." in str(x) else int(x))
+                        if "." in str(x) else int(x))
         self.globals.set("to_text",   lambda x: str(x))
         self.globals.set("length",    lambda x: len(x))

@@ -1,5 +1,5 @@
-# =============================================================
-# AION AI Runtime — Mock Provider
+﻿# =============================================================
+# NEKOVA AI Runtime — Mock Provider
 # =============================================================
 # The mock provider simulates AI responses without needing
 # any API key or internet connection.
@@ -7,7 +7,7 @@
 # It's useful for:
 #   - Development and testing
 #   - Demos without API costs
-#   - Building AION programs before getting an API key
+#   - Building NEKOVA programs before getting an API key
 #
 # When you get an API key, just switch the provider to
 # "claude" and everything works identically.
@@ -59,15 +59,15 @@ class MockProvider(BaseProvider):
             return "I can answer questions about world capitals."
 
         if "hello" in prompt_lower or "hi" in prompt_lower:
-            return "Hello! I am AION's built-in AI assistant."
+            return "Hello! I am NEKOVA's built-in AI assistant."
 
         if "what is aion" in prompt_lower:
-            return ("AION is an AI-native programming language "
+            return ("NEKOVA is an AI-native programming language "
                     "built with Python. It combines simplicity "
                     "with native AI capabilities.")
 
         if "who are you" in prompt_lower:
-            return ("I am AION's AI runtime — currently running "
+            return ("I am NEKOVA's AI runtime — currently running "
                     "in mock mode. Connect an API key to unlock "
                     "full AI capabilities.")
 
@@ -130,7 +130,7 @@ class MockProvider(BaseProvider):
         if "poem" in instruction_lower:
             return (
                 "In lines of code we build our dreams,\n"
-                "With AION's syntax, nothing's hard it seems,\n"
+                "With NEKOVA's syntax, nothing's hard it seems,\n"
                 "Variables flow like rivers wide,\n"
                 "With AI as our faithful guide."
             )

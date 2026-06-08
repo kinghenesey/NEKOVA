@@ -1,5 +1,5 @@
-# =============================================================
-# AION Language — Code Formatter
+﻿# =============================================================
+# NEKOVA Language — Code Formatter
 # =============================================================
 # Automatically formats .aion files:
 #   - Consistent indentation (4 spaces)
@@ -17,12 +17,12 @@ import re
 from config import Color
 
 
-class AIONFormatter:
+class NEKOVAFormatter:
     """
-    Formats AION source code to a consistent style.
+    Formats NEKOVA source code to a consistent style.
 
     Usage:
-        formatter = AIONFormatter(source)
+        formatter = NEKOVAFormatter(source)
         formatted = formatter.format()
     """
 
@@ -186,7 +186,7 @@ def format_file(filepath: str,
                 check_only: bool = False,
                 write: bool = True) -> bool:
     """
-    Format an AION file.
+    Format an NEKOVA file.
 
     Args:
         filepath   — path to .aion file
@@ -203,7 +203,7 @@ def format_file(filepath: str,
     with open(filepath, "r", encoding="utf-8") as f:
         original = f.read()
 
-    formatter = AIONFormatter(original)
+    formatter = NEKOVAFormatter(original)
     formatted = formatter.format()
     changes   = formatter.diff()
 

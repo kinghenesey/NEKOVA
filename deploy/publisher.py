@@ -1,21 +1,21 @@
+﻿# =============================================================
+# NEKOVA Deployment — Publisher
 # =============================================================
-# AION Deployment — Publisher
-# =============================================================
-# Publishes AION packages to registries.
+# Publishes NEKOVA packages to registries.
 #
 # Currently supports:
 #   - Local registry (always available)
 #   - GitHub (via git commands)
-#   - Future: AION Cloud Registry
+#   - Future: NEKOVA Cloud Registry
 #
-# This lays the foundation for a future AION package
+# This lays the foundation for a future NEKOVA package
 # ecosystem where developers share their modules.
 
 import os
 import json
 import shutil
 from datetime import datetime
-from config import AION_VERSION, Color
+from config import NEKOVA_VERSION, Color
 
 
 # Local registry path
@@ -27,7 +27,7 @@ LOCAL_REGISTRY = os.path.join(
 
 class Publisher:
     """
-    Publishes AION packages to registries.
+    Publishes NEKOVA packages to registries.
 
     Usage:
         publisher = Publisher()
@@ -150,7 +150,7 @@ class Publisher:
             "name":      pkg_name,
             "published": datetime.now().isoformat(),
             "size":      os.path.getsize(pkg_path),
-            "aion":      AION_VERSION,
+            "aion":      NEKOVA_VERSION,
         }
 
         with open(index_path, "w") as f:

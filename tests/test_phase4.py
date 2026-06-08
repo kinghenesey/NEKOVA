@@ -1,5 +1,5 @@
-# =============================================================
-# AION — Phase 4 Tests (Interpreter)
+﻿# =============================================================
+# NEKOVA — Phase 4 Tests (Interpreter)
 # =============================================================
 # Run with: python tests/test_phase4.py
 
@@ -17,7 +17,7 @@ from interpreter.interpreter import Interpreter
 
 def run(source: str) -> str:
     """
-    Helper — run AION source and capture printed output.
+    Helper — run NEKOVA source and capture printed output.
     Returns everything that was printed as a string.
     """
     tokens      = Lexer(source).tokenize()
@@ -67,8 +67,8 @@ class TestVariables(unittest.TestCase):
 class TestShowStatement(unittest.TestCase):
 
     def test_show_string(self):
-        output = run('show "Hello AION"')
-        self.assertEqual(output, "Hello AION")
+        output = run('show "Hello NEKOVA"')
+        self.assertEqual(output, "Hello NEKOVA")
 
     def test_show_integer(self):
         output = run("show 42")
@@ -109,8 +109,8 @@ class TestArithmetic(unittest.TestCase):
 class TestStringConcatenation(unittest.TestCase):
 
     def test_concat_strings(self):
-        output = run('show "Hello " + "AION"')
-        self.assertEqual(output, "Hello AION")
+        output = run('show "Hello " + "NEKOVA"')
+        self.assertEqual(output, "Hello NEKOVA")
 
     def test_concat_string_variable(self):
         output = run('name = "Emmanuel"\nshow "Hello " + name')
@@ -199,7 +199,7 @@ class TestTaskStatement(unittest.TestCase):
 class TestBuiltins(unittest.TestCase):
 
     def test_length(self):
-        output = run('show length("AION")')
+        output = run('show length("NEKOVA")')
         self.assertEqual(output, "4")
 
     def test_to_text(self):
@@ -209,6 +209,6 @@ class TestBuiltins(unittest.TestCase):
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("  AION Phase 4 — Interpreter Test Suite")
+    print("  NEKOVA Phase 4 — Interpreter Test Suite")
     print("=" * 50)
     unittest.main(verbosity=2)

@@ -1,4 +1,4 @@
-# AION Package — charts
+﻿# NEKOVA Package — charts
 # Simple ASCII charts for terminal output
 
 def load() -> dict:

@@ -1,7 +1,7 @@
+﻿# =============================================================
+# NEKOVA Compiler — Bytecode Instruction Set
 # =============================================================
-# AION Compiler — Bytecode Instruction Set
-# =============================================================
-# Defines every operation the AION Virtual Machine can execute.
+# Defines every operation the NEKOVA Virtual Machine can execute.
 #
 # Each instruction is called an "opcode" (operation code).
 # The compiler converts AST nodes into sequences of opcodes.
@@ -15,7 +15,7 @@ from typing import Any, List
 
 
 class OpCode(Enum):
-    """Every possible instruction in the AION VM."""
+    """Every possible instruction in the NEKOVA VM."""
 
     # ── Stack operations ──────────────────────────────────────
     LOAD_CONST   = auto()   # Push a constant onto the stack
@@ -92,7 +92,7 @@ class Instruction:
 @dataclass
 class CodeObject:
     """
-    A compiled unit of AION code.
+    A compiled unit of NEKOVA code.
     Contains the bytecode instructions for one
     program or function.
 

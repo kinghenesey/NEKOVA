@@ -1,5 +1,5 @@
-# =============================================================
-# AION Parser — Main Parser Engine
+﻿# =============================================================
+# NEKOVA Parser — Main Parser Engine
 # =============================================================
 # The Parser takes the flat list of tokens from the Lexer
 # and builds an AST (Abstract Syntax Tree).
@@ -145,7 +145,7 @@ class Parser:
 
         raise ParseError(
             f"Unexpected token '{token.value}' — "
-            f"AION doesn't know what to do with this here.",
+            f"NEKOVA doesn't know what to do with this here.",
             token.line
         )
 

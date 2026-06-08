@@ -1,15 +1,15 @@
+﻿# =============================================================
+# NEKOVA AI Runtime — AI Module
 # =============================================================
-# AION AI Runtime — AI Module
-# =============================================================
-# This is what gets loaded when you write "use ai" in AION.
-# It exposes all AI functions to your AION programs.
+# This is what gets loaded when you write "use ai" in NEKOVA.
+# It exposes all AI functions to your NEKOVA programs.
 #
-# Usage in AION:
+# Usage in NEKOVA:
 #   use ai
 #   answer  = ai_ask("What is the capital of Nigeria?")
 #   summary = ai_summarize("Long text here...")
 #   content = ai_generate("Write a poem about coding")
-#   label   = ai_classify("I love AION!", "positive,negative")
+#   label   = ai_classify("I love NEKOVA!", "positive,negative")
 #   show answer
 
 from ai.providers import get_provider
@@ -18,7 +18,7 @@ from ai.providers import get_provider
 def load() -> dict:
     """
     Returns all AI functions to be loaded
-    into the AION environment when "use ai" is called.
+    into the NEKOVA environment when "use ai" is called.
     """
     # Get the best available provider
     provider = get_provider()

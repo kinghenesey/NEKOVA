@@ -1,25 +1,25 @@
+﻿# =============================================================
+# NEKOVA Language — File Runner
 # =============================================================
-# AION Language — File Runner
-# =============================================================
-# Loads .aion files and passes them through the pipeline.
+# Loads .nk files and passes them through the pipeline.
 # Pipeline is a stub for now — will be filled in Phase 2-4.
 
 import os
 import sys
 import time
 
-from config import AION_EXTENSION, Color
+from config import NEKOVA_EXTENSION, Color
 from cli import print_error, print_info, print_success, print_separator
 from cli.error_display import display_error
 from lexer import Lexer, LexerError
 from parser.parser import Parser, ParseError
 from interpreter.interpreter import (
     Interpreter, RuntimeError,
-    AIONImportError, AIONNameError
+    NEKOVAImportError, NEKOVANameError
 )
 
 
-class AIONRunner:
+class NEKOVARunner:
     """
     Orchestrates execution of a single .aion source file.
     Knows nothing about the language itself — only manages
@@ -42,10 +42,10 @@ class AIONRunner:
 
     def _validate_file(self) -> bool:
         """Check the file exists and has the .aion extension."""
-        if not self.filepath.endswith(AION_EXTENSION):
+        if not self.filepath.endswith(NEKOVA_EXTENSION):
             print_error(
-                f"'{self.filepath}' is not an AION file.\n"
-                f"  Expected a file ending in '{AION_EXTENSION}'"
+                f"'{self.filepath}' is not a NEKOVA file.\n"
+                f"  Expected a file ending in '{NEKOVA_EXTENSION}'"
             )
             return False
 
@@ -80,7 +80,7 @@ class AIONRunner:
 
     def _execute(self) -> int:
         """
-        Run source through the AION pipeline.
+        Run source through the NEKOVA pipeline.
         Phases 2-4 will replace the stub below with:
             tokens = Lexer(self.source).tokenize()
             ast    = Parser(tokens).parse()
@@ -162,7 +162,7 @@ class AIONRunner:
             )
             return 1
 
-        except AIONNameError as e:
+        except NEKOVANameError as e:
             variables = {}
             try:
                 # Only show user-defined variables
@@ -184,7 +184,7 @@ class AIONRunner:
             )
             return 1
 
-        except AIONImportError as e:
+        except NEKOVAImportError as e:
             display_error(
                 error_type="ImportError",
                 message=str(e),

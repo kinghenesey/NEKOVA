@@ -1,7 +1,7 @@
-{
+﻿{
   "name": "aion-language",
-  "displayName": "AION - AI Native Programming Language",
-  "description": "Syntax highlighting for the AION AI-Native Programming Language — think, pipelines, vision, voice, memory, sandbox and more",
+  "displayName": "NEKOVA - AI Native Programming Language",
+  "description": "Syntax highlighting for the NEKOVA AI-Native Programming Language — think, pipelines, vision, voice, memory, sandbox and more",
   "version": "1.0.2",
   "publisher": "emmanuel-king-christopher",
   "engines": {
@@ -23,7 +23,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/kinghenesey/AION"
+    "url": "https://github.com/kinghenesey/NEKOVA"
   },
   "icon": "icon.png",
   "contributes": {
@@ -31,7 +31,7 @@
       {
         "id": "aion",
         "aliases": [
-          "AION",
+          "NEKOVA",
           "aion"
         ],
         "extensions": [

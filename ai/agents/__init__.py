@@ -1,5 +1,5 @@
-# =============================================================
-# AION AI Ecosystem — Agents Package Init
+﻿# =============================================================
+# NEKOVA AI Ecosystem — Agents Package Init
 # =============================================================
 
 from ai.agents.agent import Agent, AgentMemory, AgentTool

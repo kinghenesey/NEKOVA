@@ -1,20 +1,20 @@
+﻿# =============================================================
+# NEKOVA Standard Library — Text Module
 # =============================================================
-# AION Standard Library — Text Module
-# =============================================================
-# Usage in AION:
+# Usage in NEKOVA:
 #   use text
 #   show upper("hello")        → HELLO
-#   show lower("AION")         → aion
+#   show lower("NEKOVA")         → aion
 #   show length("hello")       → 5
 #   show replace("hi", "hi", "hello")  → hello
-#   show contains("AION", "AI")        → true
+#   show contains("NEKOVA", "AI")        → true
 #   show trim("  hello  ")     → hello
 
 
 def load() -> dict:
     """
     Returns all text functions to be loaded
-    into the AION environment.
+    into the NEKOVA environment.
     """
     return {
         # Case

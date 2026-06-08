@@ -1,5 +1,5 @@
-# =============================================================
-# AION Web Framework — Router
+﻿# =============================================================
+# NEKOVA Web Framework — Router
 # =============================================================
 # Maps URL paths to handler functions.
 #
@@ -13,9 +13,9 @@
 #   - Multiple methods: GET, POST
 
 import re
-from web.request import AIONRequest
+from web.request import NEKOVARequest
 from web.response import (
-    AIONResponse, text_response,
+    NEKOVAResponse, text_response,
     not_found_response, error_response
 )
 
@@ -62,7 +62,7 @@ class Route:
 
 class Router:
     """
-    Central routing system for AION web apps.
+    Central routing system for NEKOVA web apps.
 
     Usage:
         router = Router()
@@ -85,7 +85,7 @@ class Router:
         self.routes.append(route)
         return route
 
-    def handle(self, request: AIONRequest) -> AIONResponse:
+    def handle(self, request: NEKOVARequest) -> NEKOVAResponse:
         """
         Find the matching route and call its handler.
         Returns a response object.
@@ -112,7 +112,7 @@ class Router:
                     if isinstance(result, dict):
                         from web.response import json_response
                         return json_response(result)
-                    if isinstance(result, AIONResponse):
+                    if isinstance(result, NEKOVAResponse):
                         return result
 
                     return text_response(str(result))

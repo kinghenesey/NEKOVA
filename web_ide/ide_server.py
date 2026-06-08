@@ -1,5 +1,5 @@
-# =============================================================
-# AION Web IDE — Premium Server v2.0
+﻿# =============================================================
+# NEKOVA Web IDE — Premium Server v2.0
 # =============================================================
 import os
 import sys
@@ -11,7 +11,7 @@ from flask import Flask, request, jsonify, send_from_directory
 sys.path.insert(0, os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))
 
-from config import AION_VERSION, AION_CODENAME
+from config import NEKOVA_VERSION, NEKOVA_CODENAME
 
 
 def create_ide_app() -> Flask:
@@ -37,7 +37,7 @@ def create_ide_app() -> Flask:
             "output":  output,
             "error":   error,
             "time":    elapsed,
-            "version": AION_VERSION,
+            "version": NEKOVA_VERSION,
         })
 
     @app.route("/api/examples", methods=["GET"])
@@ -47,8 +47,8 @@ def create_ide_app() -> Flask:
     @app.route("/api/version", methods=["GET"])
     def get_version():
         return jsonify({
-            "version":  AION_VERSION,
-            "codename": AION_CODENAME,
+            "version":  NEKOVA_VERSION,
+            "codename": NEKOVA_CODENAME,
         })
 
     @app.route("/api/complete", methods=["POST"])
@@ -62,8 +62,8 @@ def create_ide_app() -> Flask:
         data = request.get_json()
         code = data.get("code", "")
         try:
-            from formatter import AIONFormatter
-            formatter = AIONFormatter()
+            from formatter import NEKOVAFormatter
+            formatter = NEKOVAFormatter()
             formatted = formatter.format(code)
             return jsonify({"formatted": formatted, "error": None})
         except Exception as e:
@@ -165,12 +165,12 @@ EXAMPLES = [
     {
         "name": "Hello World",
         "category": "basics",
-        "code": 'name = "World"\nshow "Hello, {name}!"\nshow "Welcome to AION — the AI-native language."',
+        "code": 'name = "World"\nshow "Hello, {name}!"\nshow "Welcome to NEKOVA — the AI-native language."',
     },
     {
         "name": "Think (AI)",
         "category": "ai",
-        "code": '# AI-native syntax — think calls the AI directly\nthink "What makes AION unique as a programming language?"\n\n# Capture the response\nidea = think "Give me one creative app idea in one sentence"\nshow "AI said: {idea}"',
+        "code": '# AI-native syntax — think calls the AI directly\nthink "What makes NEKOVA unique as a programming language?"\n\n# Capture the response\nidea = think "Give me one creative app idea in one sentence"\nshow "AI said: {idea}"',
     },
     {
         "name": "Agent Pipeline",
@@ -190,7 +190,7 @@ EXAMPLES = [
     {
         "name": "Memory Block",
         "category": "ai",
-        "code": '# Data persists between program runs\nmemory user_profile:\n    name = "Emmanuel"\n    language = "AION"\n    version = "1.1.0"\n\nshow user_profile["name"]\nshow user_profile["language"]',
+        "code": '# Data persists between program runs\nmemory user_profile:\n    name = "Emmanuel"\n    language = "NEKOVA"\n    version = "1.1.0"\n\nshow user_profile["name"]\nshow user_profile["language"]',
     },
     {
         "name": "Model Routing",
@@ -215,12 +215,12 @@ EXAMPLES = [
     {
         "name": "Loops",
         "category": "basics",
-        "code": '# Repeat loop\nrepeat 3:\n    show "AION is powerful!"\n\n# For loop\nfruits = ["mango", "banana", "orange"]\nfor fruit in fruits:\n    show "Fruit: {fruit}"\n\n# While loop\ncount = 1\nwhile count <= 5:\n    show count\n    count = count + 1',
+        "code": '# Repeat loop\nrepeat 3:\n    show "NEKOVA is powerful!"\n\n# For loop\nfruits = ["mango", "banana", "orange"]\nfor fruit in fruits:\n    show "Fruit: {fruit}"\n\n# While loop\ncount = 1\nwhile count <= 5:\n    show count\n    count = count + 1',
     },
     {
         "name": "Tasks (Functions)",
         "category": "basics",
-        "code": 'task greet(name, lang):\n    show "Hello {name}!"\n    show "You are coding in {lang}"\n    return "Greeting sent!"\n\nresult = greet("Emmanuel", "AION")\nshow result',
+        "code": 'task greet(name, lang):\n    show "Hello {name}!"\n    show "You are coding in {lang}"\n    return "Greeting sent!"\n\nresult = greet("Emmanuel", "NEKOVA")\nshow result',
     },
     {
         "name": "Math Module",
@@ -247,7 +247,7 @@ def start_ide(port: int = 3000):
 
     from config import Color
     print()
-    print(f"{Color.CYAN}{Color.BOLD}  AION Web IDE v2.0{Color.RESET}")
+    print(f"{Color.CYAN}{Color.BOLD}  NEKOVA Web IDE v2.0{Color.RESET}")
     print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
     print(f"  {Color.GREEN}✓ Running at http://localhost:{port}{Color.RESET}")
     print(f"  {Color.DIM}Press Ctrl+C to stop{Color.RESET}")

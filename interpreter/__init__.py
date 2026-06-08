@@ -1,5 +1,5 @@
-# =============================================================
-# AION Interpreter — Package Init
+﻿# =============================================================
+# NEKOVA Interpreter — Package Init
 # =============================================================
 # Makes the interpreter importable from anywhere like:
 #   from interpreter import Interpreter

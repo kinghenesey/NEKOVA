@@ -1,5 +1,5 @@
-# =============================================================
-# AION Lexer — Main Lexer Engine
+﻿# =============================================================
+# NEKOVA Lexer — Main Lexer Engine
 # =============================================================
 # The Lexer reads raw source code character by character
 # and produces a list of Tokens.
@@ -25,7 +25,7 @@ class LexerError(Exception):
 
 class Lexer:
     """
-    Converts raw AION source code into a list of Tokens.
+    Converts raw NEKOVA source code into a list of Tokens.
 
     Usage:
         lexer  = Lexer(source_code)
@@ -127,7 +127,7 @@ class Lexer:
 
         # Also handle tab-based indentation (1 tab = 4 spaces)
         # We already advanced past spaces; now check tabs
-        # (tabs at start of line are uncommon in AION but supported)
+        # (tabs at start of line are uncommon in NEKOVA but supported)
 
         current_indent = self.indent_stack[-1]
 
@@ -277,7 +277,7 @@ class Lexer:
         # ── Unknown character ─────────────────────────────────
         raise LexerError(
             f"Unexpected character '{char}' — "
-            f"AION doesn't know what this means.",
+            f"NEKOVA doesn't know what this means.",
             self.line, self.column
         )
 

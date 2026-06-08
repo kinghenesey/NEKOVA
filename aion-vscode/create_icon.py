@@ -1,4 +1,4 @@
-import struct
+﻿import struct
 import zlib
 import math
 
@@ -110,7 +110,7 @@ png    = create_png(128, 128, pixels)
 with open('icon.png', 'wb') as f:
     f.write(png)
 
-print('✓ AION icon created! (128x128)')
+print('✓ NEKOVA icon created! (128x128)')
 
 # Also generate smaller sizes
 for size in [64, 32]:

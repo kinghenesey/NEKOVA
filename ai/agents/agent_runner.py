@@ -1,5 +1,5 @@
-# =============================================================
-# AION AI Ecosystem — Agent Runner
+﻿# =============================================================
+# NEKOVA AI Ecosystem — Agent Runner
 # =============================================================
 # Runs agents and manages their execution lifecycle.
 #
@@ -18,7 +18,7 @@ from ai.providers import get_provider
 
 class AgentRunner:
     """
-    Manages the execution of AION agents.
+    Manages the execution of NEKOVA agents.
 
     Usage:
         runner = AgentRunner()

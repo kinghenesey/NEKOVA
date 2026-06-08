@@ -1,7 +1,7 @@
+﻿# =============================================================
+# NEKOVA Language — Notebook System
 # =============================================================
-# AION Language — Notebook System
-# =============================================================
-# A Jupyter-like notebook for AION.
+# A Jupyter-like notebook for NEKOVA.
 # Runs in the browser with cells that can be executed
 # independently while sharing the same interpreter state.
 #
@@ -14,7 +14,7 @@ import sys
 import json
 from io import StringIO
 from flask import Flask, request, jsonify, send_from_directory
-from config import AION_VERSION, Color
+from config import NEKOVA_VERSION, Color
 
 
 # ── Notebook cell types ───────────────────────────────────────
@@ -44,7 +44,7 @@ class Cell:
 
 class Notebook:
     """
-    An AION notebook with multiple cells sharing state.
+    An NEKOVA notebook with multiple cells sharing state.
     """
 
     def __init__(self, filepath: str = None):
@@ -58,10 +58,10 @@ class Notebook:
             self._load_from_file(filepath)
         else:
             # Start with 3 empty cells
-            self.add_cell("# Welcome to AION Notebook!\n"
-                         "show \"Hello from AION Notebook!\"")
+            self.add_cell("# Welcome to NEKOVA Notebook!\n"
+                         "show \"Hello from NEKOVA Notebook!\"")
             self.add_cell("use math\nshow sqrt(144)\nshow round(pi)")
-            self.add_cell("# Write your AION code here")
+            self.add_cell("# Write your NEKOVA code here")
 
     def _init_interpreter(self):
         """Initialize a fresh interpreter."""
@@ -167,7 +167,7 @@ class Notebook:
         """Save notebook to JSON file."""
         path = filepath or self.filepath or "notebook.aionb"
         data = {
-            "version": AION_VERSION,
+            "version": NEKOVA_VERSION,
             "cells":   [c.to_dict() for c in self.cells]
         }
         with open(path, "w", encoding="utf-8") as f:
@@ -219,7 +219,7 @@ def create_notebook_app(notebook: Notebook) -> Flask:
     def get_cells():
         return jsonify({
             "cells":   [c.to_dict() for c in notebook.cells],
-            "version": AION_VERSION,
+            "version": NEKOVA_VERSION,
         })
 
     @app.route("/api/cells", methods=["POST"])
@@ -269,7 +269,7 @@ def create_notebook_app(notebook: Notebook) -> Flask:
 
 def start_notebook(filepath: str = None,
                    port: int = 4000):
-    """Start the AION Notebook server."""
+    """Start the NEKOVA Notebook server."""
     import logging
     log = logging.getLogger("werkzeug")
     log.setLevel(logging.ERROR)
@@ -278,7 +278,7 @@ def start_notebook(filepath: str = None,
 
     print()
     print(f"{Color.CYAN}{Color.BOLD}"
-          f"  AION Notebook{Color.RESET}")
+          f"  NEKOVA Notebook{Color.RESET}")
     print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
     print(f"  {Color.GREEN}✓ Notebook running at "
           f"http://localhost:{port}{Color.RESET}")
@@ -303,7 +303,7 @@ NOTEBOOK_HTML = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AION Notebook</title>
+    <title>NEKOVA Notebook</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -461,7 +461,7 @@ NOTEBOOK_HTML = """<!DOCTYPE html>
 </head>
 <body>
 <div class="header">
-    <div class="logo">⚡ AION Notebook</div>
+    <div class="logo">⚡ NEKOVA Notebook</div>
     <div class="toolbar">
         <button class="btn btn-run-all" onclick="runAll()">▶▶ Run All</button>
         <button class="btn btn-add" onclick="addCell()">+ Add Cell</button>

@@ -1,32 +1,32 @@
-# =============================================================
-# AION Web Framework — Server
+﻿# =============================================================
+# NEKOVA Web Framework — Server
 # =============================================================
 # Wraps Flask to create a real HTTP server.
 # The Router handles all URL dispatching.
 # Flask handles the actual HTTP layer.
 #
 # Usage:
-#   server = AIONServer(router)
+#   server = NEKOVAServer(router)
 #   server.start(port=8000)
 
 import os
 import sys
 from web.router import Router
 from web.request import from_flask_request
-from web.response import AIONResponse
+from web.response import NEKOVAResponse
 
 
-class AIONServer:
+class NEKOVAServer:
     """
     A real HTTP server powered by Flask.
 
     Usage:
-        server = AIONServer()
+        server = NEKOVAServer()
         server.router.add("/", handler)
         server.start(8000)
     """
 
-    def __init__(self, name: str = "AION App"):
+    def __init__(self, name: str = "NEKOVA App"):
         self.name   = name
         self.router = Router()
         self._app   = None
@@ -40,7 +40,7 @@ class AIONServer:
 
         from config import Color
         print()
-        print(f"{Color.CYAN}{Color.BOLD}  AION Web Server{Color.RESET}")
+        print(f"{Color.CYAN}{Color.BOLD}  NEKOVA Web Server{Color.RESET}")
         print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
         print(f"  {Color.GREEN}✓ Server running at "
               f"http://localhost:{port}{Color.RESET}")
@@ -80,7 +80,7 @@ class AIONServer:
         def handle_all(path):
             from flask import Response as FlaskResponse
 
-            # Convert Flask request to AION request
+            # Convert Flask request to NEKOVA request
             aion_request  = from_flask_request(flask_request)
             aion_response = self.router.handle(aion_request)
 
@@ -92,4 +92,4 @@ class AIONServer:
             )
 
     def __repr__(self):
-        return f"AIONServer({self.name})"
+        return f"NEKOVAServer({self.name})"

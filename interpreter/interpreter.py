@@ -1,5 +1,5 @@
-# =============================================================
-# AION Interpreter — Main Execution Engine
+﻿# =============================================================
+# NEKOVA Interpreter — Main Execution Engine
 # =============================================================
 # The Interpreter walks the AST tree and executes each node.
 #
@@ -33,14 +33,14 @@ class RuntimeError(Exception):
         self.line = line
         super().__init__(f"\n  {message}")
 
-class AIONImportError(Exception):
+class NEKOVAImportError(Exception):
     """Raised when a module cannot be found."""
     def __init__(self, message: str, line: int = 0):
         self.line = line
         super().__init__(f"\n  {message}")
 
 
-class AIONNameError(Exception):
+class NEKOVANameError(Exception):
     """Raised when a variable is not found."""
     def __init__(self, message: str, line: int = 0):
         self.line = line
@@ -49,7 +49,7 @@ class AIONNameError(Exception):
 
 class Interpreter:
     """
-    Executes an AION AST produced by the Parser.
+    Executes an NEKOVA AST produced by the Parser.
 
     Usage:
         interpreter = Interpreter()
@@ -61,7 +61,7 @@ class Interpreter:
         self.globals = Environment()
         self.env     = self.globals
 
-        # Built-in functions available everywhere in AION
+        # Built-in functions available everywhere in NEKOVA
         self._register_builtins()
 
     # ----------------------------------------------------------
@@ -70,7 +70,7 @@ class Interpreter:
 
     def execute(self, program: Program,
                 filepath: str = None):
-        """Execute a full AION program."""
+        """Execute a full NEKOVA program."""
         if filepath:
             self._current_file  = filepath
         if not hasattr(self, '_imported_files'):
@@ -92,7 +92,7 @@ class Interpreter:
 
         if method is None:
             raise RuntimeError(
-                f"AION doesn't know how to execute "
+                f"NEKOVA doesn't know how to execute "
                 f"'{type(node).__name__}' yet."
             )
 
@@ -178,7 +178,7 @@ class Interpreter:
             if isinstance(step, Identifier):
                 try:
                     value = self._execute_node(step)
-                except (AIONNameError, NameError, KeyError):
+                except (NEKOVANameError, NameError, KeyError):
                     value = step.name
             else:
                 value = self._execute_node(step)
@@ -733,7 +733,7 @@ class Interpreter:
             for name, func in stdlib.items():
                 self.env.set(name, func)
         except ImportError as e:
-            raise AIONImportError(str(e))
+            raise NEKOVAImportError(str(e))
     
     def _exec_ImportStatement(self,
                                node: ImportStatement):
@@ -820,7 +820,7 @@ class Interpreter:
         if callable(callee) and not isinstance(callee, TaskStatement):
             return callee(*args)
 
-        # AION task
+        # NEKOVA task
         if isinstance(callee, TaskStatement):
             return self._call_task(callee, args)
 
@@ -1057,7 +1057,7 @@ class Interpreter:
         try:
             return self.env.get(node.name)
         except NameError as e:
-            raise AIONNameError(str(e))
+            raise NEKOVANameError(str(e))
 
     # ----------------------------------------------------------
     # Helpers
@@ -1114,7 +1114,7 @@ class Interpreter:
 
     def _is_truthy(self, value) -> bool:
         """
-        Determine if a value is considered true in AION.
+        Determine if a value is considered true in NEKOVA.
         Rules:
             null  → false
             false → false
@@ -1129,7 +1129,7 @@ class Interpreter:
         return True
 
     def _to_string(self, value) -> str:
-        """Convert any AION value to a printable string."""
+        """Convert any NEKOVA value to a printable string."""
         if value is None:
             return "null"
         if value is True:
@@ -1151,7 +1151,7 @@ class Interpreter:
         return str(value)
 
     def _register_builtins(self):
-        """Register built-in functions available in all AION programs."""
+        """Register built-in functions available in all NEKOVA programs."""
         self.globals.set("type_of",   lambda x: type(x).__name__)
         self.globals.set("to_number", lambda x: float(x)
                          if "." in str(x) else int(x))

@@ -1,5 +1,5 @@
-# =============================================================
-# AION Marketplace — Package Init
+﻿# =============================================================
+# NEKOVA Marketplace — Package Init
 # =============================================================
 
 from marketplace.marketplace import Marketplace

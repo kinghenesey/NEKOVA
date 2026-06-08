@@ -1,7 +1,7 @@
+﻿# =============================================================
+# NEKOVA Interpreter — Environment (Variable Storage)
 # =============================================================
-# AION Interpreter — Environment (Variable Storage)
-# =============================================================
-# The Environment is AION's memory system.
+# The Environment is NEKOVA's memory system.
 # It stores variables and handles scope.
 #
 # Scope means:

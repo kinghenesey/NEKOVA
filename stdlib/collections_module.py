@@ -1,7 +1,7 @@
+﻿# =============================================================
+# NEKOVA Standard Library — Collections Module
 # =============================================================
-# AION Standard Library — Collections Module
-# =============================================================
-# Usage in AION:
+# Usage in NEKOVA:
 #   use collections
 #   items = make_list(1, 2, 3)
 #   show list_length(items)      → 3
@@ -14,7 +14,7 @@
 def load() -> dict:
     """
     Returns all collection functions to be loaded
-    into the AION environment.
+    into the NEKOVA environment.
     """
     return {
         # Creating

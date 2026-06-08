@@ -1,5 +1,5 @@
-# =============================================================
-# AION CLI — Deployment Commands
+﻿# =============================================================
+# NEKOVA CLI — Deployment Commands
 # =============================================================
 # Handles all deployment commands:
 #   python main.py export <file.aion>
@@ -15,7 +15,7 @@ from cli import (print_success, print_error,
 
 def cmd_export(filepath: str,
                output_dir: str = "dist") -> bool:
-    """Export an AION file to HTML and script formats."""
+    """Export an NEKOVA file to HTML and script formats."""
     if not filepath:
         print_error(
             "Please provide a file to export.\n"
@@ -29,7 +29,7 @@ def cmd_export(filepath: str,
 
     print()
     print(f"{Color.CYAN}{Color.BOLD}"
-          f"  AION Exporter{Color.RESET}")
+          f"  NEKOVA Exporter{Color.RESET}")
     print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
     print()
     print_info(f"Exporting '{filepath}'...")
@@ -65,10 +65,10 @@ def cmd_export(filepath: str,
 
 def cmd_package(project_dir: str = ".",
                 output_dir: str = "dist") -> bool:
-    """Package an AION project."""
+    """Package an NEKOVA project."""
     print()
     print(f"{Color.CYAN}{Color.BOLD}"
-          f"  AION Packager{Color.RESET}")
+          f"  NEKOVA Packager{Color.RESET}")
     print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
     print()
 
@@ -88,7 +88,7 @@ def cmd_package(project_dir: str = ".",
 
 
 def cmd_publish(pkg_path: str) -> bool:
-    """Publish an AION package to the local registry."""
+    """Publish an NEKOVA package to the local registry."""
     if not pkg_path:
         print_error(
             "Please provide a package to publish.\n"
@@ -99,7 +99,7 @@ def cmd_publish(pkg_path: str) -> bool:
 
     print()
     print(f"{Color.CYAN}{Color.BOLD}"
-          f"  AION Publisher{Color.RESET}")
+          f"  NEKOVA Publisher{Color.RESET}")
     print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
     print()
 
@@ -136,7 +136,7 @@ def cmd_deploy(filepath: str) -> bool:
 
     print()
     print(f"{Color.CYAN}{Color.BOLD}"
-          f"  AION Deployment Pipeline{Color.RESET}")
+          f"  NEKOVA Deployment Pipeline{Color.RESET}")
     print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
     print()
     print_info(
@@ -191,7 +191,7 @@ def cmd_deploy(filepath: str) -> bool:
 
 def cmd_deploy_cloud(filepath: str) -> bool:
     """
-    Deploy an AION app to the cloud.
+    Deploy an NEKOVA app to the cloud.
     Usage: python main.py deploy cloud app.aion
     """
     if not filepath:
@@ -207,7 +207,7 @@ def cmd_deploy_cloud(filepath: str) -> bool:
 
     print()
     print(f"{Color.CYAN}{Color.BOLD}"
-          f"  AION Cloud Deployment{Color.RESET}")
+          f"  NEKOVA Cloud Deployment{Color.RESET}")
     print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
     print()
 

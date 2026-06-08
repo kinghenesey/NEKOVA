@@ -1,5 +1,5 @@
-# =============================================================
-# AION CLI — Marketplace Commands
+﻿# =============================================================
+# NEKOVA CLI — Marketplace Commands
 # =============================================================
 # Handles all marketplace commands:
 #   python main.py marketplace

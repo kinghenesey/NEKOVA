@@ -1,5 +1,5 @@
-# =============================================================
-# AION Lexer — Token Class
+﻿# =============================================================
+# NEKOVA Lexer — Token Class
 # =============================================================
 # A Token is a single labelled piece of your source code.
 # Every word, number, symbol and operator becomes one Token.
@@ -14,7 +14,7 @@ from lexer.token_types import TokenType
 
 class Token:
     """
-    Represents a single token in the AION source code.
+    Represents a single token in the NEKOVA source code.
 
     Attributes:
         type    — what kind of token this is (from TokenType)

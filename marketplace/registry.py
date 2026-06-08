@@ -1,5 +1,5 @@
-# =============================================================
-# AION Marketplace — Package Registry
+﻿# =============================================================
+# NEKOVA Marketplace — Package Registry
 # =============================================================
 # Manages the marketplace package catalog.
 # Contains all available community packages with metadata.
@@ -11,7 +11,7 @@
 import os
 import json
 from datetime import datetime
-from config import AION_VERSION
+from config import NEKOVA_VERSION
 
 
 # Registry file path
@@ -29,8 +29,8 @@ CATALOG = {
     "aion-ui-pro": {
         "name":        "aion-ui-pro",
         "version":     "2.1.0",
-        "description": "Advanced UI components for AION apps",
-        "author":      "AION Core Team",
+        "description": "Advanced UI components for NEKOVA apps",
+        "author":      "NEKOVA Core Team",
         "category":    "ui",
         "downloads":   15420,
         "stars":       234,
@@ -107,7 +107,7 @@ CATALOG = {
     "aion-orm": {
         "name":        "aion-orm",
         "version":     "2.0.0",
-        "description": "Object-relational mapper for AION",
+        "description": "Object-relational mapper for NEKOVA",
         "author":      "DB Team",
         "category":    "database",
         "downloads":   9870,
@@ -133,7 +133,7 @@ CATALOG = {
     "aion-email": {
         "name":        "aion-email",
         "version":     "1.0.0",
-        "description": "Send emails from AION applications",
+        "description": "Send emails from NEKOVA applications",
         "author":      "Comm Team",
         "category":    "communication",
         "downloads":   5120,

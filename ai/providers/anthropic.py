@@ -1,15 +1,15 @@
+﻿# =============================================================
+# NEKOVA AI Runtime — Anthropic Claude Provider
 # =============================================================
-# AION AI Runtime — Anthropic Claude Provider
-# =============================================================
-# This provider connects AION to Anthropic's Claude API.
+# This provider connects NEKOVA to Anthropic's Claude API.
 #
 # To activate:
 #   1. Get an API key from https://console.anthropic.com
-#   2. Create a .env file in your AION root folder
+#   2. Create a .env file in your NEKOVA root folder
 #   3. Add this line:  ANTHROPIC_API_KEY=sk-ant-your-key-here
 #   4. Change provider to "claude" in ai/__init__.py
 #
-# The rest of your AION code stays exactly the same.
+# The rest of your NEKOVA code stays exactly the same.
 
 import os
 from ai.providers.base import BaseProvider
@@ -17,7 +17,7 @@ from ai.providers.base import BaseProvider
 
 class AnthropicProvider(BaseProvider):
     """
-    Connects AION to Anthropic's Claude AI model.
+    Connects NEKOVA to Anthropic's Claude AI model.
     Requires ANTHROPIC_API_KEY environment variable.
     """
 

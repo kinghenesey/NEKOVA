@@ -1,12 +1,12 @@
-# =============================================================
-# AION AI Runtime — Base Provider
+﻿# =============================================================
+# NEKOVA AI Runtime — Base Provider
 # =============================================================
 
 from abc import ABC, abstractmethod
 
 
 class BaseProvider(ABC):
-    """Abstract base class for all AION AI providers."""
+    """Abstract base class for all NEKOVA AI providers."""
 
     def __init__(self):
         # Memory system — stores conversation history

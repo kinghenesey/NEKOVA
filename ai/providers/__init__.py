@@ -1,5 +1,5 @@
-# =============================================================
-# AION AI Runtime — Provider Registry
+﻿# =============================================================
+# NEKOVA AI Runtime — Provider Registry
 # =============================================================
 # Priority order:
 #   1. Gemini  (if GEMINI_API_KEY is set)
@@ -48,7 +48,7 @@ def get_provider():
 def set_provider(name: str):
     """
     Set the active provider by name.
-    Called by the `model` keyword in AION programs.
+    Called by the `model` keyword in NEKOVA programs.
     Raises ValueError if the name is not recognized.
     """
     global _active_provider

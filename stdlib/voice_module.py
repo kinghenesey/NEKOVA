@@ -1,11 +1,11 @@
-# =============================================================
-# AION Standard Library — Voice Module
+﻿# =============================================================
+# NEKOVA Standard Library — Voice Module
 # =============================================================
 # Provides text-to-speech and speech-to-text capabilities.
 #
-# Usage in AION:
+# Usage in NEKOVA:
 #   use voice
-#   voice_speak("Hello from AION!")
+#   voice_speak("Hello from NEKOVA!")
 #   transcript = voice_listen()
 
 import os
@@ -17,8 +17,8 @@ def voice_speak(text: str) -> str:
     Convert text to speech and play it aloud.
     Uses edge-tts for natural voice, falls back to pyttsx3.
 
-    Usage in AION:
-        voice_speak("Hello from AION!")
+    Usage in NEKOVA:
+        voice_speak("Hello from NEKOVA!")
     """
     text = str(text)
 
@@ -83,7 +83,7 @@ def voice_listen(timeout: int = 5) -> str:
     Record audio from the microphone and transcribe it.
     Falls back to text input if microphone unavailable.
 
-    Usage in AION:
+    Usage in NEKOVA:
         transcript = voice_listen()
         show "You said: {transcript}"
     """
@@ -124,7 +124,7 @@ def voice_save(text: str, filepath: str) -> str:
     """
     Save text as an audio file (mp3).
 
-    Usage in AION:
+    Usage in NEKOVA:
         voice_save("Hello world", "greeting.mp3")
     """
     try:
@@ -139,7 +139,7 @@ def voice_save(text: str, filepath: str) -> str:
 
 
 def load() -> dict:
-    """Return all voice functions for AION's use statement."""
+    """Return all voice functions for NEKOVA's use statement."""
     return {
         "voice_speak":  voice_speak,
         "voice_listen": voice_listen,

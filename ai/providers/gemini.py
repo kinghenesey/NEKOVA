@@ -1,5 +1,5 @@
-# =============================================================
-# AION AI Runtime — Google Gemini Provider
+﻿# =============================================================
+# NEKOVA AI Runtime — Google Gemini Provider
 # =============================================================
 # Uses the new google-genai SDK (replaces google-generativeai)
 # Get a free API key at: https://aistudio.google.com
@@ -10,7 +10,7 @@ from ai.providers.base import BaseProvider
 
 class GeminiProvider(BaseProvider):
     """
-    Connects AION to Google Gemini AI.
+    Connects NEKOVA to Google Gemini AI.
     Requires GEMINI_API_KEY environment variable.
     """
 

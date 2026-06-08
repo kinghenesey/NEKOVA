@@ -1,6 +1,6 @@
-<div align="center">
+﻿<div align="center">
 
-# AION Programming Language
+# NEKOVA Programming Language
 
 ### The AI-Native Programming Language
 
@@ -18,9 +18,9 @@
 
 ---
 
-## What is AION?
+## What is NEKOVA?
 
-AION is an **AI-native programming language** built with Python. It's the first language where `think` is syntax — AI isn't a library you import, it's part of the language itself.
+NEKOVA is an **AI-native programming language** built with Python. It's the first language where `think` is syntax — AI isn't a library you import, it's part of the language itself.
 
 ```aion
 # AI is just syntax
@@ -62,8 +62,8 @@ aion hello.aion
 ### Option 2 — Clone from GitHub
 
 ```bash
-git clone https://github.com/kinghenesey/AION.git
-cd AION
+git clone https://github.com/kinghenesey/NEKOVA.git
+cd NEKOVA
 pip install -r requirements.txt
 ```
 
@@ -101,7 +101,7 @@ python main.py examples/hello.aion
 ```aion
 name = "Emmanuel"
 show "Hello {name}!"
-show "Welcome to AION — where AI is syntax."
+show "Welcome to NEKOVA — where AI is syntax."
 ```
 
 ### Think (AI as syntax)
@@ -177,7 +177,7 @@ show "You said: {transcript}"
 ```aion
 memory user_profile:
     name = "Emmanuel"
-    language = "AION"
+    language = "NEKOVA"
     run_count = 0
 
 show user_profile["name"]
@@ -220,7 +220,7 @@ else:
 
 # Loops
 repeat 5:
-    show "AION!"
+    show "NEKOVA!"
 
 for item in items:
     show item
@@ -324,9 +324,9 @@ aion/
 
 ## Community
 
-**AION Connect** — Share your AION projects with the community.
+**NEKOVA Connect** — Share your NEKOVA projects with the community.
 
-- Browse projects built with AION
+- Browse projects built with NEKOVA
 - Share your own programs
 - World chat with other developers
 - Run projects live in the browser
@@ -351,10 +351,10 @@ aion/
 - [x] Web IDE
 - [x] VS Code extension
 - [x] PyPI package
-- [x] AION Connect community
+- [x] NEKOVA Connect community
 - [ ] LLVM native compilation
 - [ ] Language server (LSP)
-- [ ] AION package registry
+- [ ] NEKOVA package registry
 
 ---
 
@@ -374,8 +374,8 @@ MIT License — free to use, modify, and distribute.
 
 <div align="center">
 
-**Star ⭐ this repo if AION inspired you!**
+**Star ⭐ this repo if NEKOVA inspired you!**
 
-[github.com/kinghenesey/AION](https://github.com/kinghenesey/AION) · [PyPI](https://pypi.org/project/aion-lang/) · [AION Connect](https://github.com/kinghenesey/AION)
+[github.com/kinghenesey/NEKOVA](https://github.com/kinghenesey/NEKOVA) · [PyPI](https://pypi.org/project/aion-lang/) · [NEKOVA Connect](https://github.com/kinghenesey/NEKOVA)
 
 </div>

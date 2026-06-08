@@ -1,5 +1,5 @@
-# =============================================================
-# AION Parser — Package Init
+﻿# =============================================================
+# NEKOVA Parser — Package Init
 # =============================================================
 # Makes the parser importable from anywhere like:
 #   from parser import Parser

@@ -1,8 +1,8 @@
+﻿# =============================================================
+# NEKOVA Standard Library — Package Init
 # =============================================================
-# AION Standard Library — Package Init
-# =============================================================
-# This is the central registry for all AION stdlib modules.
-# When AION sees "use math" it calls load_module("math")
+# This is the central registry for all NEKOVA stdlib modules.
+# When NEKOVA sees "use math" it calls load_module("math")
 # which returns all functions for that module.
 #
 # Adding a new module in the future is as simple as:

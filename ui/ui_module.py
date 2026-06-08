@@ -1,13 +1,13 @@
+﻿# =============================================================
+# NEKOVA UI Framework — UI Module
 # =============================================================
-# AION UI Framework — UI Module
-# =============================================================
-# This is what gets loaded when you write "use ui" in AION.
-# It exposes all UI building functions to your AION programs.
+# This is what gets loaded when you write "use ui" in NEKOVA.
+# It exposes all UI building functions to your NEKOVA programs.
 #
-# Usage in AION:
+# Usage in NEKOVA:
 #   use ui
 #   ui_page("Home")
-#   ui_title("Welcome to AION")
+#   ui_title("Welcome to NEKOVA")
 #   ui_text("Build beautiful apps")
 #   ui_button("Get Started", "Dashboard")
 #   ui_save("app.html")
@@ -28,7 +28,7 @@ _current_page = None
 def load() -> dict:
     """
     Returns all UI functions to be loaded
-    into the AION environment when 'use ui' is called.
+    into the NEKOVA environment when 'use ui' is called.
     """
     return {
         # App management
@@ -69,7 +69,7 @@ def _ui_page(name: str):
     global _current_app, _current_page
 
     if _current_app is None:
-        _current_app = UIApp(name="AION App")
+        _current_app = UIApp(name="NEKOVA App")
 
     page = Page(name=str(name))
     _current_app.add_page(page)

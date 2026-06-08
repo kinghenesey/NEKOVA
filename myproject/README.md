@@ -1,6 +1,6 @@
-# myproject
+﻿# myproject
 
-An AION language project.
+An NEKOVA language project.
 
 ## Run
 
@@ -10,4 +10,4 @@ python main.py src/main.aion
 
 ## Built with
 
-AION v0.1.0 · Genesis
+NEKOVA v0.1.0 · Genesis

@@ -1,5 +1,5 @@
-# =============================================================
-# AION — Phase 5 Tests (Standard Library)
+﻿# =============================================================
+# NEKOVA — Phase 5 Tests (Standard Library)
 # =============================================================
 # Run with: python tests/test_phase5.py
 
@@ -16,7 +16,7 @@ from interpreter.interpreter import Interpreter
 
 
 def run(source: str) -> str:
-    """Helper — run AION source and capture printed output."""
+    """Helper — run NEKOVA source and capture printed output."""
     tokens      = Lexer(source).tokenize()
     program     = Parser(tokens).parse()
     interpreter = Interpreter()
@@ -71,7 +71,7 @@ class TestTextModule(unittest.TestCase):
         self.assertEqual(output, "HELLO")
 
     def test_lower(self):
-        output = run('use text\nshow lower("AION")')
+        output = run('use text\nshow lower("NEKOVA")')
         self.assertEqual(output, "aion")
 
     def test_trim(self):
@@ -79,19 +79,19 @@ class TestTextModule(unittest.TestCase):
         self.assertEqual(output, "hello")
 
     def test_replace(self):
-        output = run('use text\nshow replace("Hello World", "World", "AION")')
-        self.assertEqual(output, "Hello AION")
+        output = run('use text\nshow replace("Hello World", "World", "NEKOVA")')
+        self.assertEqual(output, "Hello NEKOVA")
 
     def test_contains_true(self):
-        output = run('use text\nshow contains("AION Language", "AION")')
+        output = run('use text\nshow contains("NEKOVA Language", "NEKOVA")')
         self.assertEqual(output, "true")
 
     def test_reverse(self):
-        output = run('use text\nshow reverse("AION")')
+        output = run('use text\nshow reverse("NEKOVA")')
         self.assertEqual(output, "NOIA")
 
     def test_length(self):
-        output = run('use text\nshow length("AION")')
+        output = run('use text\nshow length("NEKOVA")')
         self.assertEqual(output, "4")
 
 
@@ -100,12 +100,12 @@ class TestFilesModule(unittest.TestCase):
     def test_write_and_read(self):
         source = (
             'use files\n'
-            'write_file("test_output.txt", "Hello AION")\n'
+            'write_file("test_output.txt", "Hello NEKOVA")\n'
             'content = read_file("test_output.txt")\n'
             'show content'
         )
         output = run(source)
-        self.assertEqual(output, "Hello AION")
+        self.assertEqual(output, "Hello NEKOVA")
         if os.path.exists("test_output.txt"):
             os.remove("test_output.txt")
 
@@ -176,6 +176,6 @@ class TestCollectionsModule(unittest.TestCase):
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("  AION Phase 5 — Stdlib Test Suite")
+    print("  NEKOVA Phase 5 — Stdlib Test Suite")
     print("=" * 50)
     unittest.main(verbosity=2)
