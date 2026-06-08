@@ -2,10 +2,10 @@
 
 # NEKOVA Programming Language
 
-### The AI-Native Programming Language
+### The AI-Native Programming Language by SYNEKCOT Tech
 
 ![Version](https://img.shields.io/badge/version-1.1.1-00d4ff)
-![PyPI](https://img.shields.io/pypi/v/aion-lang)
+![PyPI](https://img.shields.io/pypi/v/nekova-lang)
 ![Python](https://img.shields.io/badge/python-3.11+-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Tests](https://img.shields.io/badge/tests-147%20passing-success)
@@ -20,9 +20,11 @@
 
 ## What is NEKOVA?
 
+**NEKOVA** means *"Connected Forge"* — a language that forges a direct connection between the developer and AI. Built by **SYNEKCOT Tech** in Nigeria, for the world.
+
 NEKOVA is an **AI-native programming language** built with Python. It's the first language where `think` is syntax — AI isn't a library you import, it's part of the language itself.
 
-```aion
+```nekova
 # AI is just syntax
 think "What should I build today?"
 
@@ -41,22 +43,35 @@ run pipeline market_analysis
 
 ---
 
+## Why NEKOVA?
+
+> *"I didn't just learn to code. I built the tools other people use to code."*
+> — Emmanuel King Christopher, Founder of SYNEKCOT Tech
+
+NEKOVA was born in Nigeria and built to prove that world-class programming languages can come from anywhere. The name comes from two words: **NEKT** (connected, from Latin *nectere*) and **KOVA** (to forge). Together: the forge that connects human intent to AI.
+
+---
+
 ## Installation
 
 ### Option 1 — pip (recommended)
 
 ```bash
-pip install aion-lang
+pip install nekova-lang
 ```
 
-Add your API key to a `.env` file:
-GEMINI_API_KEY=your_key_here
+Add your API key to a `.env` file in your project folder:
 
-Get a free key at [ai.google.dev](https://ai.google.dev)
+```env
+# You only need ONE key — NEKOVA auto-detects which one you have
+GEMINI_API_KEY=your_key_here       # Free key at aistudio.google.com
+ANTHROPIC_API_KEY=your_key_here    # Key at console.anthropic.com
+OPENAI_API_KEY=your_key_here       # Key at platform.openai.com
+```
 
 Run your first program:
 ```bash
-aion hello.aion
+nekova hello.nk
 ```
 
 ### Option 2 — Clone from GitHub
@@ -69,7 +84,32 @@ pip install -r requirements.txt
 
 Run a program:
 ```bash
-python main.py examples/hello.aion
+python main.py examples/hello.nk
+```
+
+---
+
+## AI Providers
+
+NEKOVA supports three AI providers out of the box. Just add the key for whichever one you have — NEKOVA picks it up automatically.
+
+| Provider | Key | Get it free? |
+|----------|-----|-------------|
+| Google Gemini | `GEMINI_API_KEY` | ✅ Yes — [aistudio.google.com](https://aistudio.google.com) |
+| Anthropic Claude | `ANTHROPIC_API_KEY` | No — [console.anthropic.com](https://console.anthropic.com) |
+| OpenAI GPT | `OPENAI_API_KEY` | No — [platform.openai.com](https://platform.openai.com) |
+| Mock (no key) | — | ✅ Always available |
+
+Switch providers at runtime inside your `.nk` file:
+```nekova
+model "gemini"
+think "Using Gemini now"
+
+model "openai"
+think "Using GPT now"
+
+model "claude"
+think "Using Claude now"
 ```
 
 ---
@@ -81,14 +121,14 @@ python main.py examples/hello.aion
 | 🧠 **Think** | `think "prompt"` | Call AI directly — no imports needed |
 | 🔗 **Pipelines** | `researcher -> writer` | Chain AI agents with `->` |
 | 🔀 **Model Routing** | `model "gemini"` | Switch AI providers at runtime |
-| 👁️ **Vision** | `vision_scan("img.png")` | Analyze images with Gemini |
+| 👁️ **Vision** | `vision_scan("img.png")` | Analyze images with AI |
 | 🎙️ **Voice** | `voice_speak("Hello!")` | Text-to-speech built in |
 | ⚡ **Parallel** | `autonomous parallel:` | Run AI tasks simultaneously |
 | 💾 **Memory** | `memory profile:` | Persistent data between runs |
 | 🔒 **Sandbox** | `sandbox strict:` | Secure execution environment |
 | 🧬 **Neural Pipeline** | `pipeline name:` | Full AI workflow in one block |
-| 🏗️ **Compiler** | `aion compile app.aion` | Compile to standalone Python |
-| ☁️ **Deploy** | `aion deploy cloud app.aion` | Deploy to cloud with one command |
+| 🏗️ **Compiler** | `nekova compile app.nk` | Compile to standalone Python |
+| ☁️ **Deploy** | `nekova deploy cloud app.nk` | Deploy to cloud with one command |
 | 🌐 **Web** | `use web` | Build real HTTP servers |
 | 🗄️ **Database** | `use database` | Full SQLite CRUD |
 | 🎨 **UI** | `use ui` | Generate HTML apps |
@@ -98,14 +138,14 @@ python main.py examples/hello.aion
 ## Examples
 
 ### Hello World
-```aion
+```nekova
 name = "Emmanuel"
 show "Hello {name}!"
 show "Welcome to NEKOVA — where AI is syntax."
 ```
 
 ### Think (AI as syntax)
-```aion
+```nekova
 # Standalone think
 think "What is the capital of Nigeria?"
 
@@ -120,7 +160,7 @@ show result
 ```
 
 ### Agent Pipeline
-```aion
+```nekova
 # Chain agents — output flows left to right
 "Analyze Nigerian tech ecosystem" -> researcher -> marketer -> reporter
 
@@ -130,7 +170,7 @@ show report
 ```
 
 ### Neural Pipeline
-```aion
+```nekova
 pipeline market_research:
     collect "Nigerian startup ecosystem 2025"
     process with ai
@@ -143,7 +183,7 @@ show result
 ```
 
 ### Parallel Execution
-```aion
+```nekova
 # All three run simultaneously
 autonomous parallel:
     think "Capital of Nigeria?"
@@ -157,7 +197,7 @@ results = autonomous parallel:
 ```
 
 ### Vision + Voice
-```aion
+```nekova
 use vision
 use voice
 
@@ -174,7 +214,7 @@ show "You said: {transcript}"
 ```
 
 ### Persistent Memory
-```aion
+```nekova
 memory user_profile:
     name = "Emmanuel"
     language = "NEKOVA"
@@ -185,7 +225,7 @@ show user_profile["language"]
 ```
 
 ### Sandbox
-```aion
+```nekova
 sandbox strict:
     show "Running in secure mode"
     think "What is 2 + 2?"
@@ -196,17 +236,8 @@ sandbox relaxed:
     show data
 ```
 
-### Model Routing
-```aion
-model "gemini"
-think "Using Gemini now"
-
-model "mock"
-think "Using mock provider"
-```
-
 ### Variables, Loops & Tasks
-```aion
+```nekova
 # Variables
 name = "Emmanuel"
 age  = 20
@@ -235,14 +266,14 @@ show result
 ```
 
 ### Standard Library
-```aion
+```nekova
 use math
 use text
 use database
 use web
 
 show sqrt(144)
-show upper("hello aion")
+show upper("hello nekova")
 
 db_connect("myapp.db")
 db_create("users", "name text, age integer")
@@ -257,26 +288,26 @@ show results
 
 ```bash
 # Run files
-aion hello.aion
-aion app.aion --debug
+nekova hello.nk
+nekova app.nk --debug
 
 # Using python directly
-python main.py hello.aion
+python main.py hello.nk
 python main.py repl
 python main.py ide
 
 # Developer tools
-aion repl                    # Interactive shell
-aion ide                     # Web IDE at localhost:3000
-aion compile app.aion        # Compile to Python
-aion deploy cloud app.aion   # Deploy to cloud
-aion --version               # Show version
-aion --help                  # Show help
+nekova repl                     # Interactive shell
+nekova ide                      # Web IDE at localhost:3000
+nekova compile app.nk           # Compile to Python
+nekova deploy cloud app.nk      # Deploy to cloud
+nekova --version                # Show version
+nekova --help                   # Show help
 
 # Package manager
-python main.py --install charts
-python main.py --packages
-python main.py marketplace
+nekova --install charts
+nekova --packages
+nekova marketplace
 ```
 
 ---
@@ -300,25 +331,28 @@ python main.py marketplace
 ---
 
 ## Project Structure
-aion/
+
+```
+nekova/
 ├── main.py              ← Entry point
 ├── runner.py            ← Pipeline orchestrator
 ├── config.py            ← Version & constants
 ├── repl.py              ← Interactive shell
-├── aion_cli.py          ← pip CLI entry point
+├── nekova_cli.py        ← pip CLI entry point
 ├── lexer/               ← Tokenizer
 ├── parser/              ← AST builder
 ├── interpreter/         ← Execution engine
 ├── compiler/            ← Bytecode compiler + VM
 ├── stdlib/              ← Standard library
-├── ai/                  ← AI runtime + agents
+├── ai/                  ← AI runtime + providers
 ├── web/                 ← Web framework
 ├── database/            ← Database system
 ├── ui/                  ← UI framework
 ├── web_ide/             ← Browser-based IDE
 ├── deploy/              ← Deployment tools
-├── examples/            ← Example programs
+├── examples/            ← Example programs (.nk)
 └── tests/               ← Test suite (147 tests)
+```
 
 ---
 
@@ -328,7 +362,7 @@ aion/
 
 - Browse projects built with NEKOVA
 - Share your own programs
-- World chat with other developers
+- Chat with other developers
 - Run projects live in the browser
 
 ---
@@ -337,7 +371,7 @@ aion/
 
 - [x] Core language (lexer, parser, interpreter)
 - [x] Standard library (math, text, files, datetime)
-- [x] AI runtime (Gemini, Claude, Mock)
+- [x] AI runtime (Gemini, Claude, OpenAI, Mock)
 - [x] `think` keyword — AI as syntax
 - [x] Agent pipelines (`->` operator)
 - [x] Model routing (`model "gemini"`)
@@ -346,21 +380,22 @@ aion/
 - [x] Persistent memory blocks
 - [x] Sandboxing (`sandbox strict/relaxed`)
 - [x] Neural pipelines (`pipeline name:`)
-- [x] LLVM compiler backend
+- [x] Bytecode compiler + VM
 - [x] Cloud deployment
 - [x] Web IDE
 - [x] VS Code extension
-- [x] PyPI package
-- [x] NEKOVA Connect community
-- [ ] LLVM native compilation
+- [x] PyPI package (`nekova-lang`)
+- [x] OpenAI/GPT provider
+- [ ] NEKOVA native compilation
 - [ ] Language server (LSP)
 - [ ] NEKOVA package registry
+- [ ] NEKOVA Connect community platform
 
 ---
 
 ## Built By
 
-**Emmanuel King Christopher** — Built from scratch with Python 3.11.
+**Emmanuel King Christopher** — Founder, SYNEKCOT Tech. Built from scratch with Python 3.11, in Nigeria.
 
 > *"I didn't just learn to code. I built the tools other people use to code."*
 
@@ -376,6 +411,6 @@ MIT License — free to use, modify, and distribute.
 
 **Star ⭐ this repo if NEKOVA inspired you!**
 
-[github.com/kinghenesey/NEKOVA](https://github.com/kinghenesey/NEKOVA) · [PyPI](https://pypi.org/project/aion-lang/) · [NEKOVA Connect](https://github.com/kinghenesey/NEKOVA)
+[github.com/kinghenesey/NEKOVA](https://github.com/kinghenesey/NEKOVA) · [PyPI](https://pypi.org/project/nekova-lang/) · Built by SYNEKCOT Tech 🇳🇬
 
 </div>
