@@ -103,18 +103,77 @@ class AnthropicProvider(BaseProvider):
             )
 
         try:
+            # Add memory context if available
+            full_prompt = self.get_memory_context() + prompt
+
             client  = self._get_client()
             message = client.messages.create(
                 model=self.MODEL,
                 max_tokens=self.MAX_TOKENS,
                 messages=[
-                    {"role": "user", "content": prompt}
+                    {"role": "user", "content": full_prompt}
                 ]
             )
-            return message.content[0].text
+            response_text = message.content[0].text
+
+            # Save response to memory if enabled
+            if self.memory_enabled:
+                self.memory.append({
+                    "role":    "assistant",
+                    "content": response_text
+                })
+
+            return response_text
 
         except Exception as e:
             raise RuntimeError(
                 f"Claude API error: {str(e)}\n"
+                f"  Check your API key and internet connection."
+            )
+
+    def stream(self, prompt: str) -> str:
+        """
+        Stream a response from Claude word by word.
+        Prints text as it arrives, same as the Gemini provider.
+        """
+        if not self.is_available:
+            raise RuntimeError(
+                "No Anthropic API key found.\n"
+                "  Add ANTHROPIC_API_KEY to your .env file."
+            )
+
+        try:
+            full_prompt = self.get_memory_context() + prompt
+            client = self._get_client()
+
+            print(f"\033[96m", end="", flush=True)
+
+            full_response = []
+            with client.messages.stream(
+                model=self.MODEL,
+                max_tokens=self.MAX_TOKENS,
+                messages=[
+                    {"role": "user", "content": full_prompt}
+                ]
+            ) as stream:
+                for text in stream.text_stream:
+                    print(text, end="", flush=True)
+                    full_response.append(text)
+
+            print(f"\033[0m")
+
+            response_text = "".join(full_response)
+
+            if self.memory_enabled:
+                self.memory.append({
+                    "role":    "assistant",
+                    "content": response_text
+                })
+
+            return response_text
+
+        except Exception as e:
+            raise RuntimeError(
+                f"Claude streaming error: {str(e)}\n"
                 f"  Check your API key and internet connection."
             )

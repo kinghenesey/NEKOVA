@@ -24,3 +24,10 @@ packages/registry.json
 # OS files
 .DS_Store
 Thumbs.db
+
+@"
+node_modules/
+*.vsix
+out/
+.vscode-test/
+"@ | Out-File -FilePath "aion-vscode\.gitignore" -Encoding utf8

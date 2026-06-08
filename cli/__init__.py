@@ -10,18 +10,21 @@ from config import Color, AION_VERSION, AION_CODENAME
 
 def print_banner():
     """Print the AION startup banner."""
-    banner = f"""
-{Color.CYAN}{Color.BOLD}
-    ___    ____  ____  _   __
-   /   |  /  _/ / __ \/ | / /
-  / /| |  / /  / / / /  |/ / 
- / ___ |_/ /  / /_/ / /|  /  
-/_/  |_/___/  \____/_/ |_/   
-{Color.RESET}
-  {Color.DIM}AI-Native Programming Language{Color.RESET}
-  {Color.YELLOW}Version {AION_VERSION} · {AION_CODENAME}{Color.RESET}
-  {Color.DIM}{"─" * 40}{Color.RESET}
-"""
+    art = (
+        r"    ___    ____  ____  _   __"         "\n"
+        r"   /   |  /  _/ / __ \/ | / /"        "\n"
+        r"  / /| |  / /  / / / /  |/ / "        "\n"
+        r" / ___ |_/ /  / /_/ / /|  /  "        "\n"
+        r"/_/  |_/___/  \____/_/ |_/   "
+    )
+    banner = (
+        f"\n{Color.CYAN}{Color.BOLD}\n"
+        f"{art}\n"
+        f"{Color.RESET}\n"
+        f"  {Color.DIM}AI-Native Programming Language{Color.RESET}\n"
+        f"  {Color.YELLOW}Version {AION_VERSION} · {AION_CODENAME}{Color.RESET}\n"
+        f"  {Color.DIM}{'─' * 40}{Color.RESET}\n"
+    )
     print(banner)
 
 
