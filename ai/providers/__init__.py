@@ -4,16 +4,19 @@
 # Priority order:
 #   1. Gemini  (if GEMINI_API_KEY is set)
 #   2. Claude  (if ANTHROPIC_API_KEY is set)
-#   3. Mock    (always available as fallback)
+#   3. OpenAI  (if OPENAI_API_KEY is set)
+#   4. Mock    (always available as fallback)
 
 from ai.providers.mock      import MockProvider
 from ai.providers.anthropic import AnthropicProvider
 from ai.providers.gemini    import GeminiProvider
+from ai.providers.openai    import OpenAIProvider
 
 
 PROVIDERS = [
     GeminiProvider,
     AnthropicProvider,
+    OpenAIProvider,
     MockProvider,
 ]
 
@@ -27,7 +30,7 @@ def get_provider():
     Return the active AI provider.
     If the user has called `model "..."`, use that.
     Otherwise auto-detect from available API keys:
-      Gemini → Claude → Mock
+      Gemini → Claude → OpenAI → Mock
     """
     global _active_provider
 
@@ -51,10 +54,12 @@ def set_provider(name: str):
     global _active_provider
 
     providers = {
-        "mock":     MockProvider,
-        "claude":   AnthropicProvider,
+        "mock":      MockProvider,
+        "claude":    AnthropicProvider,
         "anthropic": AnthropicProvider,
-        "gemini":   GeminiProvider,
+        "gemini":    GeminiProvider,
+        "openai":    OpenAIProvider,
+        "gpt":       OpenAIProvider,
     }
 
     if name not in providers:
@@ -82,6 +87,8 @@ def get_provider_by_name(name: str):
         "claude":    AnthropicProvider,
         "anthropic": AnthropicProvider,
         "gemini":    GeminiProvider,
+        "openai":    OpenAIProvider,
+        "gpt":       OpenAIProvider,
     }
 
     if name not in providers:
