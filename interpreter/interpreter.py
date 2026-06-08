@@ -13,7 +13,7 @@
 # and most readable interpreter architecture possible.
 
 from parser.nodes import (
-    Program, IntegerLiteral, FloatLiteral, SandboxStatement, StringLiteral,
+    Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,

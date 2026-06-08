@@ -166,5 +166,3 @@ class MockProvider(BaseProvider):
             return "negative"
 
         return labels[0] if labels else "unknown"
-        # Default to first label
-        return labels[0] if labels else "unknown"
