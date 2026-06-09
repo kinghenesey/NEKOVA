@@ -122,32 +122,32 @@ class HTMLRenderer:
     # ----------------------------------------------------------
 
     def _render_title(self, c: Title) -> str:
-        return f'<h1 class="aion-title">{c.text}</h1>\n'
+        return f'<h1 class="nekova-title">{c.text}</h1>\n'
 
     def _render_text(self, c: Text) -> str:
-        return f'<p class="aion-text">{c.content}</p>\n'
+        return f'<p class="nekova-text">{c.content}</p>\n'
 
     def _render_button(self, c: Button) -> str:
         if c.goto:
             onclick = f"showPage('{c.goto}')"
         else:
             onclick = ""
-        return (f'<button class="aion-button" '
+        return (f'<button class="nekova-button" '
                 f'onclick="{onclick}">{c.label}</button>\n')
 
     def _render_input(self, c: Input) -> str:
-        return (f'<input class="aion-input" '
+        return (f'<input class="nekova-input" '
                 f'type="text" '
                 f'placeholder="{c.placeholder}" '
                 f'name="{c.name}">\n')
 
     def _render_image(self, c: Image) -> str:
-        return (f'<img class="aion-image" '
+        return (f'<img class="nekova-image" '
                 f'src="{c.src}" '
                 f'alt="{c.alt}">\n')
 
     def _render_divider(self, c: Divider) -> str:
-        return '<hr class="aion-divider">\n'
+        return '<hr class="nekova-divider">\n'
 
     def _render_space(self, c: Space) -> str:
         height = c.size * 20
@@ -155,11 +155,11 @@ class HTMLRenderer:
 
     def _render_card(self, c: Card) -> str:
         inner = self._render_components(c.children)
-        return f'<div class="aion-card">{inner}</div>\n'
+        return f'<div class="nekova-card">{inner}</div>\n'
 
     def _render_row(self, c: Row) -> str:
         inner = self._render_components(c.children)
-        return f'<div class="aion-row">{inner}</div>\n'
+        return f'<div class="nekova-row">{inner}</div>\n'
 
     # ----------------------------------------------------------
     # Styles
@@ -235,7 +235,7 @@ class HTMLRenderer:
         }
 
         /* Components */
-        .aion-title {
+        .nekova-title {
             font-size: 2.5rem;
             font-weight: 800;
             color: #ffffff;
@@ -243,14 +243,14 @@ class HTMLRenderer:
             line-height: 1.2;
         }
 
-        .aion-text {
+        .nekova-text {
             font-size: 1.1rem;
             color: #a0a0b0;
             margin-bottom: 16px;
             line-height: 1.6;
         }
 
-        .aion-button {
+        .nekova-button {
             background: linear-gradient(135deg, #00d4ff, #0088cc);
             color: white;
             border: none;
@@ -263,12 +263,12 @@ class HTMLRenderer:
             transition: transform 0.2s, opacity 0.2s;
         }
 
-        .aion-button:hover {
+        .nekova-button:hover {
             transform: translateY(-2px);
             opacity: 0.9;
         }
 
-        .aion-input {
+        .nekova-input {
             width: 100%;
             background: #1a1a2e;
             border: 1px solid #2a2a4a;
@@ -281,23 +281,23 @@ class HTMLRenderer:
             transition: border-color 0.2s;
         }
 
-        .aion-input:focus {
+        .nekova-input:focus {
             border-color: #00d4ff;
         }
 
-        .aion-image {
+        .nekova-image {
             max-width: 100%;
             border-radius: 8px;
             margin-bottom: 16px;
         }
 
-        .aion-divider {
+        .nekova-divider {
             border: none;
             border-top: 1px solid #2a2a4a;
             margin: 24px 0;
         }
 
-        .aion-card {
+        .nekova-card {
             background: #1a1a2e;
             border: 1px solid #2a2a4a;
             border-radius: 12px;
@@ -305,7 +305,7 @@ class HTMLRenderer:
             margin-bottom: 16px;
         }
 
-        .aion-row {
+        .nekova-row {
             display: flex;
             gap: 16px;
             flex-wrap: wrap;
@@ -314,7 +314,7 @@ class HTMLRenderer:
         }
 
         /* Footer */
-        .aion-footer {
+        .nekova-footer {
             text-align: center;
             padding: 32px;
             color: #444;

@@ -4,9 +4,9 @@
 # Creates distributable NEKOVA project packages.
 #
 # A package includes:
-#   - All .aion source files
+#   - All .nekova source files
 #   - Dependencies (stdlib modules used)
-#   - Configuration (aion.json)
+#   - Configuration (nekova.json)
 #   - README and documentation
 #   - Examples
 
@@ -31,7 +31,7 @@ class Packager:
         self.project_dir = project_dir
         self.config      = self._load_config()
         self.name        = self.config.get(
-                               "name", "aion-project")
+                               "name", "nekova-project")
         self.version     = self.config.get(
                                "version", "1.0.0")
 
@@ -44,7 +44,7 @@ class Packager:
 
         pkg_name = f"{self.name}-{self.version}"
         pkg_path = os.path.join(
-            output_dir, f"{pkg_name}.aionpkg")
+            output_dir, f"{pkg_name}.nekovapkg")
 
         print(f"{Color.CYAN}  Packaging "
               f"'{self.name}'...{Color.RESET}")
@@ -52,9 +52,9 @@ class Packager:
         with zipfile.ZipFile(pkg_path, "w",
                              zipfile.ZIP_DEFLATED) as zf:
 
-            # Add all .aion files
-            aion_files = self._find_aion_files()
-            for filepath in aion_files:
+            # Add all .nekova files
+            nekova_files = self._find_nekova_files()
+            for filepath in nekova_files:
                 arcname = os.path.relpath(
                     filepath, self.project_dir)
                 zf.write(filepath, arcname)
@@ -63,7 +63,7 @@ class Packager:
 
             # Add config
             config = self._generate_config()
-            zf.writestr("aion.json",
+            zf.writestr("nekova.json",
                         json.dumps(config, indent=2))
 
             # Add README if exists
@@ -77,7 +77,7 @@ class Packager:
 
             # Add manifest
             manifest = self._generate_manifest(
-                aion_files)
+                nekova_files)
             zf.writestr("MANIFEST.json",
                         json.dumps(manifest, indent=2))
 
@@ -92,7 +92,7 @@ class Packager:
                              pkg_path: str,
                              target_dir: str = "."):
         """
-        Install an .aionpkg package.
+        Install an .nekovapkg package.
         Extracts to target directory.
         """
         if not os.path.exists(pkg_path):
@@ -122,9 +122,9 @@ class Packager:
               f"'{install_dir}'{Color.RESET}")
         return install_dir
 
-    def _find_aion_files(self) -> list:
-        """Find all .aion files in the project."""
-        aion_files = []
+    def _find_nekova_files(self) -> list:
+        """Find all .nekova files in the project."""
+        nekova_files = []
         for root, dirs, files in os.walk(
                 self.project_dir):
             # Skip hidden and cache dirs
@@ -136,15 +136,15 @@ class Packager:
                 and d != "dist"
             ]
             for f in files:
-                if f.endswith(".aion"):
-                    aion_files.append(
+                if f.endswith(".nekova"):
+                    nekova_files.append(
                         os.path.join(root, f))
-        return aion_files
+        return nekova_files
 
     def _load_config(self) -> dict:
-        """Load project config from aion.json."""
+        """Load project config from nekova.json."""
         config_path = os.path.join(
-            self.project_dir, "aion.json")
+            self.project_dir, "nekova.json")
         if os.path.exists(config_path):
             with open(config_path, "r") as f:
                 return json.load(f)
@@ -155,11 +155,11 @@ class Packager:
         return {
             "name":      self.name,
             "version":   self.version,
-            "aion":      NEKOVA_VERSION,
+            "nekova":      NEKOVA_VERSION,
             "built":     datetime.now().isoformat(),
-            "type":      "aion-package",
+            "type":      "nekova-package",
             "main":      self.config.get(
-                             "main", "main.aion"),
+                             "main", "main.nekova"),
         }
 
     def _generate_manifest(self,
@@ -168,7 +168,7 @@ class Packager:
         return {
             "name":     self.name,
             "version":  self.version,
-            "aion":     NEKOVA_VERSION,
+            "nekova":     NEKOVA_VERSION,
             "files":    [
                 os.path.relpath(f, self.project_dir)
                 for f in files
@@ -185,6 +185,6 @@ Version {self.version} — Built with NEKOVA v{NEKOVA_VERSION}
 ## Run
 
 ```bash
-python main.py {self.config.get('main', 'main.aion')}
+python main.py {self.config.get('main', 'main.nekova')}
 ```
 """

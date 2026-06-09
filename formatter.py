@@ -1,7 +1,7 @@
 ﻿# =============================================================
 # NEKOVA Language — Code Formatter
 # =============================================================
-# Automatically formats .aion files:
+# Automatically formats .nekova files:
 #   - Consistent indentation (4 spaces)
 #   - Spaces around operators
 #   - Clean blank lines
@@ -9,8 +9,8 @@
 #   - Removes trailing whitespace
 #
 # Usage:
-#   python main.py format app.aion
-#   python main.py format app.aion --check
+#   python main.py format app.nekova
+#   python main.py format app.nekova --check
 
 import os
 import re
@@ -189,7 +189,7 @@ def format_file(filepath: str,
     Format an NEKOVA file.
 
     Args:
-        filepath   — path to .aion file
+        filepath   — path to .nekova file
         check_only — only check, don't write
         write      — write formatted code back to file
 
@@ -237,14 +237,14 @@ def format_file(filepath: str,
 
 
 def format_directory(directory: str = ".") -> int:
-    """Format all .aion files in a directory."""
+    """Format all .nekova files in a directory."""
     count = 0
     for root, dirs, files in os.walk(directory):
         dirs[:] = [d for d in dirs
                    if d not in ("venv", ".git",
                                 "__pycache__")]
         for f in files:
-            if f.endswith(".aion"):
+            if f.endswith(".nekova"):
                 path = os.path.join(root, f)
                 if format_file(path):
                     count += 1

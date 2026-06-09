@@ -2,11 +2,11 @@
 # NEKOVA CLI — Commands
 # =============================================================
 # Implements all NEKOVA developer commands:
-#   run     — execute an .aion file
+#   run     — execute an .nekova file
 #   test    — run all test suites
 #   new     — create a new NEKOVA project
 #   info    — show NEKOVA system information
-#   build   — check and validate an .aion file
+#   build   — check and validate an .nekova file
 #   clean   — remove cache files
 
 import os
@@ -69,9 +69,9 @@ def cmd_new(project_name: str):
     for d in dirs:
         os.makedirs(d, exist_ok=True)
 
-    # Create main.aion
-    main_aion = os.path.join(project_name, "src", "main.aion")
-    with open(main_aion, "w", encoding="utf-8") as f:
+    # Create main.nekova
+    main_nekova = os.path.join(project_name, "src", "main.nekova")
+    with open(main_nekova, "w", encoding="utf-8") as f:
         f.write(f'''# {project_name} — NEKOVA Project
 # Created with NEKOVA v{NEKOVA_VERSION}
 
@@ -90,7 +90,7 @@ An NEKOVA language project.
 ## Run
 
 ```bash
-python main.py src/main.aion
+python main.py src/main.nekova
 ```
 
 ## Built with
@@ -99,14 +99,14 @@ NEKOVA v{NEKOVA_VERSION} · {NEKOVA_CODENAME}
 ''')
 
     # Create project config
-    config = os.path.join(project_name, "aion.json")
+    config = os.path.join(project_name, "nekova.json")
     import json
     with open(config, "w", encoding="utf-8") as f:
         json.dump({
             "name":    project_name,
             "version": "1.0.0",
-            "main":    "src/main.aion",
-            "aion":    NEKOVA_VERSION,
+            "main":    "src/main.nekova",
+            "nekova":    NEKOVA_VERSION,
         }, f, indent=2)
 
     print_success(f"Project '{project_name}' created!")
@@ -114,13 +114,13 @@ NEKOVA v{NEKOVA_VERSION} · {NEKOVA_CODENAME}
     print(f"  {Color.DIM}Structure:{Color.RESET}")
     print(f"  {project_name}/")
     print(f"  ├── src/")
-    print(f"  │   └── main.aion")
+    print(f"  │   └── main.nekova")
     print(f"  ├── tests/")
     print(f"  └── README.md")
     print()
     print_info(f"Run your project:")
     print(f"  {Color.CYAN}cd {project_name}{Color.RESET}")
-    print(f"  {Color.CYAN}python ../main.py src/main.aion{Color.RESET}")
+    print(f"  {Color.CYAN}python ../main.py src/main.nekova{Color.RESET}")
     print()
     return True
 
@@ -203,12 +203,12 @@ def cmd_test():
 
 def cmd_build(filepath: str):
     """
-    Validate and check an .aion file without executing it.
+    Validate and check an .nekova file without executing it.
     Runs the file through Lexer and Parser only.
     """
     if not filepath:
         print_error("Please provide a file to build.")
-        print_info("Usage:  python main.py build app.aion")
+        print_info("Usage:  python main.py build app.nekova")
         return False
 
     if not os.path.isfile(filepath):

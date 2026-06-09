@@ -322,8 +322,8 @@ class Interpreter:
         from colorama import Fore, Style, init
         init(autoreset=True)
 
-        # Memory files stored in .aionmem/ folder
-        mem_dir = ".aionmem"
+        # Memory files stored in .nekovamem/ folder
+        mem_dir = ".nekovamem"
         os.makedirs(mem_dir, exist_ok=True)
         mem_file = os.path.join(mem_dir, f"{node.name}.json")
 
@@ -569,9 +569,9 @@ class Interpreter:
                 try:
                     import json
                     import os
-                    os.makedirs(".aionmem", exist_ok=True)
+                    os.makedirs(".nekovamem", exist_ok=True)
                     save_path = os.path.join(
-                        ".aionmem",
+                        ".nekovamem",
                         f"pipeline_{node.name}.json"
                     )
                     save_data = {
@@ -738,8 +738,8 @@ class Interpreter:
     def _exec_ImportStatement(self,
                                node: ImportStatement):
         """
-        Execute:  import "filepath.aion"
-        Loads and executes another .aion file,
+        Execute:  import "filepath.nekova"
+        Loads and executes another .nekova file,
         making all its tasks and variables available
         in the current scope.
         """

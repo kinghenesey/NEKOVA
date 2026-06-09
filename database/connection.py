@@ -25,7 +25,7 @@ class DatabaseConnection:
         db.close()
     """
 
-    def __init__(self, filepath: str = "aion.db"):
+    def __init__(self, filepath: str = "nekova.db"):
         self.filepath   = filepath
         self.connection = None
         self.cursor     = None

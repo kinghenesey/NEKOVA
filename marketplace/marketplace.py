@@ -22,7 +22,7 @@ class Marketplace:
     Usage:
         mp = Marketplace()
         mp.browse()
-        mp.install("aion-charts-pro")
+        mp.install("nekova-charts-pro")
         mp.search("nigeria")
     """
 

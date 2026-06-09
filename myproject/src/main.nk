@@ -1,6 +1,6 @@
-# myproject — AION Project
-# Created with AION v0.1.0
+# myproject — nekova Project
+# Created with nekova v0.1.0
 
 name = "myproject"
 show "Welcome to " + name
-show "Built with AION 0.1.0"
+show "Built with nekova 0.1.0"

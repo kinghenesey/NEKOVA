@@ -10,14 +10,14 @@ show "=== Test 2: Strict Blocks Files ==="
 use files
 sandbox strict:
     show "Trying to read a file..."
-    data = read_file("examples/hello.aion")
+    data = read_file("examples/hello.nekova")
     show data
 
 # Test 3: Relaxed sandbox — allows file reads
 show "=== Test 3: Relaxed Allows Reads ==="
 sandbox relaxed:
     show "Inside relaxed sandbox"
-    data = read_file("examples/hello.aion")
+    data = read_file("examples/hello.nekova")
     show "File read successfully!"
     show data
 

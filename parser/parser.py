@@ -500,7 +500,7 @@ class Parser:
         return UseStatement(module)
     
     def _parse_import(self):
-        """Parse:  import "filepath.aion" """
+        """Parse:  import "filepath.nekova" """
         self._consume(TokenType.IMPORT)
         filepath = self._consume(TokenType.STRING).value
         self._expect_newline_or_eof()

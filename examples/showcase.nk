@@ -1,4 +1,4 @@
-# AION Showcase — Everything working together
+# nekova Showcase — Everything working together
 
 use math
 use text
@@ -12,14 +12,14 @@ age     = 20
 
 # Show info
 show "================================"
-show "AION Language Showcase"
+show "nekova Language Showcase"
 show "================================"
 show ""
 
 # String operations
-greeting = "hello aion"
+greeting = "hello nekova"
 show upper(greeting)
-show replace(greeting, "aion", "world")
+show replace(greeting, "nekova", "world")
 
 # Math
 show sqrt(144)
@@ -39,7 +39,7 @@ else:
 show ""
 show "Counting:"
 repeat 3:
-    show "AION is alive!"
+    show "nekova is alive!"
 
 # Task
 task greet(person):
@@ -57,5 +57,5 @@ show answer
 
 show ""
 show "================================"
-show "AION v" + version + " running!"
+show "nekova v" + version + " running!"
 show "================================"

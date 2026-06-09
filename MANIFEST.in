@@ -1,7 +1,7 @@
 include config.py
 include runner.py
 include main.py
-include aion_cli.py
+include nekova_cli.py
 include requirements.txt
 recursive-include lexer *.py
 recursive-include parser *.py

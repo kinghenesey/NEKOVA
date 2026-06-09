@@ -439,10 +439,10 @@ class UseStatement(Node):
 
 class ImportStatement(Node):
     """
-    Imports another .aion file.
+    Imports another .nekova file.
     Example:
-        import "utils.aion"
-        import "greetings.aion"
+        import "utils.nekova"
+        import "greetings.nekova"
     """
     def __init__(self, filepath: str):
         self.filepath = filepath

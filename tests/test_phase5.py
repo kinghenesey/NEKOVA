@@ -72,7 +72,7 @@ class TestTextModule(unittest.TestCase):
 
     def test_lower(self):
         output = run('use text\nshow lower("NEKOVA")')
-        self.assertEqual(output, "aion")
+        self.assertEqual(output, "nekova")
 
     def test_trim(self):
         output = run('use text\nshow trim("  hello  ")')

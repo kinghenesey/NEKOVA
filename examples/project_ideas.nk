@@ -1,5 +1,5 @@
 # =============================================
-# AION Project Ideas Tracker
+# nekova Project Ideas Tracker
 # Your personal AI-powered idea manager
 # =============================================
 
@@ -82,13 +82,13 @@ task count_stats():
 # ── Add Your Project Ideas ─────────────────────
 
 show "================================"
-show "  AION PROJECT IDEAS TRACKER"
+show "  nekova PROJECT IDEAS TRACKER"
 show "  Powered by Gemini AI"
 show "================================"
 show ""
 
 # Add some starter ideas
-add_idea("AION Web IDE", "A browser-based editor for writing and running AION code online")
+add_idea("nekova Web IDE", "A browser-based editor for writing and running nekova code online")
 add_idea("AI Resume Builder", "An app that uses AI to generate professional resumes from user input")
 add_idea("Nigerian Slang Translator", "An AI tool that translates Nigerian slang to formal English and vice versa")
 add_idea("Student Grade Tracker", "A simple app for students to track their grades and get AI study tips")
@@ -113,7 +113,7 @@ get_ai_suggestions()
 
 show ""
 show "================================"
-show "  Thanks for using AION!"
+show "  Thanks for using nekova!"
 show "  Keep building. Keep growing."
 show "================================"
 

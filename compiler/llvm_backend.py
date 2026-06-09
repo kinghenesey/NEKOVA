@@ -7,7 +7,7 @@
 # Usage:
 #   from compiler.llvm_backend import LLVMCompiler
 #   compiler = LLVMCompiler()
-#   compiler.compile("examples/hello.aion", "hello.exe")
+#   compiler.compile("examples/hello.nekova", "hello.exe")
 
 import os
 import sys
@@ -105,7 +105,7 @@ class LLVMCompiler:
             import llvmlite.ir as ir
 
             # Create LLVM module
-            module  = ir.Module(name="aion_program")
+            module  = ir.Module(name="nekova_program")
             module.triple = llvm.get_default_triple()
 
             # Declare printf

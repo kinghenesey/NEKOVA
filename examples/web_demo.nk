@@ -1,25 +1,25 @@
-# AION Web Framework Demo
+# nekova Web Framework Demo
 # Run this then visit http://localhost:8000
 
 use web
 
 # Create the web app
-web_app("AION Web Server")
+web_app("nekova Web Server")
 
 # Home route
-web_route("/", "Welcome to AION Web Framework!")
+web_route("/", "Welcome to nekova Web Framework!")
 
 # About route
-web_route("/about", "AION is an AI-native programming language.")
+web_route("/about", "nekova is an AI-native programming language.")
 
 # Version route
-web_route("/version", "AION v0.1.0 - Genesis")
+web_route("/version", "nekova v0.1.0 - Genesis")
 
 # Hello route with name
-web_route("/hello", "Hello from AION!")
+web_route("/hello", "Hello from nekova!")
 
 # API route returning info
-web_route("/api/info", "AION Web API is running!")
+web_route("/api/info", "nekova Web API is running!")
 
 # Start the server on port 8000
 web_start(8000)

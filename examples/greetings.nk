@@ -1,7 +1,7 @@
-# greetings.aion — Greeting functions
+# greetings.nekova — Greeting functions
 
 task greet(name):
-    show "Hello {name}! Welcome to AION."
+    show "Hello {name}! Welcome to nekova."
 
 task farewell(name):
     show "Goodbye {name}! Keep building."

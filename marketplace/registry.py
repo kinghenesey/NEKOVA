@@ -26,8 +26,8 @@ REGISTRY_PATH = os.path.join(
 
 CATALOG = {
     # ── UI & Design ───────────────────────────────────────────
-    "aion-ui-pro": {
-        "name":        "aion-ui-pro",
+    "nekova-ui-pro": {
+        "name":        "nekova-ui-pro",
         "version":     "2.1.0",
         "description": "Advanced UI components for NEKOVA apps",
         "author":      "NEKOVA Core Team",
@@ -38,8 +38,8 @@ CATALOG = {
         "functions":   ["modal", "toast", "sidebar",
                         "navbar", "footer"],
     },
-    "aion-charts-pro": {
-        "name":        "aion-charts-pro",
+    "nekova-charts-pro": {
+        "name":        "nekova-charts-pro",
         "version":     "1.3.0",
         "description": "Beautiful charts and data visualizations",
         "author":      "DataViz Team",
@@ -52,8 +52,8 @@ CATALOG = {
     },
 
     # ── AI & ML ───────────────────────────────────────────────
-    "aion-nlp": {
-        "name":        "aion-nlp",
+    "nekova-nlp": {
+        "name":        "nekova-nlp",
         "version":     "1.0.0",
         "description": "Natural language processing tools",
         "author":      "AI Labs",
@@ -64,8 +64,8 @@ CATALOG = {
         "functions":   ["tokenize", "sentiment",
                         "extract_keywords", "translate"],
     },
-    "aion-vision": {
-        "name":        "aion-vision",
+    "nekova-vision": {
+        "name":        "nekova-vision",
         "version":     "0.9.0",
         "description": "Computer vision and image processing",
         "author":      "Vision AI",
@@ -78,8 +78,8 @@ CATALOG = {
     },
 
     # ── Web & API ─────────────────────────────────────────────
-    "aion-rest": {
-        "name":        "aion-rest",
+    "nekova-rest": {
+        "name":        "nekova-rest",
         "version":     "1.5.0",
         "description": "REST API builder with authentication",
         "author":      "Web Dev Team",
@@ -90,8 +90,8 @@ CATALOG = {
         "functions":   ["api_get", "api_post",
                         "api_auth", "api_middleware"],
     },
-    "aion-websocket": {
-        "name":        "aion-websocket",
+    "nekova-websocket": {
+        "name":        "nekova-websocket",
         "version":     "1.1.0",
         "description": "Real-time WebSocket communication",
         "author":      "RealTime Team",
@@ -104,8 +104,8 @@ CATALOG = {
     },
 
     # ── Database ──────────────────────────────────────────────
-    "aion-orm": {
-        "name":        "aion-orm",
+    "nekova-orm": {
+        "name":        "nekova-orm",
         "version":     "2.0.0",
         "description": "Object-relational mapper for NEKOVA",
         "author":      "DB Team",
@@ -118,8 +118,8 @@ CATALOG = {
     },
 
     # ── Utilities ─────────────────────────────────────────────
-    "aion-crypto": {
-        "name":        "aion-crypto",
+    "nekova-crypto": {
+        "name":        "nekova-crypto",
         "version":     "1.2.0",
         "description": "Cryptography and security utilities",
         "author":      "Security Team",
@@ -130,8 +130,8 @@ CATALOG = {
         "functions":   ["encrypt", "decrypt",
                         "hash_sha256", "generate_key"],
     },
-    "aion-email": {
-        "name":        "aion-email",
+    "nekova-email": {
+        "name":        "nekova-email",
         "version":     "1.0.0",
         "description": "Send emails from NEKOVA applications",
         "author":      "Comm Team",
@@ -142,8 +142,8 @@ CATALOG = {
         "functions":   ["send_email", "send_html_email",
                         "email_template"],
     },
-    "aion-pdf": {
-        "name":        "aion-pdf",
+    "nekova-pdf": {
+        "name":        "nekova-pdf",
         "version":     "1.1.0",
         "description": "Generate and manipulate PDF files",
         "author":      "Document Team",
@@ -156,8 +156,8 @@ CATALOG = {
     },
 
     # ── Nigeria / Africa specific ─────────────────────────────
-    "aion-naira": {
-        "name":        "aion-naira",
+    "nekova-naira": {
+        "name":        "nekova-naira",
         "version":     "1.0.0",
         "description": "Nigerian Naira currency and payments",
         "author":      "FinTech Nigeria",
@@ -169,8 +169,8 @@ CATALOG = {
         "functions":   ["format_naira", "convert_currency",
                         "paystack_pay", "flutterwave_pay"],
     },
-    "aion-sms-ng": {
-        "name":        "aion-sms-ng",
+    "nekova-sms-ng": {
+        "name":        "nekova-sms-ng",
         "version":     "1.0.0",
         "description": "Send SMS via Nigerian providers",
         "author":      "Telecom Team",

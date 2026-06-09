@@ -31,7 +31,7 @@ class Publisher:
 
     Usage:
         publisher = Publisher()
-        publisher.publish("dist/myapp-1.0.0.aionpkg")
+        publisher.publish("dist/myapp-1.0.0.nekovapkg")
     """
 
     def __init__(self):
@@ -109,7 +109,7 @@ class Publisher:
             return packages
 
         for f in os.listdir(self.registry_path):
-            if f.endswith(".aionpkg"):
+            if f.endswith(".nekovapkg"):
                 path = os.path.join(
                     self.registry_path, f)
                 size = os.path.getsize(path)
@@ -150,7 +150,7 @@ class Publisher:
             "name":      pkg_name,
             "published": datetime.now().isoformat(),
             "size":      os.path.getsize(pkg_path),
-            "aion":      NEKOVA_VERSION,
+            "nekova":      NEKOVA_VERSION,
         }
 
         with open(index_path, "w") as f:

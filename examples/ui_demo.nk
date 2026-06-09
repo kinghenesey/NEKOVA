@@ -1,14 +1,14 @@
-# AION UI Framework Demo
+# nekova UI Framework Demo
 # This builds a real HTML app with multiple pages
 
 use ui
 
 # Create the app
-ui_app("AION Demo App")
+ui_app("nekova Demo App")
 
 # ── Page 1: Home ──────────────────────────────
 ui_page("Home")
-ui_title("Welcome to AION")
+ui_title("Welcome to nekova")
 ui_text("The AI-native programming language that makes building apps easy.")
 ui_text("Write clean code. Build beautiful interfaces. Integrate AI natively.")
 ui_divider()
@@ -25,12 +25,12 @@ ui_text("Quick Actions:")
 ui_button("New Project", "Home")
 ui_button("Run AI Task", "Home")
 ui_space(1)
-ui_text("AION makes it simple to build, run, and deploy AI-powered apps.")
+ui_text("nekova makes it simple to build, run, and deploy AI-powered apps.")
 
 # ── Page 3: About ─────────────────────────────
 ui_page("About")
-ui_title("About AION")
-ui_text("AION is an AI-native programming language built with Python.")
+ui_title("About nekova")
+ui_text("nekova is an AI-native programming language built with Python.")
 ui_text("It combines simplicity, readability, and AI integration into one elegant system.")
 ui_divider()
 ui_text("Version 0.1.0 · Genesis")

@@ -23,10 +23,10 @@ class NEKOVATranspiler:
         self.indent_level = 0
         self.output_lines = []
 
-        aion_root = os.path.dirname(
+        nekova_root = os.path.dirname(
             os.path.dirname(os.path.abspath(__file__))
         )
-        self._write_header(aion_root)
+        self._write_header(nekova_root)
 
         for stmt in program.statements:
             self._transpile_stmt(stmt)
@@ -37,24 +37,24 @@ class NEKOVATranspiler:
 
         return py_path
 
-    def _write_header(self, aion_root: str = ""):
-        safe_root = aion_root.replace("\\", "/")
+    def _write_header(self, nekova_root: str = ""):
+        safe_root = nekova_root.replace("\\", "/")
         lines = [
             "#!/usr/bin/env python3",
             "# Compiled NEKOVA Program — NEKOVA Compiler v1.0.0",
             "import os, sys, re, time, random",
             "",
-            "_aion_root = " + repr(safe_root),
-            "if _aion_root not in sys.path:",
-            "    sys.path.insert(0, _aion_root)",
+            "_nekova_root = " + repr(safe_root),
+            "if _nekova_root not in sys.path:",
+            "    sys.path.insert(0, _nekova_root)",
             "",
-            "def _aion_show(value):",
+            "def _nekova_show(value):",
             "    if value is None:    print('null')",
             "    elif value is True:  print('true')",
             "    elif value is False: print('false')",
             "    else:                print(str(value))",
             "",
-            "def _aion_think(prompt):",
+            "def _nekova_think(prompt):",
             "    try:",
             "        from ai.providers import get_provider",
             "        provider = get_provider()",
@@ -65,14 +65,14 @@ class NEKOVATranspiler:
             "        print('[think error: ' + str(e) + ']')",
             "        return ''",
             "",
-            "def _aion_interpolate(text, local_vars):",
+            "def _nekova_interpolate(text, local_vars):",
             "    import re",
             "    def replace(m):",
             "        name = m.group(1)",
             "        return str(local_vars.get(name, m.group(0)))",
             "    return re.sub(r'{(\\w+)}', replace, text)",
             "",
-            "def _aion_to_string(v):",
+            "def _nekova_to_string(v):",
             "    if v is None:  return 'null'",
             "    if v is True:  return 'true'",
             "    if v is False: return 'false'",
@@ -138,14 +138,14 @@ class NEKOVATranspiler:
             self._transpile_sandbox(node)
 
     def _transpile_show(self, node):
-        self._write("_aion_show(" + self._transpile_expr(node.expression) + ")")
+        self._write("_nekova_show(" + self._transpile_expr(node.expression) + ")")
 
     def _transpile_think(self, node):
         prompt = self._transpile_expr(node.prompt)
         if node.variable:
-            self._write(node.variable + " = _aion_think(" + prompt + ")")
+            self._write(node.variable + " = _nekova_think(" + prompt + ")")
         else:
-            self._write("_aion_think(" + prompt + ")")
+            self._write("_nekova_think(" + prompt + ")")
 
     def _transpile_assign(self, node):
         self._write(node.name + " = " + self._transpile_expr(node.value))
@@ -213,7 +213,7 @@ class NEKOVATranspiler:
         for stmt in node.try_body:
             self._transpile_stmt(stmt)
         self.indent_level -= 1
-        err_var = node.error_var or "_aion_err"
+        err_var = node.error_var or "_nekova_err"
         self._write("except Exception as " + err_var + ":")
         self.indent_level += 1
         for stmt in node.catch_body:
@@ -255,7 +255,7 @@ class NEKOVATranspiler:
             return str(node.value)
         if isinstance(node, StringLiteral):
             escaped = node.value.replace("'", "\\'")
-            return "_aion_interpolate('" + escaped + "', locals())"
+            return "_nekova_interpolate('" + escaped + "', locals())"
         if isinstance(node, BooleanLiteral):
             return "True" if node.value else "False"
         if isinstance(node, NullLiteral):

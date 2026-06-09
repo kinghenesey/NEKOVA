@@ -6,7 +6,7 @@
 #
 # It sets up the path and environment, then delegates
 # everything to main.py so all commands work identically
-# whether you run "python main.py ..." or "aion ...".
+# whether you run "python main.py ..." or "nekova ...".
 
 import sys
 import os
@@ -16,11 +16,11 @@ def main():
     """Main entry point for the 'nekova' shell command."""
 
     # Add NEKOVA installation directory to the Python path
-    aion_dir = os.path.dirname(os.path.abspath(__file__))
-    sys.path.insert(0, aion_dir)
+    nekova_dir = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, nekova_dir)
 
     # Load .env file so API keys are available before anything imports
-    env_path = os.path.join(aion_dir, ".env")
+    env_path = os.path.join(nekova_dir, ".env")
     if os.path.exists(env_path):
         with open(env_path) as f:
             for line in f:

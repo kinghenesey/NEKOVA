@@ -739,7 +739,7 @@ body::before{
       <div class="editor-pane">
         <div class="editor-header">
           <span>●</span>
-          <span id="file-name" style="color:var(--text1)">untitled.aion</span>
+          <span id="file-name" style="color:var(--text1)">untitled.nekova</span>
           <span style="margin-left:auto;color:var(--text2);font-size:0.6rem" id="char-count">0 chars</span>
         </div>
 
@@ -803,7 +803,7 @@ think &quot;What should I build today?&quot;"
 <script>
 // ── State ──────────────────────────────────────────────────────
 let isRunning = false;
-let currentFile = 'untitled.aion';
+let currentFile = 'untitled.nekova';
 let isModified = false;
 let currentActivity = 'files';
 let sidebarOpen = true;
@@ -881,7 +881,7 @@ async function runCode() {
   setRunning(true);
 
   const out = document.getElementById('output');
-  out.innerHTML = '<span class="out-dim">$ aion run ' + currentFile + '\n\n</span>';
+  out.innerHTML = '<span class="out-dim">$ nekova run ' + currentFile + '\n\n</span>';
 
   try {
     const res = await fetch('/api/run', {
@@ -1204,9 +1204,9 @@ async function saveFile() {
 }
 
 function newFile() {
-  const name = prompt('File name:', 'untitled.aion');
+  const name = prompt('File name:', 'untitled.nekova');
   if (!name) return;
-  currentFile = name.endsWith('.aion') ? name : name + '.aion';
+  currentFile = name.endsWith('.nekova') ? name : name + '.nekova';
   document.getElementById('file-name').textContent = currentFile;
   document.getElementById('editor').value = '# ' + currentFile + '\n\n';
   updateLineNumbers();
@@ -1226,7 +1226,7 @@ async function loadFiles() {
 function renderFiles(files) {
   const el = document.getElementById('sidebar-content');
   if (!files.length) {
-    el.innerHTML = '<div style="padding:12px 14px;font-size:0.7rem;color:var(--text2)">No .aion files found</div>';
+    el.innerHTML = '<div style="padding:12px 14px;font-size:0.7rem;color:var(--text2)">No .nekova files found</div>';
     return;
   }
   el.innerHTML = '<div class="sidebar-group">' +
@@ -1323,7 +1323,7 @@ function renderExamples() {
 function loadExample(ex) {
   if (typeof ex === 'string') ex = JSON.parse(ex);
   document.getElementById('editor').value = ex.code;
-  currentFile = ex.name.toLowerCase().replace(/\s+/g,'-') + '.aion';
+  currentFile = ex.name.toLowerCase().replace(/\s+/g,'-') + '.nekova';
   document.getElementById('file-name').textContent = currentFile;
   updateLineNumbers();
   updateStats();

@@ -1,5 +1,5 @@
 {
   "theme": "dark",
-  "ai_model": "gemini",
+  "ai_model": "gemini, anthropic, google, openai",
   "debug": false
 }

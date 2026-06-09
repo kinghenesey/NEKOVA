@@ -1,15 +1,15 @@
-# multi_file_demo.aion
-# Demonstrates importing from other .aion files
+# multi_file_demo.nekova
+# Demonstrates importing from other .nekova files
 
-import "greetings.aion"
-import "utils.aion"
+import "greetings.nekova"
+import "utils.nekova"
 
-# Use functions from greetings.aion
+# Use functions from greetings.nekova
 greet("Emmanuel")
 farewell("Emmanuel")
 introduce("Emmanuel", 20)
 
-# Use functions from utils.aion
+# Use functions from utils.nekova
 sum     = calculate(10, 20)
 product = multiply(5, 6)
 

@@ -34,14 +34,14 @@ class TestConfig(unittest.TestCase):
 
 class TestRunner(unittest.TestCase):
 
-    def _make_temp_aion(self, content: str = 'show "test"') -> str:
-        fd, path = tempfile.mkstemp(suffix=".aion")
+    def _make_temp_nekova(self, content: str = 'show "test"') -> str:
+        fd, path = tempfile.mkstemp(suffix=".nekova")
         with os.fdopen(fd, "w") as f:
             f.write(content)
         return path
 
     def test_missing_file(self):
-        runner = NEKOVARunner("/nonexistent/path/app.aion")
+        runner = NEKOVARunner("/nonexistent/path/app.nekova")
         code = runner.run()
         self.assertEqual(code, 1)
 
@@ -51,7 +51,7 @@ class TestRunner(unittest.TestCase):
         self.assertEqual(code, 1)
 
     def test_valid_file_loads(self):
-        path = self._make_temp_aion('show "Hello NEKOVA"')
+        path = self._make_temp_nekova('show "Hello NEKOVA"')
         try:
             runner = NEKOVARunner(path, debug=False)
             code = runner.run()
@@ -60,7 +60,7 @@ class TestRunner(unittest.TestCase):
             os.unlink(path)
 
     def test_empty_file(self):
-        path = self._make_temp_aion("")
+        path = self._make_temp_nekova("")
         try:
             runner = NEKOVARunner(path, debug=False)
             code = runner.run()

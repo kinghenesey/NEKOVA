@@ -1,11 +1,11 @@
-# AION AI Demo
-# This shows AION's native AI capabilities.
+# nekova AI Demo
+# This shows nekova's native AI capabilities.
 # Currently running in mock mode.
 # Swap in an API key to get real responses.
 
 use ai
 
-show "=== AION AI Runtime Demo ==="
+show "=== nekova AI Runtime Demo ==="
 show ""
 
 # Ask a question
@@ -15,7 +15,7 @@ show "Answer: " + answer
 show ""
 
 # Summarize text
-article = "AION is an AI-native programming language built with Python. It combines the simplicity of Python with native AI capabilities, making it easy for beginners to build intelligent applications."
+article = "nekova is an AI-native programming language built with Python. It combines the simplicity of Python with native AI capabilities, making it easy for beginners to build intelligent applications."
 summary = ai_summarize(article)
 show "Summary: " + summary
 show ""
@@ -27,7 +27,7 @@ show poem
 show ""
 
 # Classify sentiment
-sentiment = ai_classify("I absolutely love programming in AION!", "positive,negative,neutral")
+sentiment = ai_classify("I absolutely love programming in nekova!", "positive,negative,neutral")
 show "Sentiment: " + sentiment
 show ""
 

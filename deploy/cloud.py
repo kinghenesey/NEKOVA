@@ -10,7 +10,7 @@
 # Usage:
 #   from deploy.cloud import CloudDeployer
 #   deployer = CloudDeployer()
-#   result = deployer.deploy("examples/web_demo.aion")
+#   result = deployer.deploy("examples/web_demo.nekova")
 
 import os
 import sys
@@ -192,7 +192,7 @@ OPTION 2 — Deploy to Render (Free):
 2. Click "New Web Service"
 3. Upload the contents of the bundle zip
 4. Set build command: pip install -r requirements.txt
-5. Set start command: python main.py app.aion
+5. Set start command: python main.py app.nekova
 6. Click "Create Web Service"
 
 OPTION 3 — Run Locally:
@@ -201,10 +201,10 @@ OPTION 3 — Run Locally:
 2. Install dependencies:
    pip install -r requirements.txt
 3. Run:
-   python main.py {app_name}.aion
+   python main.py {app_name}.nekova
 
 Bundle contents:
-- {app_name}.aion     Your NEKOVA application
+- {app_name}.nekova     Your NEKOVA application
 - main.py             NEKOVA runtime entry point
 - requirements.txt    Python dependencies
 - Procfile            Railway/Heroku process file

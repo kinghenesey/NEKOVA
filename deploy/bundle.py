@@ -8,7 +8,7 @@
 # Usage:
 #   from deploy.bundle import AppBundler
 #   bundler = AppBundler()
-#   bundle_dir = bundler.bundle("examples/web_demo.aion")
+#   bundle_dir = bundler.bundle("examples/web_demo.nekova")
 
 import os
 import shutil
@@ -30,7 +30,7 @@ class AppBundler:
 
         # Create temp bundle directory
         bundle_dir = tempfile.mkdtemp(
-            prefix=f"aion_{app_name}_")
+            prefix=f"nekova_{app_name}_")
 
         print(f"  → Copying app files...")
         self._copy_app(filepath, bundle_dir, app_name)
@@ -48,11 +48,11 @@ class AppBundler:
     def _copy_app(self, filepath: str,
                   bundle_dir: str, app_name: str):
         """Copy the NEKOVA source file to the bundle."""
-        dest = os.path.join(bundle_dir, f"{app_name}.aion")
+        dest = os.path.join(bundle_dir, f"{app_name}.nekova")
         shutil.copy2(filepath, dest)
 
         # Copy NEKOVA core modules needed at runtime
-        aion_root = os.path.dirname(
+        nekova_root = os.path.dirname(
             os.path.dirname(os.path.abspath(__file__))
         )
 
@@ -63,7 +63,7 @@ class AppBundler:
         ]
 
         for dir_name in core_dirs:
-            src = os.path.join(aion_root, dir_name)
+            src = os.path.join(nekova_root, dir_name)
             dst = os.path.join(bundle_dir, dir_name)
             if os.path.isdir(src):
                 shutil.copytree(src, dst,
@@ -72,7 +72,7 @@ class AppBundler:
 
         # Copy config.py and runner.py
         for fname in ["config.py", "runner.py"]:
-            src = os.path.join(aion_root, fname)
+            src = os.path.join(nekova_root, fname)
             if os.path.isfile(src):
                 shutil.copy2(src,
                     os.path.join(bundle_dir, fname))
@@ -92,7 +92,7 @@ requests>=2.27.0
     def _write_procfile(self, bundle_dir: str,
                         app_name: str):
         """Write Procfile for Railway/Heroku."""
-        content = f"web: python main.py {app_name}.aion\n"
+        content = f"web: python main.py {app_name}.nekova\n"
         path = os.path.join(bundle_dir, "Procfile")
         with open(path, "w") as f:
             f.write(content)
@@ -128,7 +128,7 @@ load_env()
 from runner import NEKOVARunner
 
 if __name__ == "__main__":
-    filepath = sys.argv[1] if len(sys.argv) > 1 else "{app_name}.aion"
+    filepath = sys.argv[1] if len(sys.argv) > 1 else "{app_name}.nekova"
     runner   = NEKOVARunner(filepath=filepath)
     exit_code = runner.run()
     sys.exit(exit_code)
@@ -148,7 +148,7 @@ Built with [NEKOVA Programming Language](https://github.com/kinghenesey/NEKOVA)
 
 ```bash
 pip install -r requirements.txt
-python main.py {app_name}.aion
+python main.py {app_name}.nekova
 ```
 
 ## Environment Variables
@@ -172,7 +172,7 @@ See `deploy_instructions.txt` for cloud deployment options.
                 "builder": "NIXPACKS"
             },
             "deploy": {
-                "startCommand": f"python main.py {app_name}.aion",
+                "startCommand": f"python main.py {app_name}.nekova",
                 "restartPolicyType": "ON_FAILURE",
                 "restartPolicyMaxRetries": 10
             }

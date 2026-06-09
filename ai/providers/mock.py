@@ -61,7 +61,7 @@ class MockProvider(BaseProvider):
         if "hello" in prompt_lower or "hi" in prompt_lower:
             return "Hello! I am NEKOVA's built-in AI assistant."
 
-        if "what is aion" in prompt_lower:
+        if "what is nekova" in prompt_lower:
             return ("NEKOVA is an AI-native programming language "
                     "built with Python. It combines simplicity "
                     "with native AI capabilities.")

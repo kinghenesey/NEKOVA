@@ -19,7 +19,7 @@ class Exporter:
     Exports NEKOVA programs to distributable formats.
 
     Usage:
-        exporter = Exporter("myapp.aion")
+        exporter = Exporter("myapp.nekova")
         exporter.to_html("output/")
         exporter.to_package("dist/")
     """
@@ -87,23 +87,23 @@ class Exporter:
     def to_package(self,
                    output_dir: str = "dist") -> str:
         """
-        Create a shareable .aionpkg zip package.
+        Create a shareable .nekovapkg zip package.
         Includes source, metadata, and dependencies.
         """
         os.makedirs(output_dir, exist_ok=True)
         pkg_name    = f"{self.name}-{NEKOVA_VERSION}"
         pkg_path    = os.path.join(
-            output_dir, f"{pkg_name}.aionpkg")
+            output_dir, f"{pkg_name}.nekovapkg")
 
         with zipfile.ZipFile(pkg_path, "w",
                              zipfile.ZIP_DEFLATED) as zf:
             # Add source file
             zf.write(self.filepath,
-                     f"{self.name}.aion")
+                     f"{self.name}.nekova")
 
             # Add metadata
             metadata = self._generate_metadata()
-            zf.writestr("aion.json",
+            zf.writestr("nekova.json",
                         json.dumps(metadata, indent=2))
 
             # Add README
@@ -173,10 +173,10 @@ except ImportError:
         return {
             "name":       self.name,
             "version":    "1.0.0",
-            "aion":       NEKOVA_VERSION,
+            "nekova":       NEKOVA_VERSION,
             "created":    datetime.now().isoformat(),
-            "main":       f"{self.name}.aion",
-            "type":       "aion-package",
+            "main":       f"{self.name}.nekova",
+            "type":       "nekova-package",
         }
 
     def _generate_readme(self) -> str:
@@ -188,7 +188,7 @@ An NEKOVA language package.
 ## Run
 
 ```bash
-python main.py {self.name}.aion
+python main.py {self.name}.nekova
 ```
 
 ## Built with

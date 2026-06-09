@@ -2,7 +2,7 @@
 show "=== Test 1: Basic Memory ==="
 memory user_profile:
     name = "Emmanuel"
-    language = "AION"
+    language = "nekova"
     version = "1.0.0"
 
 show user_profile["name"]

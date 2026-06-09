@@ -1,18 +1,18 @@
 # Test 1: Voice Speak
 show "=== Test 1: Voice Speak ==="
 use voice
-voice_speak("Hello! I am AION, an AI-native programming language.")
+voice_speak("Hello! I am nekova, an AI-native programming language.")
 show "Speech complete!"
 
 # Test 2: Save audio file
 show "=== Test 2: Voice Save ==="
-voice_save("AION can speak, listen, and see the world.", "examples/aion_voice.mp3")
+voice_save("nekova can speak, listen, and see the world.", "examples/nekova_voice.mp3")
 show "Audio saved!"
 
-# Test 3: Vision — scan the AION icon
-show "=== Test 3: Vision Scan (AION icon) ==="
+# Test 3: Vision — scan the nekova icon
+show "=== Test 3: Vision Scan (nekova icon) ==="
 use vision
-description = vision_scan("aion-vscode/icon.png")
+description = vision_scan("nekova-vscode/icon.png")
 show "Vision result:"
 show description
 

@@ -2,10 +2,10 @@
 # NEKOVA CLI — Deployment Commands
 # =============================================================
 # Handles all deployment commands:
-#   python main.py export <file.aion>
+#   python main.py export <file.nekova>
 #   python main.py package <project_dir>
-#   python main.py publish <package.aionpkg>
-#   python main.py deploy <file.aion>
+#   python main.py publish <package.nekovapkg>
+#   python main.py deploy <file.nekova>
 
 import os
 from config import Color
@@ -19,7 +19,7 @@ def cmd_export(filepath: str,
     if not filepath:
         print_error(
             "Please provide a file to export.\n"
-            "  Usage: python main.py export app.aion"
+            "  Usage: python main.py export app.nekova"
         )
         return False
 
@@ -93,7 +93,7 @@ def cmd_publish(pkg_path: str) -> bool:
         print_error(
             "Please provide a package to publish.\n"
             "  Usage: python main.py publish "
-            "dist/myapp-1.0.0.aionpkg"
+            "dist/myapp-1.0.0.nekovapkg"
         )
         return False
 
@@ -130,7 +130,7 @@ def cmd_deploy(filepath: str) -> bool:
     if not filepath:
         print_error(
             "Please provide a file to deploy.\n"
-            "  Usage: python main.py deploy app.aion"
+            "  Usage: python main.py deploy app.nekova"
         )
         return False
 
@@ -170,7 +170,7 @@ def cmd_deploy(filepath: str) -> bool:
     pkg_file = None
     if os.path.exists(dist_dir):
         for f in os.listdir(dist_dir):
-            if f.endswith(".aionpkg"):
+            if f.endswith(".nekovapkg"):
                 pkg_file = os.path.join(dist_dir, f)
                 break
 
@@ -192,12 +192,12 @@ def cmd_deploy(filepath: str) -> bool:
 def cmd_deploy_cloud(filepath: str) -> bool:
     """
     Deploy an NEKOVA app to the cloud.
-    Usage: python main.py deploy cloud app.aion
+    Usage: python main.py deploy cloud app.nekova
     """
     if not filepath:
         print_error(
             "Please provide a file to deploy.\n"
-            "  Usage: python main.py deploy cloud app.aion"
+            "  Usage: python main.py deploy cloud app.nekova"
         )
         return False
 

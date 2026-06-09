@@ -54,7 +54,7 @@ def load() -> dict:
 # Connection management
 # ----------------------------------------------------------
 
-def _db_connect(filepath: str = "aion.db"):
+def _db_connect(filepath: str = "nekova.db"):
     """Connect to a SQLite database."""
     global _connection, _query
 
@@ -137,7 +137,7 @@ def _db_insert(table: str, values: str) -> int:
     Insert a row into a table.
 
     Usage:
-        db_insert("users", "Emmanuel, emma@aion.dev, 20")
+        db_insert("users", "Emmanuel, emma@nekova.dev, 20")
 
     Values are matched to columns in order of creation.
     Returns the ID of the new row.

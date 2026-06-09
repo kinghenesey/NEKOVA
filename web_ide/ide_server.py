@@ -72,11 +72,11 @@ def create_ide_app() -> Flask:
     @app.route("/api/save", methods=["POST"])
     def save_file():
         data     = request.get_json()
-        filename = data.get("filename", "untitled.aion")
+        filename = data.get("filename", "untitled.nekova")
         code     = data.get("code", "")
         safe     = os.path.basename(filename)
-        if not safe.endswith(".aion"):
-            safe += ".aion"
+        if not safe.endswith(".nekova"):
+            safe += ".nekova"
         path = os.path.join("examples", safe)
         try:
             with open(path, "w", encoding="utf-8") as f:
@@ -89,7 +89,7 @@ def create_ide_app() -> Flask:
     def list_files():
         files = []
         for fname in os.listdir("examples"):
-            if fname.endswith(".aion"):
+            if fname.endswith(".nekova"):
                 files.append(fname)
         return jsonify({"files": sorted(files)})
 

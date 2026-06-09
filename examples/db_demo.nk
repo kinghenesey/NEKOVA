@@ -1,4 +1,4 @@
-# AION Database Demo
+# nekova Database Demo
 # Shows how to store and query real data
 
 use database
@@ -10,10 +10,10 @@ db_connect("examples/myapp.db")
 db_create("users", "name text, email text, age integer")
 
 # Insert some users
-db_insert("users", "Emmanuel, emma@aion.dev, 20")
-db_insert("users", "Alice, alice@aion.dev, 25")
-db_insert("users", "Bob, bob@aion.dev, 17")
-db_insert("users", "Sarah, sarah@aion.dev, 30")
+db_insert("users", "Emmanuel, emma@nekova.dev, 20")
+db_insert("users", "Alice, alice@nekova.dev, 25")
+db_insert("users", "Bob, bob@nekova.dev, 17")
+db_insert("users", "Sarah, sarah@nekova.dev, 30")
 
 # Count all users
 total = db_count("users")

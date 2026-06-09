@@ -81,14 +81,14 @@ class NEKOVAServer:
             from flask import Response as FlaskResponse
 
             # Convert Flask request to NEKOVA request
-            aion_request  = from_flask_request(flask_request)
-            aion_response = self.router.handle(aion_request)
+            nekova_request  = from_flask_request(flask_request)
+            nekova_response = self.router.handle(nekova_request)
 
             return FlaskResponse(
-                response=aion_response.body,
-                status=aion_response.status,
-                headers=aion_response.headers,
-                content_type=aion_response.content_type,
+                response=nekova_response.body,
+                status=nekova_response.status,
+                headers=nekova_response.headers,
+                content_type=nekova_response.content_type,
             )
 
     def __repr__(self):

@@ -42,7 +42,7 @@ def cmd_marketplace(subcommand: str = "",
             print_error(
                 "Please provide a package name.\n"
                 "  Usage: python main.py "
-                "marketplace install aion-charts-pro"
+                "marketplace install nekova-charts-pro"
             )
             return False
         return mp.install(arg)
@@ -52,7 +52,7 @@ def cmd_marketplace(subcommand: str = "",
             print_error(
                 "Please provide a package name.\n"
                 "  Usage: python main.py "
-                "marketplace uninstall aion-charts-pro"
+                "marketplace uninstall nekova-charts-pro"
             )
             return False
         return mp.uninstall(arg)
@@ -62,7 +62,7 @@ def cmd_marketplace(subcommand: str = "",
             print_error(
                 "Please provide a package name.\n"
                 "  Usage: python main.py "
-                "marketplace info aion-charts-pro"
+                "marketplace info nekova-charts-pro"
             )
             return False
         mp.info(arg)

@@ -5,7 +5,7 @@
 # See variables, current line, and execution flow.
 #
 # Usage:
-#   python main.py debug examples/hello.aion
+#   python main.py debug examples/hello.nekova
 
 import os
 import sys

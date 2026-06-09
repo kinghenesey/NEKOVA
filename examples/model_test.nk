@@ -15,4 +15,4 @@ think "Say exactly: I am using Gemini"
 # Test 4: Model in a pipeline
 show "=== Test 4: Mock Pipeline ==="
 model "mock"
-"Analyze AION language" -> researcher -> writer
+"Analyze nekova language" -> researcher -> writer

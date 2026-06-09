@@ -4,7 +4,7 @@
 
 NEKOVA_VERSION = "1.1.1"
 NEKOVA_CODENAME  = "Genesis"
-NEKOVA_EXTENSION = ".aion"
+NEKOVA_EXTENSION = ".nekova"
 
 class Color:
     RESET   = "\033[0m"

@@ -1,6 +1,6 @@
 ﻿{
   "name": "myproject",
   "version": "1.0.0",
-  "main": "src/main.aion",
-  "aion": "0.1.0"
+  "main": "src/main.nekova",
+  "nekova": "0.1.0"
 }

@@ -21,7 +21,7 @@ from interpreter.interpreter import (
 
 class NEKOVARunner:
     """
-    Orchestrates execution of a single .aion source file.
+    Orchestrates execution of a single .nekova source file.
     Knows nothing about the language itself — only manages
     file I/O and delegates to the pipeline.
     """
@@ -41,7 +41,7 @@ class NEKOVARunner:
         return self._execute()
 
     def _validate_file(self) -> bool:
-        """Check the file exists and has the .aion extension."""
+        """Check the file exists and has the .nekova extension."""
         if not self.filepath.endswith(NEKOVA_EXTENSION):
             print_error(
                 f"'{self.filepath}' is not a NEKOVA file.\n"

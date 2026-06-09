@@ -4,7 +4,7 @@
 # Usage in NEKOVA:
 #   use text
 #   show upper("hello")        → HELLO
-#   show lower("NEKOVA")         → aion
+#   show lower("NEKOVA")         → nekova
 #   show length("hello")       → 5
 #   show replace("hi", "hi", "hello")  → hello
 #   show contains("NEKOVA", "AI")        → true

@@ -31,3 +31,7 @@ node_modules/
 out/
 .vscode-test/
 "@ | Out-File -FilePath "nekova-vscode\.gitignore" -Encoding utf8
+dist/
+venv/
+*.egg-info/
+build/

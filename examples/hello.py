@@ -7,14 +7,14 @@ import os, sys, re, time, random
 
 # ── NEKOVA Runtime ────────────────────────────────────────────
 
-def _aion_show(value):
+def _nekova_show(value):
     """NEKOVA show statement."""
     if value is None:       print("null")
     elif value is True:     print("true")
     elif value is False:    print("false")
     else:                   print(str(value))
 
-def _aion_think(prompt):
+def _nekova_think(prompt):
     """NEKOVA think statement — calls AI provider."""
     try:
         import sys, os
@@ -28,7 +28,7 @@ def _aion_think(prompt):
         print(f"[think error: {e}]")
         return ""
 
-def _aion_interpolate(text, local_vars):
+def _nekova_interpolate(text, local_vars):
     """Handle string interpolation."""
     import re
     def replace(m):
@@ -36,7 +36,7 @@ def _aion_interpolate(text, local_vars):
         return str(local_vars.get(name, m.group(0)))
     return re.sub(r'\{(\w+)\}', replace, text)
 
-def _aion_to_string(v):
+def _nekova_to_string(v):
     if v is None:   return "null"
     if v is True:   return "true"
     if v is False:  return "false"
@@ -54,13 +54,13 @@ def random_num(a, b): return random.randint(int(a), int(b))
 
 # ── Main Program ─────────────────────────────────────────────
 
-name = _aion_interpolate('Emmanuel', locals())
+name = _nekova_interpolate('Emmanuel', locals())
 age = 20
-_aion_show(_aion_interpolate('Welcome to NEKOVA', locals()))
-_aion_show((_aion_interpolate('Hello ', locals()) + name))
+_nekova_show(_nekova_interpolate('Welcome to NEKOVA', locals()))
+_nekova_show((_nekova_interpolate('Hello ', locals()) + name))
 if (age >= 18):
-    _aion_show(_aion_interpolate('You are an adult', locals()))
+    _nekova_show(_nekova_interpolate('You are an adult', locals()))
 else:
-    _aion_show(_aion_interpolate('You are a minor', locals()))
+    _nekova_show(_nekova_interpolate('You are a minor', locals()))
 for _i in range(int(3)):
-    _aion_show(_aion_interpolate('NEKOVA is alive!', locals()))
+    _nekova_show(_nekova_interpolate('NEKOVA is alive!', locals()))

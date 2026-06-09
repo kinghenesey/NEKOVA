@@ -13,7 +13,7 @@ for name in names:
 
 show ""
 show "Test 3 - Loop over string:"
-for letter in "AION":
+for letter in "nekova":
     show letter
 
 show ""

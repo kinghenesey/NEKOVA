@@ -1,9 +1,9 @@
-# My first AION program
+# My first nekova program
 
 name = "Emmanuel"
 age = 20
 
-show "Welcome to AION"
+show "Welcome to nekova"
 show "Hello " + name
 
 if age >= 18:
@@ -12,4 +12,4 @@ else:
     show "You are a minor"
 
 repeat 3:
-    show "AION is alive!"
+    show "nekova is alive!"

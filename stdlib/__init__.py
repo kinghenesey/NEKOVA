@@ -89,7 +89,7 @@ def _load_package(name: str) -> dict:
         # Load the module directly from its file path
         # This avoids any naming conflicts with Python builtins
         spec   = importlib.util.spec_from_file_location(
-                     f"aion_pkg_{name}", package_file)
+                     f"nekova_pkg_{name}", package_file)
         module = importlib.util.module_from_spec(spec)
 
         # Temporarily remove packages dir from sys.path

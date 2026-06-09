@@ -7,7 +7,7 @@
 #
 # Usage:
 #   python main.py notebook
-#   python main.py notebook examples/demo_notebook.aion
+#   python main.py notebook examples/demo_notebook.nekova
 
 import os
 import sys
@@ -165,7 +165,7 @@ class Notebook:
 
     def save(self, filepath: str = None):
         """Save notebook to JSON file."""
-        path = filepath or self.filepath or "notebook.aionb"
+        path = filepath or self.filepath or "notebook.nekovab"
         data = {
             "version": NEKOVA_VERSION,
             "cells":   [c.to_dict() for c in self.cells]
@@ -180,7 +180,7 @@ class Notebook:
                      if c.id == cell_id), None)
 
     def _load_from_file(self, filepath: str):
-        """Load cells from an .aion file."""
+        """Load cells from an .nekova file."""
         with open(filepath, "r",
                   encoding="utf-8") as f:
             source = f.read()

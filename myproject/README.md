@@ -5,7 +5,7 @@ An NEKOVA language project.
 ## Run
 
 ```bash
-python main.py src/main.aion
+python main.py src/main.nekova
 ```
 
 ## Built with

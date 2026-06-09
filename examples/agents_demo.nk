@@ -1,9 +1,9 @@
-# AION AI Ecosystem Demo
+# nekova AI Ecosystem Demo
 # Shows agents and workflows in action
 
 use agents
 
-show "=== AION AI Ecosystem Demo ==="
+show "=== nekova AI Ecosystem Demo ==="
 show ""
 
 # ── Agent Demo ────────────────────────────────────────────────
@@ -56,7 +56,7 @@ show "--- Quick AI Tasks ---"
 research = ai_research("Python programming language")
 show "Research: " + research
 
-plan = ai_plan("Learn AION programming language in 30 days")
+plan = ai_plan("Learn nekova programming language in 30 days")
 show ""
 show "Plan: " + plan
 
