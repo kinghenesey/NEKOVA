@@ -2,7 +2,7 @@
 # NEKOVA Language — Configuration & Version Info
 # =============================================================
 
-NEKOVA_VERSION = "1.1.1"
+NEKOVA_VERSION = "1.2.0"
 NEKOVA_CODENAME  = "Genesis"
 NEKOVA_EXTENSION = ".nekova"
 
