@@ -62,8 +62,8 @@ def create_ide_app() -> Flask:
         data = request.get_json()
         code = data.get("code", "")
         try:
-            from formatter import NEKOVAFormatter
-            formatter = NEKOVAFormatter()
+            from formatter import AIONFormatter
+            formatter = AIONFormatter()
             formatted = formatter.format(code)
             return jsonify({"formatted": formatted, "error": None})
         except Exception as e:
@@ -72,11 +72,11 @@ def create_ide_app() -> Flask:
     @app.route("/api/save", methods=["POST"])
     def save_file():
         data     = request.get_json()
-        filename = data.get("filename", "untitled.nekova")
+        filename = data.get("filename", "untitled.nk")
         code     = data.get("code", "")
         safe     = os.path.basename(filename)
-        if not safe.endswith(".nekova"):
-            safe += ".nekova"
+        if not safe.endswith(".nk"):
+            safe += ".nk"
         path = os.path.join("examples", safe)
         try:
             with open(path, "w", encoding="utf-8") as f:
@@ -89,7 +89,7 @@ def create_ide_app() -> Flask:
     def list_files():
         files = []
         for fname in os.listdir("examples"):
-            if fname.endswith(".nekova"):
+            if fname.endswith(".nk"):
                 files.append(fname)
         return jsonify({"files": sorted(files)})
 
@@ -170,7 +170,7 @@ EXAMPLES = [
     {
         "name": "Think (AI)",
         "category": "ai",
-        "code": '# AI-native syntax — think calls the AI directly\nthink "What makes NEKOVA unique as a programming language?"\n\n# Capture the response\nidea = think "Give me one creative app idea in one sentence"\nshow "AI said: {idea}"',
+        "code": '# AI-native syntax — think calls the AI directly\nthink "What makes AION unique as a programming language?"\n\n# Capture the response\nidea = think "Give me one creative app idea in one sentence"\nshow "AI said: {idea}"',
     },
     {
         "name": "Agent Pipeline",
@@ -190,7 +190,7 @@ EXAMPLES = [
     {
         "name": "Memory Block",
         "category": "ai",
-        "code": '# Data persists between program runs\nmemory user_profile:\n    name = "Emmanuel"\n    language = "NEKOVA"\n    version = "1.1.0"\n\nshow user_profile["name"]\nshow user_profile["language"]',
+        "code": '# Data persists between program runs\nmemory user_profile:\n    name = "Emmanuel"\n    language = "NEKOVA"\n    version = "1.2.0"\n\nshow user_profile["name"]\nshow user_profile["language"]',
     },
     {
         "name": "Model Routing",
@@ -215,12 +215,12 @@ EXAMPLES = [
     {
         "name": "Loops",
         "category": "basics",
-        "code": '# Repeat loop\nrepeat 3:\n    show "NEKOVA is powerful!"\n\n# For loop\nfruits = ["mango", "banana", "orange"]\nfor fruit in fruits:\n    show "Fruit: {fruit}"\n\n# While loop\ncount = 1\nwhile count <= 5:\n    show count\n    count = count + 1',
+        "code": '# Repeat loop\nrepeat 3:\n    show "AION is powerful!"\n\n# For loop\nfruits = ["mango", "banana", "orange"]\nfor fruit in fruits:\n    show "Fruit: {fruit}"\n\n# While loop\ncount = 1\nwhile count <= 5:\n    show count\n    count = count + 1',
     },
     {
         "name": "Tasks (Functions)",
         "category": "basics",
-        "code": 'task greet(name, lang):\n    show "Hello {name}!"\n    show "You are coding in {lang}"\n    return "Greeting sent!"\n\nresult = greet("Emmanuel", "NEKOVA")\nshow result',
+        "code": 'task greet(name, lang):\n    show "Hello {name}!"\n    show "You are coding in {lang}"\n    return "Greeting sent!"\n\nresult = greet("Emmanuel", "AION")\nshow result',
     },
     {
         "name": "Math Module",
