@@ -12,7 +12,7 @@ show "Audio saved!"
 # Test 3: Vision — scan the nekova icon
 show "=== Test 3: Vision Scan (nekova icon) ==="
 use vision
-description = vision_scan("nekova-vscode/icon.png")
+description = vision_scan("nekova-vscode/NekovaLogo.png")
 show "Vision result:"
 show description
 

@@ -1,7 +1,29 @@
-.vscodeignore
+# Dependencies
+node_modules/
+npm-debug.log
+
+# Old AION files
+aion-language-*.vsix
+aion.tmLanguage.json
+
+# Build artifacts
+*.vsix
+out/
+dist/
+
+# Old icons
+icon.png
+icon_32.png
+icon_64.png
+
+# Dev files
+.vscode/
+.gitignore
 create_icon.py
-**/__pycache__/
-**/*.pyc
-*.py
-I'
-IIBBBBB'
+package-lock.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+.vscodeignore
