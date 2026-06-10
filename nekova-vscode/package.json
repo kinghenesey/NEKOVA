@@ -3,7 +3,7 @@
   "displayName": "NEKOVA - AI Native Programming Language",
   "description": "Syntax highlighting for the NEKOVA AI-Native Programming Language. Built by SYNEKCOT Tech.",
   "version": "1.1.0",
-  "publisher": "emmanuel-king-christopher",
+  "publisher": "SYNEKCOTTech",
   "engines": {
     "vscode": "^1.60.0"
   },
