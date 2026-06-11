@@ -1,4 +1,4 @@
-﻿# =============================================================
+# =============================================================
 # NEKOVA Language — File Runner
 # =============================================================
 # Loads .nk files and passes them through the pipeline.
@@ -8,12 +8,12 @@ import os
 import sys
 import time
 
-from config import NEKOVA_EXTENSION, Color
-from cli import print_error, print_info, print_success, print_separator
-from cli.error_display import display_error
-from lexer import Lexer, LexerError
-from parser.parser import Parser, ParseError
-from interpreter.interpreter import (
+from nekova.config import NEKOVA_EXTENSION, Color
+from nekova.cli import print_error, print_info, print_success, print_separator
+from nekova.cli.error_display import display_error
+from nekova.lexer import Lexer, LexerError
+from nekova.parser.parser import Parser, ParseError
+from nekova.interpreter.interpreter import (
     Interpreter, RuntimeError,
     NEKOVAImportError, NEKOVANameError
 )
@@ -21,7 +21,7 @@ from interpreter.interpreter import (
 
 class NEKOVARunner:
     """
-    Orchestrates execution of a single .nekova source file.
+    Orchestrates execution of a single .NEKOVA source file.
     Knows nothing about the language itself — only manages
     file I/O and delegates to the pipeline.
     """
@@ -41,7 +41,7 @@ class NEKOVARunner:
         return self._execute()
 
     def _validate_file(self) -> bool:
-        """Check the file exists and has the .nekova extension."""
+        """Check the file exists and has the .NEKOVA extension."""
         if not self.filepath.endswith(NEKOVA_EXTENSION):
             print_error(
                 f"'{self.filepath}' is not a NEKOVA file.\n"

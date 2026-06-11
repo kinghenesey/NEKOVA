@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # =============================================================
 # NEKOVA Language — Main Entry Point
 # =============================================================
@@ -34,8 +34,8 @@ _load_env()
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config import NEKOVA_VERSION, NEKOVA_CODENAME, Color
-from cli    import print_banner, print_error, print_info, print_success
+from nekova.config import NEKOVA_VERSION, NEKOVA_CODENAME, Color
+from nekova.cli    import print_banner, print_error, print_info, print_success
 from runner import NEKOVARunner
 
 

@@ -1,3 +1,0 @@
-# Error Test 2 — Wrong module name
-use rockets
-show "hello"

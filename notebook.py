@@ -1,4 +1,4 @@
-﻿# =============================================================
+# =============================================================
 # NEKOVA Language — Notebook System
 # =============================================================
 # A Jupyter-like notebook for NEKOVA.
@@ -7,14 +7,14 @@
 #
 # Usage:
 #   python main.py notebook
-#   python main.py notebook examples/demo_notebook.nekova
+#   python main.py notebook examples/demo_notebook.NEKOVA
 
 import os
 import sys
 import json
 from io import StringIO
 from flask import Flask, request, jsonify, send_from_directory
-from config import NEKOVA_VERSION, Color
+from nekova.config import NEKOVA_VERSION, Color
 
 
 # ── Notebook cell types ───────────────────────────────────────
@@ -165,7 +165,7 @@ class Notebook:
 
     def save(self, filepath: str = None):
         """Save notebook to JSON file."""
-        path = filepath or self.filepath or "notebook.nekovab"
+        path = filepath or self.filepath or "notebook.NEKOVAb"
         data = {
             "version": NEKOVA_VERSION,
             "cells":   [c.to_dict() for c in self.cells]
@@ -180,7 +180,7 @@ class Notebook:
                      if c.id == cell_id), None)
 
     def _load_from_file(self, filepath: str):
-        """Load cells from an .nekova file."""
+        """Load cells from an .NEKOVA file."""
         with open(filepath, "r",
                   encoding="utf-8") as f:
             source = f.read()

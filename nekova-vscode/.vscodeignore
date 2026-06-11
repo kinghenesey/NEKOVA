@@ -2,9 +2,9 @@
 node_modules/
 npm-debug.log
 
-# Old AION files
-aion-language-*.vsix
-aion.tmLanguage.json
+# Old NEKOVA files
+NEKOVA-language-*.vsix
+NEKOVA.tmLanguage.json
 
 # Build artifacts
 *.vsix

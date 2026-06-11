@@ -11,9 +11,9 @@
 import sys
 import os
 
-from config import Color, NEKOVA_VERSION, NEKOVA_CODENAME
-from interpreter.interpreter import Interpreter
-from interpreter.environment import Environment
+from nekova.config import Color, NEKOVA_VERSION, NEKOVA_CODENAME
+from nekova.interpreter.interpreter import Interpreter
+from nekova.interpreter.environment import Environment
 
 
 class REPL:

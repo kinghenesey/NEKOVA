@@ -5,11 +5,11 @@
 # See variables, current line, and execution flow.
 #
 # Usage:
-#   python main.py debug examples/hello.nekova
+#   python main.py debug examples/hello.NEKOVA
 
 import os
 import sys
-from config import Color, NEKOVA_VERSION
+from nekova.config import Color, NEKOVA_VERSION
 
 
 class Debugger:
