@@ -147,6 +147,41 @@ class Lexer:
         while not self._at_end() and self._current() != "\n":
             self._advance()
 
+    def _read_fstring(self):
+        """
+        Read an f-string literal: f"Hello {name}!"
+        Stores the raw string value — interpolation is
+        handled at parse time by _parse_fstring().
+        """
+        quote = self._current()
+        self._advance()  # skip opening quote
+
+        value = []
+        while not self._at_end() and self._current() != quote:
+            if self._at_end():
+                raise SyntaxError(
+                    "f-string was never closed — did you forget a closing quote?")
+            if self._current() == "\\" and self._peek() in ('"', "'", "n", "t", "\\"):
+                escape = self._peek()
+                self._advance()
+                self._advance()
+                if escape == "n":
+                    value.append("\n")
+                elif escape == "t":
+                    value.append("\t")
+                else:
+                    value.append(escape)
+            else:
+                value.append(self._current())
+                self._advance()
+
+        if self._at_end():
+            raise SyntaxError(
+                "f-string was never closed — did you forget a closing quote?")
+
+        self._advance()  # skip closing quote
+        self._add_token(TokenType.F_STRING, "".join(value))
+
     def _read_string(self, quote: str):
         """Read a quoted string literal."""
         self._advance()  # skip opening quote
@@ -213,7 +248,13 @@ class Lexer:
             value.append(self._current())
             self._advance()
 
-        word     = "".join(value)
+        word = "".join(value)
+
+        # ── f-string prefix: f"..." or f'...' ─────────────────
+        if word == "f" and not self._at_end() and self._current() in ('"', "'"):
+            self._read_fstring()
+            return
+
         tok_type = KEYWORDS.get(word, TokenType.IDENTIFIER)
 
         # Boolean values get their Python equivalent

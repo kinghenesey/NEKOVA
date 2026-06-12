@@ -59,6 +59,18 @@ class StringLiteral(Node):
         return f"String({repr(self.value)})"
 
 
+class FStringLiteral(Node):
+    """
+    An f-string like f"Hello {name}, you are {age}!".
+    parts is a list of tuples: ('str', 'Hello ') or ('expr', <AST node>)
+    """
+    def __init__(self, parts: list):
+        self.parts = parts
+
+    def __repr__(self):
+        return f"FString({self.parts})"
+
+
 class BooleanLiteral(Node):
     """true or false."""
     def __init__(self, value: bool):

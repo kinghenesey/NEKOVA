@@ -14,7 +14,7 @@
 from nekova.lexer.token_types import TokenType
 from nekova.lexer.token import Token
 from nekova.parser.nodes import (
-    Program, IntegerLiteral, FloatLiteral, StringLiteral,
+    Program, IntegerLiteral, FloatLiteral, StringLiteral, FStringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement, MemoryStatement,
@@ -683,6 +683,10 @@ class Parser:
             self._advance()
             return StringLiteral(token.value)
 
+        if token.type == TokenType.F_STRING:
+            self._advance()
+            return self._parse_fstring(token.value)
+
         if token.type == TokenType.BOOLEAN:
             self._advance()
             return BooleanLiteral(token.value)
@@ -832,6 +836,51 @@ class Parser:
     def _current(self) -> Token:
         """Return the token at the current position."""
         return self.tokens[self.pos]
+
+    def _parse_fstring(self, raw: str) -> FStringLiteral:
+        """
+        Parse an f-string into a FStringLiteral node.
+
+        Splits the raw string on {expr} placeholders and
+        produces a list of ('str', text) and ('expr', AST node) parts.
+
+        Examples:
+            f"Hello {name}!"
+            f"Result: {a + b}"
+            f"{greeting}, {first} {last}!"
+        """
+        import re
+        parts = []
+
+        # Split on {expr} — keep the delimiters
+        segments = re.split(r'(\{[^}]*\})', raw)
+
+        for segment in segments:
+            if not segment:
+                continue
+
+            if segment.startswith('{') and segment.endswith('}'):
+                # Expression inside braces
+                expr_src = segment[1:-1].strip()
+                if not expr_src:
+                    # Empty braces {} — treat as empty string
+                    parts.append(('str', ''))
+                    continue
+                try:
+                    # Parse the inner expression using a fresh parser
+                    from nekova.lexer.lexer import Lexer
+                    from nekova.lexer.token_types import TokenType as TT
+                    inner_tokens = Lexer(expr_src).tokenize()
+                    inner_parser = Parser(inner_tokens)
+                    expr_node = inner_parser._parse_expression()
+                    parts.append(('expr', expr_node))
+                except Exception:
+                    # If parsing fails, treat as a plain string
+                    parts.append(('str', segment))
+            else:
+                parts.append(('str', segment))
+
+        return FStringLiteral(parts)
 
     def _advance(self) -> Token:
         """Consume the current token and move forward."""

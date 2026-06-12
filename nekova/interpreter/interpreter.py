@@ -13,7 +13,7 @@
 # and most readable interpreter architecture possible.
 
 from nekova.parser.nodes import (
-    Program, IntegerLiteral, FloatLiteral, StringLiteral,
+    Program, IntegerLiteral, FloatLiteral, StringLiteral, FStringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
@@ -912,6 +912,28 @@ class Interpreter:
 
     def _exec_BooleanLiteral(self, node: BooleanLiteral):
         return node.value
+
+    def _exec_FStringLiteral(self, node: FStringLiteral):
+        """
+        Execute an f-string literal.
+        Each part is either ('str', text) or ('expr', AST node).
+        Expressions are evaluated and converted to strings.
+
+        Example:
+            f"Hello {name}, you scored {score * 2}!"
+        """
+        result = []
+        for kind, val in node.parts:
+            if kind == 'str':
+                result.append(val)
+            else:
+                # Evaluate the expression and convert to string
+                try:
+                    evaluated = self._execute_node(val)
+                    result.append(self._to_string(evaluated))
+                except Exception as e:
+                    result.append(f"{{error: {e}}}")
+        return "".join(result)
 
     def _exec_NullLiteral(self, node: NullLiteral):
         return None
