@@ -41,3 +41,5 @@ nekova-vscode/node_modules/
 nekova-vscode/*.vsix
 nekova-vscode/out/
 nekova-vscode/.vscode-test/
+
+.NEKOVAmem/
