@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # =============================================================
-# NEKOVA Language — Main Entry Point
+# NEKOVA Language â€” Main Entry Point
 # =============================================================
 # Usage:
 #   python main.py <file.nk>              Run a file
@@ -41,7 +41,7 @@ from runner import NEKOVARunner
 
 HELP_TEXT = f"""
 {Color.CYAN}{Color.BOLD}NEKOVA Programming Language{Color.RESET} \
-v{NEKOVA_VERSION} · {NEKOVA_CODENAME}
+v{NEKOVA_VERSION} Â· {NEKOVA_CODENAME}
 
 {Color.BOLD}Running files:{Color.RESET}
   python main.py <file.nk>              Run an NEKOVA file
@@ -154,7 +154,7 @@ def main():
 
     args = parse_args(argv)
 
-    # ── Flag commands ─────────────────────────────────────────
+    # â”€â”€ Flag commands â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     if "--repl" in argv:
         print_banner()
@@ -164,7 +164,7 @@ def main():
         sys.exit(0)
 
     if args["version"]:
-        print(f"NEKOVA v{NEKOVA_VERSION} · {NEKOVA_CODENAME}")
+        print(f"NEKOVA v{NEKOVA_VERSION} Â· {NEKOVA_CODENAME}")
         sys.exit(0)
 
     if args["help"]:
@@ -174,30 +174,30 @@ def main():
 
     if args["packages"]:
         print_banner()
-        from cli.package_manager import list_packages
+        from nekova.cli.package_manager import list_packages
         list_packages()
         sys.exit(0)
 
     if args["install"]:
         print_banner()
-        from cli.package_manager import install_package
+        from nekova.cli.package_manager import install_package
         success = install_package(args["install"])
         sys.exit(0 if success else 1)
 
     if args["uninstall"]:
         print_banner()
-        from cli.package_manager import uninstall_package
+        from nekova.cli.package_manager import uninstall_package
         success = uninstall_package(args["uninstall"])
         sys.exit(0 if success else 1)
 
-    # ── Subcommands ───────────────────────────────────────────
+    # â”€â”€ Subcommands â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     if args["command"]:
         print_banner()
         cmd = args["command"]
         arg = args["arg"]
 
-        from cli.commands import (
+        from nekova.cli.commands import (
             cmd_info, cmd_new, cmd_test,
             cmd_build, cmd_clean
         )
@@ -253,7 +253,7 @@ def main():
             sys.exit(0)
         
         if cmd == "ide":
-            from web_ide.ide_server import start_ide
+            from nekova.web_ide.ide_server import start_ide
             port = int(arg) if arg and arg.isdigit() else 3000
             start_ide(port=port)
             sys.exit(0)
@@ -278,7 +278,7 @@ def main():
             sys.exit(0)
 
         if cmd == "marketplace":
-            from cli.marketplace_cmd import cmd_marketplace
+            from nekova.cli.marketplace_cmd import cmd_marketplace
             # arg could be subcommand, values[1] could be the query
             values = [a for a in argv
                       if not a.startswith("--")]
@@ -288,17 +288,17 @@ def main():
             sys.exit(0 if success else 1)
 
         if cmd == "export":
-            from cli.deploy import cmd_export
+            from nekova.cli.deploy import cmd_export
             success = cmd_export(arg)
             sys.exit(0 if success else 1)
 
         if cmd == "package":
-            from cli.deploy import cmd_package
+            from nekova.cli.deploy import cmd_package
             success = cmd_package(arg or ".")
             sys.exit(0 if success else 1)
 
         if cmd == "publish":
-            from cli.deploy import cmd_publish
+            from nekova.cli.deploy import cmd_publish
             success = cmd_publish(arg)
             sys.exit(0 if success else 1)
 
@@ -307,10 +307,10 @@ def main():
             values = [a for a in argv
                       if not a.startswith("--")]
             if len(values) >= 3 and values[1] == "cloud":
-                from cli.deploy import cmd_deploy_cloud
+                from nekova.cli.deploy import cmd_deploy_cloud
                 success = cmd_deploy_cloud(values[2])
             else:
-                from cli.deploy import cmd_deploy
+                from nekova.cli.deploy import cmd_deploy
                 success = cmd_deploy(arg)
             sys.exit(0 if success else 1)
         
@@ -321,18 +321,18 @@ def main():
                     "  Usage: python main.py compile app.nk"
                 )
                 sys.exit(1)
-            from compiler.llvm_backend import LLVMCompiler
+            from nekova.compiler.llvm_backend import LLVMCompiler
             compiler = LLVMCompiler()
             print_info(f"Compiling '{arg}'...")
             try:
                 output = compiler.compile(arg)
-                print_success(f"Compiled → {output}")
+                print_success(f"Compiled â†’ {output}")
             except Exception as e:
                 print_error(f"Compile error: {e}")
                 sys.exit(1)
             sys.exit(0)
 
-    # ── Direct file execution ─────────────────────────────────
+    # â”€â”€ Direct file execution â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     if args["file"]:
         print_banner()
@@ -342,7 +342,7 @@ def main():
         exit_code = runner.run()
         sys.exit(exit_code)
 
-    # ── Nothing matched ───────────────────────────────────────
+    # â”€â”€ Nothing matched â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     print_error(
         "Unknown command. "
         "Run 'python main.py --help' for usage."

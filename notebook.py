@@ -1,5 +1,5 @@
-# =============================================================
-# NEKOVA Language — Notebook System
+﻿# =============================================================
+# NEKOVA Language â€” Notebook System
 # =============================================================
 # A Jupyter-like notebook for NEKOVA.
 # Runs in the browser with cells that can be executed
@@ -17,7 +17,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from nekova.config import NEKOVA_VERSION, Color
 
 
-# ── Notebook cell types ───────────────────────────────────────
+# â”€â”€ Notebook cell types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class Cell:
     """A single notebook cell."""
@@ -65,7 +65,7 @@ class Notebook:
 
     def _init_interpreter(self):
         """Initialize a fresh interpreter."""
-        from interpreter.interpreter import Interpreter
+        from nekova.interpreter.interpreter import Interpreter
         self.interpreter = Interpreter()
 
     def add_cell(self, code: str = "",
@@ -88,8 +88,8 @@ class Notebook:
         error      = None
 
         try:
-            from lexer import Lexer
-            from parser.parser import Parser
+            from nekova.lexer import Lexer
+            from nekova.parser.parser import Parser
 
             tokens  = Lexer(cell.code).tokenize()
             program = Parser(tokens).parse()
@@ -204,7 +204,7 @@ class Notebook:
             self.add_cell(block)
 
 
-# ── Flask server ──────────────────────────────────────────────
+# â”€â”€ Flask server â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def create_notebook_app(notebook: Notebook) -> Flask:
     """Create Flask app for the notebook."""
@@ -279,8 +279,8 @@ def start_notebook(filepath: str = None,
     print()
     print(f"{Color.CYAN}{Color.BOLD}"
           f"  NEKOVA Notebook{Color.RESET}")
-    print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
-    print(f"  {Color.GREEN}✓ Notebook running at "
+    print(f"  {Color.DIM}{'â”€' * 40}{Color.RESET}")
+    print(f"  {Color.GREEN}âœ“ Notebook running at "
           f"http://localhost:{port}{Color.RESET}")
     print(f"  {Color.DIM}Press Ctrl+C to stop"
           f"{Color.RESET}")
@@ -296,7 +296,7 @@ def start_notebook(filepath: str = None,
             use_reloader=False)
 
 
-# ── HTML Interface ────────────────────────────────────────────
+# â”€â”€ HTML Interface â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 NOTEBOOK_HTML = """<!DOCTYPE html>
 <html lang="en">
@@ -461,11 +461,11 @@ NOTEBOOK_HTML = """<!DOCTYPE html>
 </head>
 <body>
 <div class="header">
-    <div class="logo">⚡ NEKOVA Notebook</div>
+    <div class="logo">âš¡ NEKOVA Notebook</div>
     <div class="toolbar">
-        <button class="btn btn-run-all" onclick="runAll()">▶▶ Run All</button>
+        <button class="btn btn-run-all" onclick="runAll()">â–¶â–¶ Run All</button>
         <button class="btn btn-add" onclick="addCell()">+ Add Cell</button>
-        <button class="btn btn-reset" onclick="resetKernel()">↺ Reset</button>
+        <button class="btn btn-reset" onclick="resetKernel()">â†º Reset</button>
     </div>
 </div>
 
@@ -494,7 +494,7 @@ function renderCell(cell) {
         ? 'cell-output error has-content'
         : hasOutput ? 'cell-output has-content' : 'cell-output';
     const outputText = cell.error
-        ? `✗ ${cell.error}` : cell.output;
+        ? `âœ— ${cell.error}` : cell.output;
 
     div.innerHTML = `
         <div class="cell-header">
@@ -504,11 +504,11 @@ function renderCell(cell) {
             <div class="cell-actions">
                 <button class="cell-btn btn-execute"
                     onclick="runCell(${cell.id})">
-                    ▶ Run
+                    â–¶ Run
                 </button>
                 <button class="cell-btn btn-delete"
                     onclick="deleteCell(${cell.id})">
-                    ✕
+                    âœ•
                 </button>
             </div>
         </div>
@@ -562,20 +562,20 @@ async function runCell(cellId) {
     const output = document.getElementById(`output-${cellId}`);
     if (result.error) {
         output.className = 'cell-output error has-content';
-        output.textContent = `✗ ${result.error}`;
+        output.textContent = `âœ— ${result.error}`;
     } else if (result.output) {
         output.className = 'cell-output has-content';
         output.textContent = result.output;
     } else {
         output.className = 'cell-output has-content';
-        output.textContent = '✓ (no output)';
+        output.textContent = 'âœ“ (no output)';
     }
 
     // Update header
     const label = document.querySelector(`#cell-${cellId} .cell-label`);
     label.textContent = `In [${cellId}]`;
 
-    btn.innerHTML = '▶ Run';
+    btn.innerHTML = 'â–¶ Run';
     btn.disabled  = false;
 }
 
@@ -618,7 +618,7 @@ async function resetKernel() {
 }
 
 function handleKey(event, cellId) {
-    // Tab → insert 4 spaces
+    // Tab â†’ insert 4 spaces
     if (event.key === 'Tab') {
         event.preventDefault();
         const ta    = event.target;
@@ -627,7 +627,7 @@ function handleKey(event, cellId) {
                       '    ' + ta.value.substring(start);
         ta.selectionStart = ta.selectionEnd = start + 4;
     }
-    // Ctrl+Enter → run cell
+    // Ctrl+Enter â†’ run cell
     if (event.ctrlKey && event.key === 'Enter') {
         event.preventDefault();
         runCell(cellId);

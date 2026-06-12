@@ -1,8 +1,8 @@
-# =============================================================
-# NEKOVA Language — File Runner
+﻿# =============================================================
+# NEKOVA Language â€” File Runner
 # =============================================================
 # Loads .nk files and passes them through the pipeline.
-# Pipeline is a stub for now — will be filled in Phase 2-4.
+# Pipeline is a stub for now â€” will be filled in Phase 2-4.
 
 import os
 import sys
@@ -22,7 +22,7 @@ from nekova.interpreter.interpreter import (
 class NEKOVARunner:
     """
     Orchestrates execution of a single .NEKOVA source file.
-    Knows nothing about the language itself — only manages
+    Knows nothing about the language itself â€” only manages
     file I/O and delegates to the pipeline.
     """
 
@@ -95,12 +95,12 @@ class NEKOVARunner:
                 print(f"  {Color.DIM}{i:>3}{Color.RESET}  {line}")
             print_separator()
 
-        # ── PIPELINE STUB ──────────────────────────────────────
+        # â”€â”€ PIPELINE STUB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         print_info(f"Running '{self.filepath}' ...")
         print()
 
         try:
-            # Phase 2 — Lexer
+            # Phase 2 â€” Lexer
             lexer  = Lexer(self.source)
             tokens = lexer.tokenize()
 
@@ -110,7 +110,7 @@ class NEKOVARunner:
                     print(f"  {Color.CYAN}{token}{Color.RESET}")
                 print()
 
-            # Phase 3 — Parser
+            # Phase 3 â€” Parser
             parser  = Parser(tokens)
             program = parser.parse()
 
@@ -120,11 +120,11 @@ class NEKOVARunner:
                     print(f"  {Color.MAGENTA}{stmt}{Color.RESET}")
                 print()
 
-            # Phase 4 — Interpreter (default)
-            # Phase 13 — Compiler (when --compile flag used)
+            # Phase 4 â€” Interpreter (default)
+            # Phase 13 â€” Compiler (when --compile flag used)
             if self.compile_mode:
-                from compiler import Compiler, VirtualMachine
-                from compiler import CompileError
+                from nekova.compiler import Compiler, VirtualMachine
+                from nekova.compiler import CompileError
                 compiler = Compiler()
                 code     = compiler.compile(program)
 
@@ -204,7 +204,7 @@ class NEKOVARunner:
             )
             return 1
 
-        # ───────────────────────────────────────────────────────
+        # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         elapsed = (time.perf_counter() - start) * 1000
         print()
         print_success(f"Done in {elapsed:.2f}ms")

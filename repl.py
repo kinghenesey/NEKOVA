@@ -137,9 +137,9 @@ class REPL:
     def _execute(self, source: str):
         """Execute NEKOVA source code in the REPL."""
         try:
-            from lexer import Lexer, LexerError
-            from parser.parser import Parser, ParseError
-            from interpreter.interpreter import RuntimeError
+            from nekova.lexer import Lexer, LexerError
+            from nekova.parser.parser import Parser, ParseError
+            from nekova.interpreter.interpreter import RuntimeError
 
             # Tokenize
             tokens = Lexer(source).tokenize()
@@ -157,7 +157,7 @@ class REPL:
 
                 # Auto-print expression results
                 if result is not None:
-                    from parser.nodes import (
+                    from nekova.parser.nodes import (
                         AssignStatement, ShowStatement,
                         UseStatement
                     )
@@ -206,7 +206,7 @@ class REPL:
 
         if cmd == "reset":
             self.interpreter = Interpreter()
-            print(f"{Color.GREEN}✓ Session reset"
+            print(f"{Color.GREEN}? Session reset"
                   f"{Color.RESET}")
             return True
 
@@ -218,7 +218,7 @@ class REPL:
 {Color.CYAN}{Color.BOLD}NEKOVA Interactive Shell{Color.RESET}
 {Color.DIM}Version {NEKOVA_VERSION} · {NEKOVA_CODENAME}{Color.RESET}
 {Color.DIM}Type 'help' for commands, 'exit' to quit{Color.RESET}
-{Color.DIM}{'─' * 40}{Color.RESET}
+{Color.DIM}{'-' * 40}{Color.RESET}
 """)
 
     def _print_help(self):
@@ -265,6 +265,6 @@ class REPL:
     def _quit(self):
         """Exit the REPL."""
         print(f"\n{Color.CYAN}Goodbye! Keep building "
-              f"with NEKOVA. 🚀{Color.RESET}\n")
+              f"with NEKOVA. ??{Color.RESET}\n")
         self.running = False
         sys.exit(0)

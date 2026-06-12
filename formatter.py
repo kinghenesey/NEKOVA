@@ -1,5 +1,5 @@
 ﻿# =============================================================
-# NEKOVA Language — Code Formatter
+# NEKOVA Language � Code Formatter
 # =============================================================
 # Automatically formats .NEKOVA files:
 #   - Consistent indentation (4 spaces)
@@ -159,7 +159,7 @@ class NEKOVAFormatter:
                             lines: list) -> list:
         """
         Normalize string quotes to double quotes.
-        Only for simple cases — preserves complex strings.
+        Only for simple cases � preserves complex strings.
         """
         result = []
         for line in lines:
@@ -171,7 +171,7 @@ class NEKOVAFormatter:
                 continue
 
             # Replace single-quoted strings with double
-            # Only simple cases: 'hello' → "hello"
+            # Only simple cases: 'hello' ? "hello"
             new_line = re.sub(
                 r"'([^'\"\\]*)'",
                 r'"\1"',
@@ -189,14 +189,14 @@ def format_file(filepath: str,
     Format an NEKOVA file.
 
     Args:
-        filepath   — path to .NEKOVA file
-        check_only — only check, don't write
-        write      — write formatted code back to file
+        filepath   � path to .NEKOVA file
+        check_only � only check, don't write
+        write      � write formatted code back to file
 
     Returns True if file was changed.
     """
     if not os.path.isfile(filepath):
-        print(f"{Color.RED}✗ File not found: "
+        print(f"{Color.RED}? File not found: "
               f"'{filepath}'{Color.RESET}")
         return False
 
@@ -208,12 +208,12 @@ def format_file(filepath: str,
     changes   = formatter.diff()
 
     if not changes:
-        print(f"{Color.GREEN}✓ '{filepath}' "
+        print(f"{Color.GREEN}? '{filepath}' "
               f"is already formatted{Color.RESET}")
         return False
 
     if check_only:
-        print(f"{Color.YELLOW}⚠ '{filepath}' "
+        print(f"{Color.YELLOW}? '{filepath}' "
               f"needs formatting "
               f"({len(changes)} changes){Color.RESET}")
         for change in changes[:5]:
@@ -229,7 +229,7 @@ def format_file(filepath: str,
         with open(filepath, "w",
                   encoding="utf-8") as f:
             f.write(formatted)
-        print(f"{Color.GREEN}✓ Formatted "
+        print(f"{Color.GREEN}? Formatted "
               f"'{filepath}' "
               f"({len(changes)} changes){Color.RESET}")
 
