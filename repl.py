@@ -2,31 +2,36 @@
 # NEKOVA Language — Interactive REPL
 # =============================================================
 # Read-Eval-Print Loop for NEKOVA.
-# Type NEKOVA code interactively and see results immediately.
-#
-# Usage:
-#   python main.py --repl
-#   python main.py repl
+# Run with: nekova repl
+# =============================================================
 
 import sys
 import os
 
 from nekova.config import Color, NEKOVA_VERSION, NEKOVA_CODENAME
-from nekova.interpreter.interpreter import Interpreter
-from nekova.interpreter.environment import Environment
 
 
 class REPL:
     """
     Interactive NEKOVA shell.
-    Maintains state between inputs so variables persist.
+    Maintains state between inputs so variables persist across lines.
     """
 
-    PROMPT      = f"{Color.CYAN}NEKOVA>{Color.RESET} "
-    PROMPT_CONT = f"{Color.DIM}  ...>{Color.RESET} "
+    PROMPT      = f"{Color.CYAN}nekova>{Color.RESET} "
+    PROMPT_CONT = f"{Color.DIM}   ...>{Color.RESET} "
+
+    # Statements that produce side effects (show, use, etc.)
+    # — don't auto-print their return value
+    SILENT_NODES = (
+        "AssignStatement", "ShowStatement", "UseStatement",
+        "ImportStatement", "TaskStatement", "ThinkStatement",
+        "PipelineStatement", "MemoryStatement", "SandboxStatement",
+        "ParallelStatement", "PipelineDefStatement",
+        "RunPipelineStatement", "ModelStatement",
+    )
 
     def __init__(self):
-        # Single interpreter instance — keeps all variables
+        from nekova.interpreter.interpreter import Interpreter
         self.interpreter = Interpreter()
         self.history     = []
         self.running     = True
@@ -38,29 +43,25 @@ class REPL:
         while self.running:
             try:
                 source = self._read_input()
-
                 if not source:
                     continue
-
-                # Handle special REPL commands
                 if self._handle_command(source):
                     continue
-
-                # Execute the NEKOVA code
                 self._execute(source)
 
             except KeyboardInterrupt:
                 print()
-                print(f"{Color.YELLOW}  Use 'exit' "
-                      f"to quit{Color.RESET}")
-
+                print(f"{Color.YELLOW}  Ctrl+C — use 'exit' to quit{Color.RESET}")
             except EOFError:
                 self._quit()
 
+    # ── Input ──────────────────────────────────────────────────────────────
+
     def _read_input(self) -> str:
         """
-        Read one line or a complete block from the user.
-        Handles multi-line input for all block types.
+        Read one line or a complete block.
+        Detects block starters (lines ending with :) and
+        reads continuation lines until the block is complete.
         """
         try:
             line = input(self.PROMPT)
@@ -70,121 +71,107 @@ class REPL:
         if not line.strip():
             return ""
 
-        # Check if line starts a block (ends with :)
+        # Multi-line block (ends with colon)
         if line.rstrip().endswith(":"):
-            lines  = [line]
-            indent = 0
-
+            lines = [line]
             while True:
                 try:
                     cont = input(self.PROMPT_CONT)
-
-                    # Empty line — check if we need
-                    # to keep reading for catch/else
                     if not cont.strip():
-                        # Check if last keyword needs
-                        # a continuation block
-                        last_keyword = self._last_keyword(
-                            lines)
-                        if last_keyword in ("try",):
-                            # Need catch block — keep reading
-                            continue
+                        # Empty line — check if more blocks expected
+                        last = self._last_keyword(lines)
+                        if last == "try":
+                            continue  # need catch block
                         break
-
                     lines.append(cont)
-
-                    # Track if we need more blocks
                     stripped = cont.strip()
-                    if stripped in ("catch:",
-                                   "catch error:") or \
-                       stripped.startswith("catch ") or \
-                       stripped == "else:":
-                        # These need their own body
-                        continue
-
+                    if stripped.startswith("catch") or stripped == "else:":
+                        continue  # these need their own body
                 except EOFError:
                     break
 
-            # Add indentation to block lines
-            result = []
-            result.append(lines[0])
+            # Indent non-block continuation lines
+            result = [lines[0]]
             for l in lines[1:]:
-                if not l.startswith(" ") and \
-                   not l.startswith("\t") and \
-                   not l.strip().startswith("catch") and \
-                   not l.strip().startswith("else"):
-                    result.append("    " + l)
-                else:
-                    result.append(l)
+                if l.strip() and not l.startswith(" ") and not l.startswith("\t"):
+                    if not any(l.strip().startswith(k) for k in ("catch", "else")):
+                        l = "    " + l
+                result.append(l)
             return "\n".join(result)
 
         return line
 
     def _last_keyword(self, lines: list) -> str:
-        """Get the last block keyword from lines."""
         for line in reversed(lines):
-            stripped = line.strip()
-            if stripped.startswith("try"):
-                return "try"
-            if stripped.startswith("if"):
-                return "if"
-            if stripped.startswith("while"):
-                return "while"
-            if stripped.startswith("repeat"):
-                return "repeat"
+            s = line.strip()
+            for kw in ("try", "if", "while", "repeat", "for"):
+                if s.startswith(kw):
+                    return kw
         return ""
 
+    # ── Execute ────────────────────────────────────────────────────────────
+
     def _execute(self, source: str):
-        """Execute NEKOVA source code in the REPL."""
+        """Execute NEKOVA source code and display results."""
         try:
-            from nekova.lexer import Lexer, LexerError
-            from nekova.parser.parser import Parser, ParseError
-            from nekova.interpreter.interpreter import RuntimeError
+            from nekova.lexer.lexer import Lexer
+            from nekova.parser.parser import Parser
 
-            # Tokenize
-            tokens = Lexer(source).tokenize()
-
-            # Parse
-            parser  = Parser(tokens)
-            program = parser.parse()
+            tokens  = Lexer(source).tokenize()
+            program = Parser(tokens).parse()
 
             if not program.statements:
                 return
 
-            # Execute each statement
             for stmt in program.statements:
                 result = self.interpreter._execute_node(stmt)
 
-                # Auto-print expression results
-                if result is not None:
-                    from nekova.parser.nodes import (
-                        AssignStatement, ShowStatement,
-                        UseStatement
-                    )
-                    if not isinstance(stmt, (
-                        AssignStatement, ShowStatement,
-                        UseStatement
-                    )):
-                        print(f"{Color.DIM}= "
-                              f"{self.interpreter._to_string(result)}"
-                              f"{Color.RESET}")
+                # Auto-print expression results (not side-effect statements)
+                node_type = type(stmt).__name__
+                if result is not None and node_type not in self.SILENT_NODES:
+                    display = self.interpreter._to_string(result)
+                    print(f"{Color.DIM}= {Color.RESET}{display}")
 
-            # Save to history
             self.history.append(source)
 
         except Exception as e:
-            # Show clean error without traceback
+            # Try wrapping as expression if it looks like one
+            stripped = source.strip()
+            if not any(stripped.startswith(kw) for kw in (
+                "show", "think", "use", "import", "if", "while",
+                "repeat", "for", "try", "task", "pipeline", "memory",
+                "sandbox", "model", "autonomous", "run", "#"
+            )) and "=" not in stripped.split("(")[0]:
+                try:
+                    from nekova.lexer.lexer import Lexer
+                    from nekova.parser.parser import Parser
+                    tokens  = Lexer(f"show {stripped}").tokenize()
+                    program = Parser(tokens).parse()
+                    for stmt in program.statements:
+                        result = self.interpreter._execute_node(stmt)
+                        if result is not None:
+                            display = self.interpreter._to_string(result)
+                            print(f"{Color.DIM}= {Color.RESET}{display}")
+                    self.history.append(source)
+                    return
+                except Exception:
+                    pass
+
             msg = str(e).strip()
-            print(f"{Color.RED}Error: {msg}{Color.RESET}")
+            first_line = msg.split("\n")[0]
+            print(f"{Color.RED}Error: {first_line}{Color.RESET}")
+            if len(msg.split("\n")) > 1:
+                for line in msg.split("\n")[1:]:
+                    if line.strip():
+                        print(f"{Color.DIM}  {line.strip()}{Color.RESET}")
+
+    # ── Commands ───────────────────────────────────────────────────────────
 
     def _handle_command(self, source: str) -> bool:
-        """
-        Handle special REPL commands.
-        Returns True if command was handled.
-        """
+        """Handle special REPL commands. Returns True if handled."""
         cmd = source.strip().lower()
 
-        if cmd in ("exit", "quit", "q"):
+        if cmd in ("exit", "quit", "q", ":q"):
             self._quit()
             return True
 
@@ -205,66 +192,78 @@ class REPL:
             return True
 
         if cmd == "reset":
+            from nekova.interpreter.interpreter import Interpreter
             self.interpreter = Interpreter()
-            print(f"{Color.GREEN}? Session reset"
-                  f"{Color.RESET}")
+            self.history = []
+            print(f"{Color.GREEN}✓ Session reset{Color.RESET}")
+            return True
+
+        if cmd == "version":
+            print(f"NEKOVA v{NEKOVA_VERSION} · {NEKOVA_CODENAME}")
             return True
 
         return False
 
+    # ── Display ────────────────────────────────────────────────────────────
+
     def _print_welcome(self):
-        """Print the REPL welcome message."""
+        border = "─" * 42
         print(f"""
-{Color.CYAN}{Color.BOLD}NEKOVA Interactive Shell{Color.RESET}
-{Color.DIM}Version {NEKOVA_VERSION} · {NEKOVA_CODENAME}{Color.RESET}
-{Color.DIM}Type 'help' for commands, 'exit' to quit{Color.RESET}
-{Color.DIM}{'-' * 40}{Color.RESET}
+{Color.CYAN}{Color.BOLD}  NEKOVA Interactive Shell{Color.RESET}
+{Color.DIM}  {border}{Color.RESET}
+{Color.DIM}  Version {NEKOVA_VERSION} · {NEKOVA_CODENAME}{Color.RESET}
+{Color.DIM}  Connected Forge · SYNEKCOT Tech{Color.RESET}
+{Color.DIM}  {border}{Color.RESET}
+{Color.DIM}  Type 'help' for commands · 'exit' to quit{Color.RESET}
 """)
 
     def _print_help(self):
-        """Print REPL help."""
         print(f"""
-{Color.CYAN}REPL Commands:{Color.RESET}
+{Color.CYAN}Commands:{Color.RESET}
   {Color.BOLD}exit{Color.RESET}      Quit the REPL
   {Color.BOLD}clear{Color.RESET}     Clear the screen
-  {Color.BOLD}vars{Color.RESET}      Show all variables
-  {Color.BOLD}history{Color.RESET}   Show command history
-  {Color.BOLD}reset{Color.RESET}     Reset the session
+  {Color.BOLD}vars{Color.RESET}      Show all variables in scope
+  {Color.BOLD}history{Color.RESET}   Show last 10 commands
+  {Color.BOLD}reset{Color.RESET}     Reset session (clear all vars)
+  {Color.BOLD}version{Color.RESET}   Show NEKOVA version
 
-{Color.CYAN}NEKOVA Examples:{Color.RESET}
+{Color.CYAN}Examples:{Color.RESET}
   {Color.DIM}name = "Emmanuel"{Color.RESET}
-  {Color.DIM}show "Hello " + name{Color.RESET}
-  {Color.DIM}show 2 + 3{Color.RESET}
+  {Color.DIM}show f"Hello {{name}}!"{Color.RESET}
   {Color.DIM}use math{Color.RESET}
-  {Color.DIM}show sqrt(16){Color.RESET}
+  {Color.DIM}show sqrt(144){Color.RESET}
+  {Color.DIM}think "What is the capital of Nigeria?"{Color.RESET}
+  {Color.DIM}task greet(n): show f"Hello {{n}}!"{Color.RESET}
 """)
 
     def _print_history(self):
-        """Print command history."""
         if not self.history:
-            print(f"{Color.DIM}No history yet.{Color.RESET}")
+            print(f"{Color.DIM}  No history yet.{Color.RESET}")
             return
         print(f"{Color.CYAN}History:{Color.RESET}")
         for i, cmd in enumerate(self.history[-10:], 1):
-            print(f"  {Color.DIM}{i:>3}.{Color.RESET} {cmd}")
+            preview = cmd.replace("\n", " ↵ ")[:60]
+            print(f"  {Color.DIM}{i:>2}.{Color.RESET} {preview}")
 
     def _print_vars(self):
-        """Print all current variables."""
-        variables = self.interpreter.globals.variables
-        if not variables:
-            print(f"{Color.DIM}No variables defined yet."
-                  f"{Color.RESET}")
-            return
-        print(f"{Color.CYAN}Variables:{Color.RESET}")
-        for name, value in variables.items():
-            if not callable(value) and not isinstance(
-                    value, type):
-                print(f"  {Color.BOLD}{name}{Color.RESET}"
-                      f" = {repr(value)}")
+        try:
+            variables = self.interpreter.env.variables
+            # Filter out built-in callables
+            user_vars = {
+                k: v for k, v in variables.items()
+                if not callable(v) and not isinstance(v, type)
+            }
+            if not user_vars:
+                print(f"{Color.DIM}  No variables defined yet.{Color.RESET}")
+                return
+            print(f"{Color.CYAN}Variables:{Color.RESET}")
+            for name, value in user_vars.items():
+                val_str = repr(value) if not isinstance(value, str) else f'"{value}"'
+                print(f"  {Color.BOLD}{name}{Color.RESET} = {Color.DIM}{val_str}{Color.RESET}")
+        except Exception:
+            print(f"{Color.DIM}  Could not read variables.{Color.RESET}")
 
     def _quit(self):
-        """Exit the REPL."""
-        print(f"\n{Color.CYAN}Goodbye! Keep building "
-              f"with NEKOVA. ??{Color.RESET}\n")
+        print(f"\n{Color.CYAN}Goodbye! Keep forging with NEKOVA. 🔥{Color.RESET}\n")
         self.running = False
         sys.exit(0)
