@@ -47,3 +47,6 @@ nekova = "nekova_cli:main"
 where = ["."]
 include = ["nekova*"]
 exclude = ["venv*", "tests*", "dist*", "build*", "*.egg-info*", "nekova-vscode*"]
+
+[tool.setuptools]
+py-modules = ["main", "runner", "nekova_cli", "repl", "debugger", "notebook", "formatter"]

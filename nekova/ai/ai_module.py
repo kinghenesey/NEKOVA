@@ -1,5 +1,5 @@
-# =============================================================
-# NEKOVA AI Runtime — AI Module
+﻿# =============================================================
+# NEKOVA AI Runtime â€” AI Module
 # =============================================================
 # This is what gets loaded when you write "use ai" in NEKOVA.
 # It exposes all AI functions to your NEKOVA programs.
@@ -68,11 +68,11 @@ def load() -> dict:
 
 def _print_provider_info(provider):
     """Print which AI provider is active when use ai loads."""
-    from config import Color
+    from nekova.config import Color
 
     if provider.name == "mock":
         print(
-            f"{Color.YELLOW}⚡ AI Runtime active "
+            f"{Color.YELLOW}âš¡ AI Runtime active "
             f"[mock mode]{Color.RESET}"
         )
         print(
@@ -81,6 +81,7 @@ def _print_provider_info(provider):
         )
     else:
         print(
-            f"{Color.GREEN}⚡ AI Runtime active "
+            f"{Color.GREEN}âš¡ AI Runtime active "
             f"[{provider.name}]{Color.RESET}"
         )
+

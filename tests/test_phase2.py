@@ -1,4 +1,4 @@
-﻿# =============================================================
+# =============================================================
 # NEKOVA — Phase 2 Tests (Lexer)
 # =============================================================
 # Run with: python tests/test_phase2.py
@@ -9,8 +9,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from lexer import Lexer, LexerError
-from lexer.token_types import TokenType
+from nekova.lexer import Lexer, LexerError
+from nekova.lexer.token_types import TokenType
 
 
 def tokenize(source: str):

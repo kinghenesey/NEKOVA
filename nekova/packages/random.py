@@ -17,4 +17,3 @@ def load() -> dict:
             _random.choices("abcdefghijklmnopqrstuvwxyz0123456789",
                            k=int(n))),
     }
-

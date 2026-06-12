@@ -1,4 +1,4 @@
-# Python cache
+﻿# Python cache
 __pycache__/
 *.pyc
 *.pyo
@@ -25,13 +25,19 @@ packages/registry.json
 .DS_Store
 Thumbs.db
 
-@"
-node_modules/
-*.vsix
-out/
-.vscode-test/
-"@ | Out-File -FilePath "nekova-vscode\.gitignore" -Encoding utf8
+# Build artifacts
 dist/
-venv/
 *.egg-info/
 build/
+
+# Runtime-generated files
+project_ideas.db
+generated_image.png
+*.NEKOVAmem/
+.NEKOVAmem/
+
+# VS Code extension
+nekova-vscode/node_modules/
+nekova-vscode/*.vsix
+nekova-vscode/out/
+nekova-vscode/.vscode-test/

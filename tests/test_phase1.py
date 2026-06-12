@@ -1,4 +1,4 @@
-﻿# =============================================================
+# =============================================================
 # NEKOVA — Phase 1 Tests
 # =============================================================
 # Run with: python tests/test_phase1.py
@@ -10,7 +10,7 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config import NEKOVA_VERSION, NEKOVA_EXTENSION, Color
+from nekova.config import NEKOVA_VERSION, NEKOVA_EXTENSION, Color
 from runner import NEKOVARunner
 
 
@@ -35,7 +35,7 @@ class TestConfig(unittest.TestCase):
 class TestRunner(unittest.TestCase):
 
     def _make_temp_nekova(self, content: str = 'show "test"') -> str:
-        fd, path = tempfile.mkstemp(suffix=".nekova")
+        fd, path = tempfile.mkstemp(suffix=NEKOVA_EXTENSION)
         with os.fdopen(fd, "w") as f:
             f.write(content)
         return path

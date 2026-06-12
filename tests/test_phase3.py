@@ -1,4 +1,4 @@
-﻿# =============================================================
+# =============================================================
 # NEKOVA — Phase 3 Tests (Parser)
 # =============================================================
 # Run with: python tests/test_phase3.py
@@ -9,9 +9,9 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from lexer import Lexer
-from parser.parser import Parser, ParseError
-from parser.nodes import (
+from nekova.lexer import Lexer
+from nekova.parser.parser import Parser, ParseError
+from nekova.parser.nodes import (
     Program, AssignStatement, ShowStatement, IfStatement,
     RepeatStatement, TaskStatement, ReturnStatement,
     UseStatement, CallExpression, BinaryOp, Identifier,

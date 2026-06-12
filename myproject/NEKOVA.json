@@ -1,6 +1,6 @@
 ﻿{
   "name": "myproject",
   "version": "1.0.0",
-  "main": "src/main.nekova",
+  "main": "src/main.nk",
   "nekova": "0.1.0"
 }

@@ -1,4 +1,4 @@
-﻿# =============================================================
+# =============================================================
 # NEKOVA — Phase 5 Tests (Standard Library)
 # =============================================================
 # Run with: python tests/test_phase5.py
@@ -10,9 +10,9 @@ from io import StringIO
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from lexer import Lexer
-from parser.parser import Parser
-from interpreter.interpreter import Interpreter
+from nekova.lexer import Lexer
+from nekova.parser.parser import Parser
+from nekova.interpreter.interpreter import Interpreter
 
 
 def run(source: str) -> str:
@@ -88,11 +88,11 @@ class TestTextModule(unittest.TestCase):
 
     def test_reverse(self):
         output = run('use text\nshow reverse("NEKOVA")')
-        self.assertEqual(output, "NOIA")
+        self.assertEqual(output, "AVOKEN")
 
     def test_length(self):
         output = run('use text\nshow length("NEKOVA")')
-        self.assertEqual(output, "4")
+        self.assertEqual(output, "6")
 
 
 class TestFilesModule(unittest.TestCase):

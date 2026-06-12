@@ -1,4 +1,4 @@
-﻿# =============================================================
+# =============================================================
 # NEKOVA — Phase 7 Tests (AI Runtime)
 # =============================================================
 # Run with: python tests/test_phase7.py
@@ -10,11 +10,11 @@ from io import StringIO
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ai.providers.mock import MockProvider
-from ai.providers import get_provider, get_provider_by_name
-from lexer import Lexer
-from parser.parser import Parser
-from interpreter.interpreter import Interpreter
+from nekova.ai.providers.mock import MockProvider
+from nekova.ai.providers import get_provider, get_provider_by_name
+from nekova.lexer import Lexer
+from nekova.parser.parser import Parser
+from nekova.interpreter.interpreter import Interpreter
 
 
 def run(source: str) -> str:

@@ -1,4 +1,4 @@
-﻿# =============================================================
+# =============================================================
 # NEKOVA — Phase 8 Tests (Package Manager)
 # =============================================================
 # Run with: python tests/test_phase8.py
@@ -10,16 +10,16 @@ from io import StringIO
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from packages import (
+from nekova.packages import (
     BUILTIN_PACKAGES, load_registry, save_registry,
     is_installed, get_available
 )
-from cli.package_manager import (
+from nekova.cli.package_manager import (
     install_package, uninstall_package
 )
-from lexer import Lexer
-from parser.parser import Parser
-from interpreter.interpreter import Interpreter
+from nekova.lexer import Lexer
+from nekova.parser.parser import Parser
+from nekova.interpreter.interpreter import Interpreter
 
 
 def run(source: str) -> str:
