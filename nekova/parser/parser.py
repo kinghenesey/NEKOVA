@@ -539,7 +539,16 @@ class Parser:
         name  = self._consume(TokenType.IDENTIFIER).value
         token = self._current()
 
-       # Assignment
+       # Typed assignment: name: type = value
+        type_hint = None
+        if token.type == TokenType.COLON:
+            self._consume(TokenType.COLON)
+            # Read the type name (text, number, boolean, list, dict)
+            if self._current().type == TokenType.IDENTIFIER:
+                type_hint = self._consume(TokenType.IDENTIFIER).value
+            token = self._current()
+
+        # Assignment
         if token.type == TokenType.ASSIGN:
             self._consume(TokenType.ASSIGN)
 
@@ -570,7 +579,7 @@ class Parser:
                 return node
 
             self._expect_newline_or_eof()
-            return AssignStatement(name, value)
+            return AssignStatement(name, value, type_hint=type_hint)
 
         # Function call
         if token.type == TokenType.LPAREN:

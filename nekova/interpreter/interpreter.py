@@ -92,9 +92,26 @@ class Interpreter:
         for stmt in node.statements:
             self._execute_node(stmt)
 
+    # Type hint mapping — NEKOVA type names to Python types
+    _TYPE_MAP = {
+        "text":    str,
+        "number":  (int, float),
+        "boolean": bool,
+        "list":    list,
+        "dict":    dict,
+        "any":     None,   # any = no check
+    }
+
     def _exec_AssignStatement(self, node: AssignStatement):
-        """Execute:  name = value"""
+        """
+        Execute:  name = value
+        Also handles typed assignments:
+            name: text = "Emmanuel"
+            age: number = 25
+        Type hints are optional — only checked when declared.
+        """
         value = self._execute_node(node.value)
+
         # Deep copy dicts and lists to prevent mutation
         if isinstance(value, dict):
             import copy
@@ -102,6 +119,18 @@ class Interpreter:
         elif isinstance(value, list):
             import copy
             value = copy.deepcopy(value)
+
+        # Type check if hint was declared
+        if node.type_hint and node.type_hint != "any":
+            expected = self._TYPE_MAP.get(node.type_hint)
+            if expected is not None and not isinstance(value, expected):
+                actual = type(value).__name__
+                raise TypeError(
+                    f"Type error on '{node.name}': "
+                    f"expected {node.type_hint}, got {actual}.\n"
+                    f"  Hint: use 'any' to allow any type."
+                )
+
         self.env.set(node.name, value)
         return value
 

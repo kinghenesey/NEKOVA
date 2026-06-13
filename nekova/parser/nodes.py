@@ -189,14 +189,20 @@ class UnaryOp(Node):
 class AssignStatement(Node):
     """
     Assigns a value to a variable.
-    Example:
+    Supports optional type hints:
         name = "Emmanuel"
+        name: text = "Emmanuel"
+        age: number = 25
+        items: list = [1, 2, 3]
     """
-    def __init__(self, name: str, value: Node):
-        self.name  = name
-        self.value = value
+    def __init__(self, name: str, value: Node, type_hint: str = None):
+        self.name      = name
+        self.value     = value
+        self.type_hint = type_hint  # e.g. "text", "number", "boolean", "list", "dict"
 
     def __repr__(self):
+        if self.type_hint:
+            return f"Assign({self.name}: {self.type_hint} = {self.value})"
         return f"Assign({self.name} = {self.value})"
 
 
