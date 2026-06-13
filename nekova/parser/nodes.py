@@ -1,13 +1,3 @@
-# =============================================================
-# NEKOVA Parser — AST Nodes
-# =============================================================
-# Every possible structure in NEKOVA code is represented as a
-# Node. The Parser builds a tree of these nodes. The
-# Interpreter then walks the tree and executes each node.
-#
-# Think of nodes like LEGO pieces — each one represents one
-# concept in your program.
-
 from dataclasses import dataclass
 
 
@@ -451,15 +441,27 @@ class UseStatement(Node):
 
 class ImportStatement(Node):
     """
-    Imports another .NEKOVA file.
-    Example:
+    Imports another .nk file.
+    Supports three forms:
+
         import "utils.nk"
-        import "greetings.nk"
+            — executes the file, all names enter current scope
+
+        import greet from "utils.nk"
+            — imports only the 'greet' task
+
+        import greet, add, PI from "utils.nk"
+            — imports multiple named exports
     """
-    def __init__(self, filepath: str):
+    def __init__(self, filepath: str, names: list = None):
         self.filepath = filepath
+        # names = None means import everything (star import)
+        # names = ['greet', 'add'] means named import
+        self.names = names
 
     def __repr__(self):
+        if self.names:
+            return f"Import({self.names} from {repr(self.filepath)})"
         return f"Import({repr(self.filepath)})"
 
 class WhileStatement(Node):

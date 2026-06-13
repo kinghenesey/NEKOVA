@@ -1,16 +1,3 @@
-# =============================================================
-# NEKOVA Parser — Main Parser Engine
-# =============================================================
-# The Parser takes the flat list of tokens from the Lexer
-# and builds an AST (Abstract Syntax Tree).
-#
-# Process:
-#   1. Look at the current token
-#   2. Decide what structure it starts
-#   3. Consume tokens until that structure is complete
-#   4. Return the matching Node
-#   5. Repeat until EOF
-
 from nekova.lexer.token_types import TokenType
 from nekova.lexer.token import Token
 from nekova.parser.nodes import (
@@ -500,11 +487,48 @@ class Parser:
         return UseStatement(module)
     
     def _parse_import(self):
-        """Parse:  import "filepath.nk" """
+        """
+        Parse import statements in three forms:
+
+            import "utils.nk"
+            import greet from "utils.nk"
+            import greet, add, PI from "utils.nk"
+        """
         self._consume(TokenType.IMPORT)
+
+        # Check if next token is a string (old form) or identifier (named form)
+        if self._current().type == TokenType.STRING:
+            # import "utils.nk"
+            filepath = self._consume(TokenType.STRING).value
+            self._expect_newline_or_eof()
+            return ImportStatement(filepath, names=None)
+
+        # Named import: import name1, name2 from "file.nk"
+        names = []
+        names.append(self._consume(TokenType.IDENTIFIER).value)
+
+        while (self._current().type == TokenType.COMMA or
+               (self._current().type == TokenType.IDENTIFIER and
+                self._current().value != "from")):
+            if self._current().type == TokenType.COMMA:
+                self._advance()  # skip comma
+            if (self._current().type == TokenType.IDENTIFIER and
+                    self._current().value != "from"):
+                names.append(self._consume(TokenType.IDENTIFIER).value)
+
+        # Expect 'from' keyword
+        if (self._current().type == TokenType.IDENTIFIER and
+                self._current().value == "from"):
+            self._advance()  # consume 'from'
+        else:
+            raise SyntaxError(
+                f"Expected 'from' after import names, "
+                f"got '{self._current().value}'"
+            )
+
         filepath = self._consume(TokenType.STRING).value
         self._expect_newline_or_eof()
-        return ImportStatement(filepath)
+        return ImportStatement(filepath, names=names)
 
     def _parse_identifier_statement(self):
         """

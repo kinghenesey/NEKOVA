@@ -1,17 +1,3 @@
-# =============================================================
-# NEKOVA Interpreter — Main Execution Engine
-# =============================================================
-# The Interpreter walks the AST tree and executes each node.
-#
-# Process:
-#   1. Receive the root Program node
-#   2. Execute each statement one by one
-#   3. For each node type call the matching execute_ method
-#   4. Return the result
-#
-# This is called a "tree-walk interpreter" — the simplest
-# and most readable interpreter architecture possible.
-
 from nekova.parser.nodes import (
     Program, IntegerLiteral, FloatLiteral, StringLiteral, FStringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
@@ -735,31 +721,46 @@ class Interpreter:
         except ImportError as e:
             raise NEKOVAImportError(str(e))
     
-    def _exec_ImportStatement(self,
-                               node: ImportStatement):
+    def _exec_ImportStatement(self, node: ImportStatement):
         """
-        Execute:  import "filepath.NEKOVA"
-        Loads and executes another .NEKOVA file,
-        making all its tasks and variables available
-        in the current scope.
+        Execute import statements in three forms:
+
+            import "utils.nk"
+                — executes file, all names enter current scope
+
+            import greet from "utils.nk"
+                — imports only 'greet' from the file
+
+            import greet, add from "utils.nk"
+                — imports multiple named exports
         """
         import os
 
         filepath = node.filepath
 
+        # Auto-add .nk extension if missing
+        if not filepath.endswith(".nk") and "." not in os.path.basename(filepath):
+            filepath = filepath + ".nk"
+
         # Resolve relative to the current file if possible
         if (not os.path.isabs(filepath) and
                 hasattr(self, '_current_file') and
                 self._current_file):
-            base_dir = os.path.dirname(
-                self._current_file)
+            base_dir = os.path.dirname(self._current_file)
             filepath = os.path.join(base_dir, filepath)
+
+        # Also search in current working directory
+        if not os.path.isfile(filepath):
+            cwd_path = os.path.join(os.getcwd(), filepath)
+            if os.path.isfile(cwd_path):
+                filepath = cwd_path
 
         # Check file exists
         if not os.path.isfile(filepath):
             raise RuntimeError(
                 f"Cannot import '{node.filepath}'.\n"
-                f"  File not found: '{filepath}'"
+                f"  File not found: '{filepath}'\n"
+                f"  Make sure the file exists and the path is correct."
             )
 
         # Prevent circular imports
@@ -768,37 +769,64 @@ class Interpreter:
 
         abs_path = os.path.abspath(filepath)
         if abs_path in self._imported_files:
-            return  # Already imported — skip
+            return  # Already imported — skip silently
 
         self._imported_files.add(abs_path)
 
-        # Load and execute the file
+        # Load and execute the file in an isolated child environment
         try:
-            with open(filepath, "r",
-                      encoding="utf-8") as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 source = f.read()
 
             from nekova.lexer import Lexer
             from nekova.parser.parser import Parser
+            from nekova.interpreter.environment import Environment
 
             tokens  = Lexer(source).tokenize()
             program = Parser(tokens).parse()
 
-            # Execute in current scope so tasks/vars
-            # are available to the importing file
-            prev_file = getattr(
-                self, '_current_file', None)
+            # Execute in a child environment to isolate the module
+            child_env  = Environment(parent=self.globals)
+            prev_env   = self.env
+            prev_file  = getattr(self, '_current_file', None)
+
+            self.env           = child_env
             self._current_file = abs_path
 
             for stmt in program.statements:
                 self._execute_node(stmt)
 
+            self.env           = prev_env
             self._current_file = prev_file
 
-            from nekova.config import Color
-            print(f"{Color.DIM}→ imported "
-                  f"'{node.filepath}'{Color.RESET}")
+            # Bring names into current scope
+            if node.names is None:
+                # Star import — bring everything into scope
+                for name, value in child_env.variables.items():
+                    self.env.set(name, value)
+            else:
+                # Named import — only bring requested names
+                for name in node.names:
+                    try:
+                        value = child_env.get(name)
+                        self.env.set(name, value)
+                    except Exception:
+                        available = list(child_env.variables.keys())
+                        raise RuntimeError(
+                            f"Cannot import '{name}' from '{node.filepath}'.\n"
+                            f"  '{name}' is not defined in that file.\n"
+                            f"  Available names: {available}"
+                        )
 
+            from nekova.config import Color
+            if node.names:
+                names_str = ", ".join(node.names)
+                print(f"{Color.DIM}→ imported {names_str} from '{node.filepath}'{Color.RESET}")
+            else:
+                print(f"{Color.DIM}→ imported '{node.filepath}'{Color.RESET}")
+
+        except RuntimeError:
+            raise
         except Exception as e:
             raise RuntimeError(
                 f"Error importing '{node.filepath}':\n"
