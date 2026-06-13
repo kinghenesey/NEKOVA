@@ -49,6 +49,14 @@ class TokenType(Enum):
     WITH        = auto()
     RUN         = auto()
 
+    # ── Async / Await / Streaming / Fetch ────────────
+    ASYNC       = auto()
+    AWAIT       = auto()
+    STREAM      = auto()
+    EACH        = auto()
+    FETCH       = auto()
+    FUNC        = auto()
+
     # ── Operators ─────────────────────────────────────────────
     PLUS        = auto()
     MINUS       = auto()
@@ -122,4 +130,10 @@ KEYWORDS = {
     "save":       TokenType.SAVE,
     "with":       TokenType.WITH,
     "run":        TokenType.RUN,
+    "async":      TokenType.ASYNC,
+    "await":      TokenType.AWAIT,
+    "stream":     TokenType.STREAM,
+    "each":       TokenType.EACH,
+    "fetch":      TokenType.FETCH,
+    "func":       TokenType.FUNC,
 }

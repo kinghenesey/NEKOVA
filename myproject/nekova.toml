@@ -1,0 +1,40 @@
+# nekova.toml
+# ─────────────────────────────────────────────────────────────────────────────
+# NEKOVA project configuration file.
+# Place this in the root of your NEKOVA project folder.
+# Run your project with:  nekova run
+# ─────────────────────────────────────────────────────────────────────────────
+
+[project]
+name    = "my-nekova-app"
+version = "0.1.0"
+author  = "Your Name"
+description = "A NEKOVA project"
+
+# The .nk file that runs when you type `nekova run`
+entry   = "main.nk"
+
+
+[ai]
+# Which AI model to use for `think` and `stream think`
+# Options: "claude" | "gemini" | "openai" | "mock"
+model   = "claude"
+
+# API key — or leave blank and set ANTHROPIC_API_KEY in your environment
+api_key = ""
+
+# Optional: override the specific model version
+# model_version = "claude-sonnet-4-6"
+
+
+[dependencies]
+# Other .nk files or NEKOVA packages this project needs
+# packages = ["nekova-utils", "nekova-http"]
+packages = []
+
+
+[run]
+# Extra options for the runner
+strict_types = false   # enforce type hints at runtime
+show_imports = false   # print import messages
+debug        = false   # enable debug output

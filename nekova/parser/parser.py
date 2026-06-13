@@ -11,6 +11,10 @@ from nekova.parser.nodes import (
     ImportStatement, CallExpression, IndexExpression,
     MethodCall
 )
+from nekova.parser.async_nodes import (
+    AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
+)
+from nekova.parser.async_parser import AsyncParserMixin
 
 
 class ParseError(Exception):
@@ -20,7 +24,7 @@ class ParseError(Exception):
         super().__init__(f"\n  Line {line}: {message}")
 
 
-class Parser:
+class Parser(AsyncParserMixin):
     """
     Converts a list of Tokens into an AST.
 
@@ -123,6 +127,18 @@ class Parser:
 
         if token.type == TokenType.IMPORT:
             return self._parse_import()
+        
+        if token.type == TokenType.ASYNC:
+            return self.parse_async_function()
+
+        if token.type == TokenType.AWAIT:
+            return self.parse_await_expr()
+
+        if token.type == TokenType.STREAM:
+            return self.parse_stream_think()
+
+        if token.type == TokenType.FETCH:
+            return self.parse_fetch_expr()
 
         if token.type == TokenType.IDENTIFIER:
             return self._parse_identifier_statement()

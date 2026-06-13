@@ -143,6 +143,21 @@ def parse_args(argv: list) -> dict:
 
     return args
 
+def _apply_toml_config(config):
+    """Apply nekova.toml AI model settings before running."""
+    if config.ai.model and config.ai.model != "mock":
+        try:
+            from nekova.ai.providers import set_provider
+            set_provider(config.ai.model)
+        except Exception:
+            pass
+    if config.ai.api_key:
+        key_map = {"claude": "ANTHROPIC_API_KEY",
+                   "gemini": "GEMINI_API_KEY",
+                   "openai": "OPENAI_API_KEY"}
+        env_var = key_map.get(config.ai.model)
+        if env_var and not os.environ.get(env_var):
+            os.environ[env_var] = config.ai.api_key
 
 def main():
     argv = sys.argv[1:]
@@ -224,13 +239,23 @@ def main():
 
         if cmd == "run":
             if not arg:
-                print_error(
-                    "Please provide a file to run.\n"
-                    "  Usage: python main.py run app.nk"
-                )
-                sys.exit(1)
-            runner    = NEKOVARunner(filepath=arg,
-                                   debug=args["debug"])
+                from nekova.toml_loader import load_config, ConfigError
+                try:
+                    config = load_config()
+                except ConfigError as e:
+                    print_error(f"Config error: {e}")
+                    sys.exit(1)
+                if config is None:
+                    print_error(
+                        "No file specified and no nekova.toml found.\n"
+                        "  Usage: nekova run app.nk\n"
+                        "  Or create a nekova.toml with [project] entry = \"main.nk\""
+                    )
+                    sys.exit(1)
+                _apply_toml_config(config)
+                print_info(f"{config.project.name} v{config.project.version}")
+                arg = config.entry_path
+            runner    = NEKOVARunner(filepath=arg, debug=args["debug"])
             exit_code = runner.run()
             sys.exit(exit_code)
         

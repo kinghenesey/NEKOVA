@@ -11,6 +11,10 @@ from nekova.parser.nodes import (
 )
 from nekova.interpreter.environment import Environment
 from nekova.runtime import ReturnSignal
+from nekova.parser.async_nodes import (
+    AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
+)
+from nekova.interpreter.async_interpreter import AsyncInterpreterMixin
 
 
 class RuntimeError(Exception):
@@ -33,7 +37,7 @@ class NEKOVANameError(Exception):
         super().__init__(f"\n  {message}")
 
 
-class Interpreter:
+class Interpreter(AsyncInterpreterMixin):
     """
     Executes a NEKOVA AST produced by the Parser.
 
@@ -73,6 +77,15 @@ class Interpreter:
         Route a node to its matching execute method.
         This is the heart of the interpreter.
         """
+        if isinstance(node, AsyncFunctionNode):
+            return self.visit_async_function(node)
+        if isinstance(node, AwaitNode):
+            return self._run_sync(self.visit_await(node))
+        if isinstance(node, StreamThinkNode):
+            return self.visit_stream_think(node)
+        if isinstance(node, FetchNode):
+            return self.visit_fetch(node)
+
         method_name = f"_exec_{type(node).__name__}"
         method      = getattr(self, method_name, None)
 
