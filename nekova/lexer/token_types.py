@@ -56,6 +56,7 @@ class TokenType(Enum):
     EACH        = auto()
     FETCH       = auto()
     FUNC        = auto()
+    LET         = auto()
 
     # ── Operators ─────────────────────────────────────────────
     PLUS        = auto()
@@ -136,4 +137,5 @@ KEYWORDS = {
     "each":       TokenType.EACH,
     "fetch":      TokenType.FETCH,
     "func":       TokenType.FUNC,
+    "let":        TokenType.LET,
 }

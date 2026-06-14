@@ -1,3 +1,4 @@
+from nekova.lexer.token_types import TokenType
 from nekova.parser.async_nodes import (
     AsyncFunctionNode,
     AwaitNode,
@@ -9,29 +10,41 @@ from nekova.parser.async_nodes import (
 class AsyncParserMixin:
     """
     Mixin for the main Parser class.
-    Expects self to have: current_token, advance(), expect(type),
-    parse_expr(), parse_block(), current_token_is(type)
+    Assumes self has:
+      - self.current_token  : current Token object  (.type, .value)
+      - self.advance()      : move to next token
+      - self.expect(type)   : consume a token of the given type or raise
+      - self.parse_expr()   : parse a single expression
+      - self.parse_block()  : parse an indented block → list[Node]
+      - self.current_token_is(type) : bool
     """
 
+    # ── async func ───────────────────────────────────────────────────────────
     def parse_async_function(self):
-        """Parse:  async task <name>(<params>): <body>"""
+        """
+        async func <name>(<params>):
+            <body>
+        """
         self.expect("ASYNC")
-        self.expect("TASK")
+        self.expect("FUNC")
         name = self.expect("IDENTIFIER").value
+
         self.expect("LPAREN")
         params = self._parse_param_list()
         self.expect("RPAREN")
+
         return_type = None
-        if self.current_token_is("ARROW"):
+        if self.current_token_is("ARROW"):          # -> text
             self.advance()
             return_type = self.expect("IDENTIFIER").value
+
         self.expect("COLON")
-        self._expect_newline_or_eof()
-        self._skip_newlines()
         body = self.parse_block()
+
         return AsyncFunctionNode(name, params, body, return_type)
 
     def _parse_param_list(self):
+        """Parse zero-or-more   name: type   or   name   params."""
         params = []
         while not self.current_token_is("RPAREN"):
             param_name = self.expect("IDENTIFIER").value
@@ -44,35 +57,60 @@ class AsyncParserMixin:
                 self.advance()
         return params
 
+    # ── await ─────────────────────────────────────────────────────────────────
     def parse_await_expr(self):
-        """Parse:  await <expr>"""
+        """
+        await <expr>
+        Usually sits on the RHS of an assignment; we return AwaitNode so the
+        interpreter can schedule it with asyncio.
+        """
         self.expect("AWAIT")
         expr = self.parse_expr()
         return AwaitNode(expr)
 
+    # ── stream think ──────────────────────────────────────────────────────────
     def parse_stream_think(self):
-        """Parse:  stream think <prompt>: each <var>: <body>"""
+        """
+        stream think <prompt_expr>:
+            each <chunk_var>:
+                <body>
+        """
         self.expect("STREAM")
         self.expect("THINK")
         prompt = self.parse_expr()
         self.expect("COLON")
-        self._expect_newline_or_eof()
-        self._skip_newlines()
+        self._skip_newlines()          # allow each on the next line
+
+        # Mandatory `each <var>:` sub-clause (may be on next line inside block)
+        # Consume the INDENT that wraps the each clause, if present
+        if self._current().type == TokenType.INDENT:
+            self._consume(TokenType.INDENT)
+
         self.expect("EACH")
         chunk_var = self.expect("IDENTIFIER").value
         self.expect("COLON")
-        self._expect_newline_or_eof()
-        self._skip_newlines()
+
         body = self.parse_block()
+
+        # Consume matching DEDENT if we consumed an INDENT above
+        if self._current().type == TokenType.DEDENT:
+            self._consume(TokenType.DEDENT)
         return StreamThinkNode(prompt, chunk_var, body)
 
+    # ── fetch ─────────────────────────────────────────────────────────────────
     def parse_fetch_expr(self):
-        """Parse:  fetch <url> [method "POST"] [headers {...}] [body {...}]"""
+        """
+        fetch <url_expr>
+        fetch <url_expr> method "POST" headers {...} body {...}
+        """
         self.expect("FETCH")
         url = self.parse_expr()
+
         method = "GET"
         headers = {}
         body_expr = None
+
+        # Optional keyword modifiers
         while self.current_token_is("IDENTIFIER"):
             kw = self.current_token.value.lower()
             if kw == "method":
@@ -80,10 +118,11 @@ class AsyncParserMixin:
                 method = self.expect("STRING").value.upper()
             elif kw == "headers":
                 self.advance()
-                headers = self.parse_expr()
+                headers = self.parse_expr()   # expects a dict literal / expr
             elif kw == "body":
                 self.advance()
                 body_expr = self.parse_expr()
             else:
                 break
+
         return FetchNode(url, method, headers, body_expr)

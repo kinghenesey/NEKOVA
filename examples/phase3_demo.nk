@@ -1,0 +1,65 @@
+# ═══════════════════════════════════════════════════════════════
+# NEKOVA Phase 3 Demo — async/await · stream think · HTTP fetch
+# Run:  nekova run examples/phase3_demo.nk
+# ═══════════════════════════════════════════════════════════════
+
+# ── 1. Sync baseline ──────────────────────────────────────────
+show "NEKOVA Phase 3 — Async Demo"
+show "────────────────────────────"
+
+let language: text = "NEKOVA"
+let version: text  = "1.2.0"
+show f"Running {language} v{version}"
+
+# ── 2. Async function definition ─────────────────────────────
+async func greet(name: text):
+    show f"  [async] Hello, {name}!"
+    return f"Greeted {name}"
+
+async func add(a: number, b: number):
+    let result: number = a + b
+    return result
+
+# ── 3. Awaiting async functions ───────────────────────────────
+show ""
+show "Async functions:"
+let msg: text = await greet("Emmanuel")
+show f"  → {msg}"
+
+let sum: number = await add(40, 2)
+show f"  → 40 + 2 = {sum}"
+
+# ── 4. Nested async ──────────────────────────────────────────
+async func pipe_run(input: text):
+    let step1: text = await greet(input)
+    show f"  [pipe_run] step1 done: {step1}"
+    return f"pipe_run({input}) complete"
+
+show ""
+show "Async pipeline:"
+let out: text = await pipe_run("World")
+show f"  → {out}"
+
+# ── 5. Stream think (AI streaming) ───────────────────────────
+show ""
+show "Stream think (mock):"
+stream think "Describe NEKOVA in one sentence.":
+    each chunk:
+        show f"  chunk: {chunk}"
+
+# ── 6. HTTP fetch ────────────────────────────────────────────
+show ""
+show "HTTP fetch:"
+let res = fetch "https://httpbin.org/json" method "GET"
+show f"  status: {res.status}"
+show f"  ok:     {res.ok}"
+
+# ── 7. POST with body ────────────────────────────────────────
+show ""
+show "POST request:"
+let post = fetch "https://httpbin.org/post" method "POST" body "{\"lang\": \"nekova\"}"
+show f"  status: {post.status}"
+
+# ── 8. Done ──────────────────────────────────────────────────
+show ""
+show "Phase 3 complete. NEKOVA is async-native."

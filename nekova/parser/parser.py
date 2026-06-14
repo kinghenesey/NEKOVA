@@ -140,6 +140,9 @@ class Parser(AsyncParserMixin):
         if token.type == TokenType.FETCH:
             return self.parse_fetch_expr()
 
+        if token.type == TokenType.LET:
+            return self._parse_let()
+
         if token.type == TokenType.IDENTIFIER:
             return self._parse_identifier_statement()
 
@@ -546,6 +549,68 @@ class Parser(AsyncParserMixin):
         self._expect_newline_or_eof()
         return ImportStatement(filepath, names=names)
 
+    def _parse_let(self):
+        """
+        Parse:  let name: type = value
+                let name = value
+
+        The 'let' keyword makes declarations unambiguous — the name
+        always follows immediately, then an optional ': type', then '= value'.
+        """
+        self._consume(TokenType.LET)
+        name  = self._consume(TokenType.IDENTIFIER).value
+
+        # Optional type hint:  name: type
+        type_hint = None
+        if self._current().type == TokenType.COLON:
+            self._consume(TokenType.COLON)
+            if self._current().type == TokenType.IDENTIFIER:
+                type_hint = self._consume(TokenType.IDENTIFIER).value
+
+        # Assignment
+        self._consume(TokenType.ASSIGN)
+
+        # Captured think: let thought = think "prompt"
+        if self._current().type == TokenType.THINK:
+            node = self._parse_think()
+            node.variable = name
+            return node
+
+        # Captured parallel: let results = autonomous parallel:
+        if self._current().type == TokenType.AUTONOMOUS:
+            node = self._parse_autonomous()
+            node.variable = name
+            return node
+
+        # Captured pipeline run: let result = run pipeline name
+        if self._current().type == TokenType.RUN:
+            node = self._parse_run_pipeline()
+            node.variable = name
+            return node
+
+        # Awaited expression: let result = await asyncFn()
+        if self._current().type == TokenType.AWAIT:
+            value = self.parse_await_expr()
+            self._expect_newline_or_eof()
+            return AssignStatement(name, value, type_hint=type_hint)
+
+        # Fetch expression: let res = fetch "url" method "GET"
+        if self._current().type == TokenType.FETCH:
+            value = self.parse_fetch_expr()
+            self._expect_newline_or_eof()
+            return AssignStatement(name, value, type_hint=type_hint)
+
+        value = self._parse_expression()
+
+        # Captured pipeline: let report = "prompt" -> agent1 -> agent2
+        if self._current().type == TokenType.ARROW:
+            node = self._parse_pipeline(value)
+            node.variable = name
+            return node
+
+        self._expect_newline_or_eof()
+        return AssignStatement(name, value, type_hint=type_hint)
+
     def _parse_identifier_statement(self):
         """
         An identifier can start two things:
@@ -625,6 +690,8 @@ class Parser(AsyncParserMixin):
         Blocks start with INDENT and end with DEDENT.
         """
         statements = []
+
+        self._skip_newlines()          # consume NEWLINE after ':'
 
         if self._current().type != TokenType.INDENT:
             raise ParseError(
@@ -792,14 +859,6 @@ class Parser(AsyncParserMixin):
             self._consume(TokenType.RPAREN)
             return expr
 
-        # await <expr> as expression: result = await task()
-        if token.type == TokenType.AWAIT:
-            return self.parse_await_expr()
-
-        # fetch <url> as expression: response = fetch "url"
-        if token.type == TokenType.FETCH:
-            return self.parse_fetch_expr()
-
         raise ParseError(
             f"Unexpected '{token.value}' — "
             f"expected a value, variable, or expression.",
@@ -964,33 +1023,6 @@ class Parser(AsyncParserMixin):
             )
         return self._advance()
 
-
-    # -- Bridge methods for AsyncParserMixin ---------------------------
-    @property
-    def current_token(self):
-        return self._current()
-
-    def expect(self, token_type):
-        from nekova.lexer.token_types import TokenType as TT
-        tt = getattr(TT, token_type) if isinstance(token_type, str) else token_type
-        return self._consume(tt)
-
-    def advance(self):
-        return self._advance()
-
-    def current_token_is(self, token_type):
-        from nekova.lexer.token_types import TokenType as TT
-        tt = getattr(TT, token_type) if isinstance(token_type, str) else token_type
-        return self._current().type == tt
-
-    def parse_expr(self):
-        return self._parse_expression()
-
-    def parse_block(self):
-        return self._parse_block()
-
-    # -- End bridge methods --------------------------------------------
-
     def _skip_newlines(self):
         """Skip over any newline tokens."""
         while (not self._at_end() and
@@ -1004,3 +1036,33 @@ class Parser(AsyncParserMixin):
         elif self._current().type == TokenType.EOF:
             pass
         # If neither, we just continue — the next parse will catch errors
+
+    # ── Aliases for AsyncParserMixin ──────────────────────────────────────────
+    # The async parser uses a consistent public API. These thin wrappers
+    # delegate to the private underscore methods already on Parser.
+
+    def expect(self, token_type_name: str) -> "Token":
+        """Consume a token of the given type (by name string) or raise."""
+        tt = TokenType[token_type_name]
+        return self._consume(tt)
+
+    def advance(self) -> "Token":
+        """Consume and return the current token."""
+        return self._advance()
+
+    def current_token_is(self, token_type_name: str) -> bool:
+        """Return True if the current token type matches the given name."""
+        return self._current().type == TokenType[token_type_name]
+
+    def parse_block(self) -> list:
+        """Delegate to the existing block parser."""
+        return self._parse_block()
+
+    @property
+    def current_token(self):
+        """Direct token access used by AsyncParserMixin."""
+        return self._current()
+
+    def parse_expr(self):
+        """Alias used by AsyncParserMixin."""
+        return self._parse_expression()
