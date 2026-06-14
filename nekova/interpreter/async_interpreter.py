@@ -93,7 +93,7 @@ class AsyncInterpreterMixin:
             name=node.name,
             params=node.params,
             body=node.body,
-            closure=self.env.snapshot(),
+            closure=self.env.snapshot() if hasattr(self.env, "snapshot") else dict(self.env),
             interpreter=self,
         )
         self.env[node.name] = fn
