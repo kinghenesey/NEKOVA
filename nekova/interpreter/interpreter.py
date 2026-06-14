@@ -144,7 +144,7 @@ class Interpreter(AsyncInterpreterMixin):
                     f"  Hint: use 'any' to allow any type."
                 )
 
-        self.env.set(node.name, value)
+        self.env[node.name] = value
         return value
 
     def _exec_ShowStatement(self, node: ShowStatement):
