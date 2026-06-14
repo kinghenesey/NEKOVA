@@ -1,8 +1,14 @@
-﻿# =============================================================
+# =============================================================
 # NEKOVA Language â€” File Runner
 # =============================================================
 # Loads .nk files and passes them through the pipeline.
 # Pipeline is a stub for now â€” will be filled in Phase 2-4.
+
+import sys
+import io
+if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 import os
 import sys

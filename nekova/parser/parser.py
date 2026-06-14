@@ -792,6 +792,14 @@ class Parser(AsyncParserMixin):
             self._consume(TokenType.RPAREN)
             return expr
 
+        # await <expr> as expression: result = await task()
+        if token.type == TokenType.AWAIT:
+            return self.parse_await_expr()
+
+        # fetch <url> as expression: response = fetch "url"
+        if token.type == TokenType.FETCH:
+            return self.parse_fetch_expr()
+
         raise ParseError(
             f"Unexpected '{token.value}' — "
             f"expected a value, variable, or expression.",
@@ -955,6 +963,33 @@ class Parser(AsyncParserMixin):
                 token.line
             )
         return self._advance()
+
+
+    # -- Bridge methods for AsyncParserMixin ---------------------------
+    @property
+    def current_token(self):
+        return self._current()
+
+    def expect(self, token_type):
+        from nekova.lexer.token_types import TokenType as TT
+        tt = getattr(TT, token_type) if isinstance(token_type, str) else token_type
+        return self._consume(tt)
+
+    def advance(self):
+        return self._advance()
+
+    def current_token_is(self, token_type):
+        from nekova.lexer.token_types import TokenType as TT
+        tt = getattr(TT, token_type) if isinstance(token_type, str) else token_type
+        return self._current().type == tt
+
+    def parse_expr(self):
+        return self._parse_expression()
+
+    def parse_block(self):
+        return self._parse_block()
+
+    # -- End bridge methods --------------------------------------------
 
     def _skip_newlines(self):
         """Skip over any newline tokens."""

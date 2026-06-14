@@ -894,6 +894,16 @@ class Interpreter(AsyncInterpreterMixin):
         if isinstance(callee, TaskStatement):
             return self._call_task(callee, args)
 
+        # NEKOVA async task
+        from nekova.interpreter.async_interpreter import AsyncFunction as _AsyncFn
+        if isinstance(callee, _AsyncFn):
+            import asyncio
+            try:
+                asyncio.get_running_loop()
+                return callee.call_async(args)  # return coroutine to outer await
+            except RuntimeError:
+                return self._run_sync(callee.call_async(args))
+
         raise RuntimeError(
             f"'{node.name}' is not a task you can call.\n"
             f"  Define it first with:  task {node.name}(...):"
@@ -1154,6 +1164,27 @@ class Interpreter(AsyncInterpreterMixin):
     # ----------------------------------------------------------
     # Helpers
     # ----------------------------------------------------------
+
+
+    # -- Bridge methods for AsyncInterpreterMixin -----------------
+    def visit(self, node):
+        return self._execute_node(node)
+
+    def execute_block(self, body, env=None):
+        if env is not None:
+            previous = self.env
+            from nekova.interpreter.environment import Environment
+            new_env = Environment(parent=self.env)
+            for k, v in env.items():
+                new_env.set(k, v)
+            self.env = new_env
+            try:
+                return self._execute_block(body, new_scope=False)
+            finally:
+                self.env = previous
+        return self._execute_block(body)
+
+    # -- End bridge methods ----------------------------------------
 
     def _execute_block(self, statements: list,
                        new_scope: bool = True):

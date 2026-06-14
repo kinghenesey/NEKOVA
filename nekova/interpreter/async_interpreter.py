@@ -93,7 +93,7 @@ class AsyncInterpreterMixin:
             name=node.name,
             params=node.params,
             body=node.body,
-            closure=dict(self.env),
+            closure=self.env.snapshot(),
             interpreter=self,
         )
         self.env[node.name] = fn
@@ -117,19 +117,35 @@ class AsyncInterpreterMixin:
         Async version of execute_block.  Needed so that await inside an async
         function body propagates the coroutine chain properly.
         """
+        from nekova.runtime import ReturnSignal
+        from nekova.parser.async_nodes import AwaitNode as _AW
+        from nekova.parser.nodes import AssignStatement as _AS
+        from nekova.parser.nodes import ReturnStatement as _RS
         old_env = self.env
         self.env = env
         result = None
-        for stmt in body:
-            # If a statement is itself a coroutine node, await it
-            from nekova.parser.async_nodes import AwaitNode as _AW
-            if isinstance(stmt, _AW):
-                result = await self.visit_await(stmt)
-            else:
-                result = self.visit(stmt)
-                if asyncio.iscoroutine(result):
-                    result = await result
-        self.env = old_env
+        try:
+            for stmt in body:
+                # top-level:  await task()
+                if isinstance(stmt, _AW):
+                    result = await self.visit_await(stmt)
+                # assignment:  x = await task()
+                elif isinstance(stmt, _AS) and isinstance(stmt.value, _AW):
+                    value = await self.visit_await(stmt.value)
+                    self.env[stmt.name] = value
+                    result = value
+                # return:  return await task()
+                elif isinstance(stmt, _RS) and isinstance(stmt.value, _AW):
+                    value = await self.visit_await(stmt.value)
+                    raise ReturnSignal(value)
+                else:
+                    result = self.visit(stmt)
+                    if asyncio.iscoroutine(result):
+                        result = await result
+        except ReturnSignal as ret:
+            result = ret.value
+        finally:
+            self.env = old_env
         return result
 
     # ── stream think ──────────────────────────────────────────────────────────

@@ -85,3 +85,34 @@ class Environment:
 
     def __repr__(self):
         return f"Environment({list(self.variables.keys())})"
+
+    def snapshot(self):
+        """Flat dict of all visible variables — used for async closure capture."""
+        flat = {}
+        if self.parent is not None:
+            flat.update(self.parent.snapshot())
+        flat.update(self.variables)
+        return flat
+
+    def keys(self):
+        return self.variables.keys()
+
+    def items(self):
+        return self.variables.items()
+
+    def __iter__(self):
+        return iter(self.variables)
+
+    def __getitem__(self, name):
+        return self.get(name)
+
+    def __setitem__(self, name, value):
+        self.set(name, value)
+
+    def __contains__(self, name):
+        try:
+            self.get(name)
+            return True
+        except NameError:
+            return False
+

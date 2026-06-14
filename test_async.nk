@@ -1,0 +1,6 @@
+async task greet(name):
+    show f"Hello {name}!"
+    return f"Done {name}"
+
+result = await greet("Emmanuel")
+show result
