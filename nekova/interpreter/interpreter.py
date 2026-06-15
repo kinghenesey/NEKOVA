@@ -56,6 +56,9 @@ class Interpreter(AsyncInterpreterMixin):
         # { var_name: type_hint_str }  — populated on first typed assignment
         self._type_registry: dict = {}
 
+        # Line tracker — updated as statements execute, used by error display
+        self._current_line: int = 0
+
         # Built-in functions available everywhere in NEKOVA
         self._register_builtins()
 
@@ -63,15 +66,24 @@ class Interpreter(AsyncInterpreterMixin):
     # Public interface
     # ----------------------------------------------------------
 
-    def execute(self, program: Program,
-                filepath: str = None):
+    def execute(self, program: Program, filepath: str = None):
         """Execute a full NEKOVA program."""
         if filepath:
-            self._current_file  = filepath
+            self._current_file = filepath
         if not hasattr(self, '_imported_files'):
             self._imported_files = set()
         for statement in program.statements:
-            self._execute_node(statement)
+            # Track line for error display (tokens carry line, nodes don't yet)
+            if hasattr(statement, "line"):
+                self._current_line = statement.line
+            try:
+                self._execute_node(statement)
+            except (TypeError, ZeroDivisionError, IndexError,
+                    KeyError, RecursionError) as e:
+                # Attach current line so runner's display_error can use it
+                if not hasattr(e, "line"):
+                    e.line = self._current_line
+                raise
 
     # ----------------------------------------------------------
     # Node dispatcher

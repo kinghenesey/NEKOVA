@@ -157,6 +157,7 @@ class NEKOVARunner:
                 source=self.source,
                 filepath=self.filepath,
                 line=getattr(e, "line", 0),
+                col=getattr(e, "column", 0),
             )
             return 1
 
@@ -167,14 +168,13 @@ class NEKOVARunner:
                 source=self.source,
                 filepath=self.filepath,
                 line=getattr(e, "line", 0),
+                col=getattr(e, "column", 0),
             )
             return 1
 
         except NEKOVANameError as e:
             variables = {}
             try:
-                # Only show user-defined variables
-                # not built-in functions
                 variables = {
                     k: v for k, v in
                     interpreter.globals.variables.items()
@@ -188,7 +188,17 @@ class NEKOVARunner:
                 source=self.source,
                 filepath=self.filepath,
                 line=getattr(e, "line", 0),
+                col=getattr(e, "column", 0),
                 variables=variables,
+            )
+            return 1
+
+        except NameError as e:
+            display_error(
+                error_type="NameError",
+                message=str(e),
+                source=self.source,
+                filepath=self.filepath,
             )
             return 1
 
@@ -199,6 +209,52 @@ class NEKOVARunner:
                 source=self.source,
                 filepath=self.filepath,
                 line=getattr(e, "line", 0),
+            )
+            return 1
+
+        except TypeError as e:
+            display_error(
+                error_type="TypeError",
+                message=str(e),
+                source=self.source,
+                filepath=self.filepath,
+                line=getattr(e, "line", 0),
+            )
+            return 1
+
+        except ZeroDivisionError as e:
+            display_error(
+                error_type="ZeroDivisionError",
+                message=str(e),
+                source=self.source,
+                filepath=self.filepath,
+            )
+            return 1
+
+        except IndexError as e:
+            display_error(
+                error_type="IndexError",
+                message=str(e),
+                source=self.source,
+                filepath=self.filepath,
+            )
+            return 1
+
+        except KeyError as e:
+            display_error(
+                error_type="KeyError",
+                message=str(e),
+                source=self.source,
+                filepath=self.filepath,
+            )
+            return 1
+
+        except RecursionError:
+            display_error(
+                error_type="RecursionError",
+                message="Maximum call depth exceeded.",
+                source=self.source,
+                filepath=self.filepath,
             )
             return 1
 

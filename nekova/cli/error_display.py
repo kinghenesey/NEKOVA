@@ -1,240 +1,341 @@
 # =============================================================
-# NEKOVA CLI — Enhanced Error Display System
+# NEKOVA CLI — Error Display  (Phase 5A)
 # =============================================================
-# Transforms raw errors into beautiful, helpful messages
-# with source context, suggestions, and did-you-mean hints.
+# Rust-style error output: source context, caret underline,
+# did-you-mean suggestions, pepper-red SYNEKCOT branding.
+#
+# Output example:
+#
+#   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#   error[NameError]: Variable Not Found
+#    --> src/main.nk:4:6
+#   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#    2 │  let age: number = 25
+#    3 │  show f"Hello {name}"
+#    4 │  show unknown_var
+#         ^^^^^^^^^^^^ variable not defined
+#   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#   💡 Did you mean: name ?
+#   🔧 Add before line 4:  unknown_var = "your value here"
+#   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import re
-from nekova.config import Color
+import difflib
+
+# ── NEKOVA brand colours (ANSI 256 approximations) ───────────
+# Pepper red  #C41E0E  → ANSI 196 / escape: \x1b[38;5;196m
+# Forged gold #D4940A  → ANSI 172 / escape: \x1b[38;5;172m
+
+_RED    = "\x1b[38;5;196m"   # pepper red
+_GOLD   = "\x1b[38;5;172m"   # forged gold
+_CYAN   = "\x1b[96m"
+_WHITE  = "\x1b[97m"
+_DIM    = "\x1b[2m"
+_BOLD   = "\x1b[1m"
+_RESET  = "\x1b[0m"
+_UNDER  = "\x1b[4m"
+
+_WIDTH  = 56
 
 
-ERROR_HINTS = {
+# ── Error catalogue ───────────────────────────────────────────
+
+_CATALOGUE = {
     "NameError": {
+        "code":    "E001",
         "title":   "Variable Not Found",
-        "hint":    "This variable was used but never defined.",
-        "example": "Define it before using it:  name = value",
+        "hint":    "This variable was used before it was defined.",
+        "example": "Define it first:  let {var} = \"value\"",
     },
     "SyntaxError": {
+        "code":    "E002",
         "title":   "Syntax Error",
-        "hint":    "There's a mistake in how this line is written.",
+        "hint":    "NEKOVA couldn't read this line.",
         "example": "Check for missing quotes, colons, or brackets.",
     },
     "ParseError": {
+        "code":    "E003",
         "title":   "Parse Error",
-        "hint":    "NEKOVA couldn't understand the structure of your code.",
-        "example": "Check your indentation and statement structure.",
+        "hint":    "NEKOVA couldn't understand the code structure.",
+        "example": "Check your indentation and block structure.",
+    },
+    "TypeError": {
+        "code":    "E004",
+        "title":   "Type Error",
+        "hint":    "A value has the wrong type for this operation.",
+        "example": "Use 'let x: any = value' to allow mixed types.",
     },
     "RuntimeError": {
+        "code":    "E005",
         "title":   "Runtime Error",
         "hint":    "Something went wrong while running your program.",
         "example": "Check the values your variables hold.",
     },
-    "TypeError": {
-        "title":   "Type Error",
-        "hint":    "You're mixing incompatible types of values.",
-        "example": "Make sure you're not adding a number to a string.",
-    },
     "ZeroDivisionError": {
+        "code":    "E006",
         "title":   "Division By Zero",
         "hint":    "You cannot divide a number by zero.",
-        "example": "Check that your divisor is never 0.",
+        "example": "Guard with:  if divisor != 0: result = a / divisor",
     },
     "ImportError": {
+        "code":    "E007",
         "title":   "Module Not Found",
-        "hint":    "This module doesn't exist in NEKOVA's standard library.",
-        "example": "Available: math, text, files, datetime, collections, ai, agents, ui, web, database",
+        "hint":    "This module doesn't exist in NEKOVA's stdlib.",
+        "example": "Available: math, text, files, datetime, collections, ai, web",
     },
     "IndexError": {
+        "code":    "E008",
         "title":   "Index Out of Range",
-        "hint":    "You're trying to access an item that doesn't exist.",
-        "example": "Check that your index is less than the list length.",
+        "hint":    "You're accessing a list position that doesn't exist.",
+        "example": "Check length first:  if i < list.length: ...",
     },
     "KeyError": {
+        "code":    "E009",
         "title":   "Key Not Found",
         "hint":    "This key doesn't exist in the dictionary.",
         "example": "Check available keys with dict.keys()",
     },
+    "RecursionError": {
+        "code":    "E010",
+        "title":   "Infinite Recursion",
+        "hint":    "A function kept calling itself without stopping.",
+        "example": "Make sure your recursive function has a base case.",
+    },
 }
 
 
+# ── Public API ────────────────────────────────────────────────
+
 def display_error(
     error_type: str,
-    message: str,
-    source: str = "",
-    filepath: str = "",
-    line: int = 0,
-    variables: dict = None,
+    message:    str,
+    source:     str  = "",
+    filepath:   str  = "",
+    line:       int  = 0,
+    col:        int  = 0,
+    variables:  dict = None,
 ):
     """
-    Display a beautifully formatted NEKOVA error message
-    with source context, suggestions and did-you-mean hints.
+    Render a Rust-style NEKOVA error to stdout.
+
+    Parameters
+    ----------
+    error_type  Python exception class name  ("NameError", "TypeError" …)
+    message     Raw exception message string
+    source      Full source text of the file being run
+    filepath    Path to the source file
+    line        1-based line number of the error (0 = unknown)
+    col         1-based column number (0 = unknown)
+    variables   Dict of currently-defined variables (for did-you-mean)
     """
-    info = ERROR_HINTS.get(error_type, {
+    info = _CATALOGUE.get(error_type, {
+        "code":    "E000",
         "title":   error_type,
         "hint":    "An unexpected error occurred.",
         "example": "Review the line shown above.",
     })
 
-    width = 52
+    # Auto-detect line/col from message if not supplied
+    if not line:
+        line, col = _extract_location(message)
 
     # ── Header ────────────────────────────────────────────────
     print()
-    print(f"{Color.RED}{'━' * width}{Color.RESET}")
-    print(f"{Color.RED}{Color.BOLD}"
-          f"  NEKOVA Error — {info['title']}"
-          f"{Color.RESET}")
-
+    _hr()
+    print(f"{_RED}{_BOLD}  error[{info['code']}]: {info['title']}{_RESET}")
     if filepath and line:
-        short_path = _shorten_path(filepath)
-        print(f"{Color.DIM}  Line {line} · {short_path}"
-              f"{Color.RESET}")
+        short = _shorten(filepath)
+        loc   = f"{short}:{line}" + (f":{col}" if col else "")
+        print(f"{_DIM}   --> {loc}{_RESET}")
     elif line:
-        print(f"{Color.DIM}  Line {line}{Color.RESET}")
+        print(f"{_DIM}   --> line {line}{_RESET}")
+    _hr()
 
-    print(f"{Color.RED}{'━' * width}{Color.RESET}")
-
-    # ── Source context ────────────────────────────────────────
+    # ── Source context with caret ─────────────────────────────
     if source and line:
-        lines = source.splitlines()
-        _show_source_context(lines, line)
+        _render_source(source, line, col, message)
 
     # ── Error message ─────────────────────────────────────────
+    clean = _clean(message)
     print()
-    clean_msg = _clean_message(message)
-    print(f"  {Color.WHITE}✗ {clean_msg}{Color.RESET}")
+    print(f"  {_RED}✗  {_WHITE}{_BOLD}{clean}{_RESET}")
 
     # ── Did you mean? ─────────────────────────────────────────
-    if error_type == "NameError" and variables:
-        var_name = _extract_var_name(message)
-        if var_name:
-            suggestions = _did_you_mean(
-                var_name, variables)
+    if variables:
+        var = _extract_token(message)
+        if var:
+            suggestions = _did_you_mean(var, list(variables.keys()))
             if suggestions:
                 print()
-                print(f"  {Color.YELLOW}"
-                      f"💡 Did you mean one of these?"
-                      f"{Color.RESET}")
+                print(f"  {_GOLD}💡 Did you mean:{_RESET}")
                 for s in suggestions:
-                    print(f"  {Color.DIM}   → {s}"
-                          f"{Color.RESET}")
+                    print(f"     {_CYAN}{s}{_RESET}")
 
     # ── Hint ──────────────────────────────────────────────────
-    print()
-    print(f"  {Color.YELLOW}💡 {info['hint']}"
-          f"{Color.RESET}")
-    print(f"  {Color.DIM}   {info['example']}"
-          f"{Color.RESET}")
+    hint = info["hint"]
+    example = info["example"]
+    # Substitute {var} in example if we have a token
+    var = _extract_token(message)
+    if var and "{var}" in example:
+        example = example.replace("{var}", var)
 
-    # ── Quick fix suggestion ───────────────────────────────────
-    fix = _suggest_fix(error_type, message, line)
+    print()
+    print(f"  {_GOLD}💡 {hint}{_RESET}")
+    print(f"  {_DIM}   {example}{_RESET}")
+
+    # ── Quick fix ─────────────────────────────────────────────
+    fix = _quick_fix(error_type, message, line, col)
     if fix:
         print()
-        print(f"  {Color.CYAN}🔧 Quick fix:{Color.RESET}")
-        print(f"  {Color.DIM}   {fix}{Color.RESET}")
+        print(f"  {_CYAN}🔧 {fix}{_RESET}")
 
-    print(f"{Color.RED}{'━' * width}{Color.RESET}")
+    _hr()
     print()
 
 
-def _show_source_context(lines: list,
-                          error_line: int):
-    """Show source lines around the error."""
-    start = max(0, error_line - 3)
-    end   = min(len(lines), error_line + 2)
+# ── Source renderer ───────────────────────────────────────────
+
+def _render_source(source: str, error_line: int,
+                   col: int, message: str):
+    """
+    Print source context with:
+      - 2 lines before and after
+      - error line highlighted in pepper red
+      - caret (^^^) pointing at the column
+    """
+    lines   = source.splitlines()
+    start   = max(0, error_line - 3)
+    end     = min(len(lines), error_line + 2)
+    gutter  = len(str(end + 1)) + 1   # width for line numbers
 
     print()
+    # Vertical bar connector
+    print(f"  {_DIM}{' ' * gutter} │{_RESET}")
+
     for i in range(start, end):
-        line_num = i + 1
-        content  = lines[i]
+        n       = i + 1
+        content = lines[i]
+        num_str = str(n).rjust(gutter)
 
-        if line_num == error_line:
-            print(f"  {Color.RED}▶ "
-                  f"{line_num:>3} │  "
-                  f"{Color.BOLD}{content}"
-                  f"{Color.RESET}")
+        if n == error_line:
+            # Error line — pepper red, bold
+            print(f"  {_RED}{num_str} │  {_BOLD}{content}{_RESET}")
+
+            # Caret line
+            if col > 0:
+                # Point at specific column
+                token = _extract_token(message) or ""
+                caret_len = max(len(token), 1)
+                pad   = " " * (col - 1)
+                caret = "^" * caret_len
+            else:
+                # Point at first non-whitespace
+                stripped = content.lstrip()
+                pad   = " " * (len(content) - len(stripped))
+                caret = "^" * max(len(stripped.split()[0]) if stripped.split() else 1, 1)
+
+            print(f"  {_DIM}{' ' * gutter} │{_RESET}  "
+                  f"{_RED}{_BOLD}{pad}{caret}{_RESET}"
+                  f"  {_DIM}{_extract_short_label(message)}{_RESET}")
         else:
-            print(f"  {Color.DIM}  "
-                  f"{line_num:>3} │  {content}"
-                  f"{Color.RESET}")
+            print(f"  {_DIM}{num_str} │  {content}{_RESET}")
+
+    print(f"  {_DIM}{' ' * gutter} │{_RESET}")
 
 
-def _clean_message(message: str) -> str:
-    """Clean up raw error messages."""
-    message = message.strip()
-    replacements = [
+# ── Helpers ───────────────────────────────────────────────────
+
+def _hr():
+    print(f"{_RED}{'━' * _WIDTH}{_RESET}")
+
+
+def _shorten(filepath: str) -> str:
+    parts = filepath.replace("\\", "/").split("/")
+    return "/".join(parts[-2:]) if len(parts) > 2 else filepath
+
+
+def _clean(message: str) -> str:
+    """Map Python internals to NEKOVA-friendly names."""
+    msg = message.strip()
+    for old, new in [
         ("\n  ", " — "),
-        ("\n", " "),
+        ("\n",   " "),
         ("'NoneType'", "'null'"),
         ("'bool'",     "'boolean'"),
         ("'str'",      "'text'"),
         ("'int'",      "'number'"),
         ("'float'",    "'decimal'"),
-    ]
-    for old, new in replacements:
-        message = message.replace(old, new)
-    return message
+        ("'list'",     "'list'"),
+    ]:
+        msg = msg.replace(old, new)
+    # Truncate very long messages
+    if len(msg) > 200:
+        msg = msg[:197] + "…"
+    return msg
 
 
-def _extract_var_name(message: str) -> str:
-    """Extract variable name from error message."""
-    match = re.search(r"'([a-zA-Z_][a-zA-Z0-9_]*)'",
-                      message)
-    return match.group(1) if match else ""
+def _extract_token(message: str) -> str:
+    """Pull the first quoted token out of an error message."""
+    m = re.search(r"'([a-zA-Z_][a-zA-Z0-9_]*)'", message)
+    return m.group(1) if m else ""
 
 
-def _did_you_mean(var_name: str,
-                  variables: dict) -> list:
-    """Suggest similar variable names."""
-    suggestions = []
-    var_lower   = var_name.lower()
-
-    for name in variables:
-        name_lower = name.lower()
-        # Check similarity
-        if (var_lower in name_lower or
-                name_lower in var_lower or
-                _similar(var_lower, name_lower)):
-            suggestions.append(name)
-
-    return suggestions[:3]
+def _extract_short_label(message: str) -> str:
+    """One-word label for the caret annotation."""
+    token = _extract_token(message)
+    if token:
+        return f"'{token}' not defined here"
+    return "error here"
 
 
-def _similar(a: str, b: str) -> bool:
-    """Check if two strings are similar."""
-    if not a or not b:
-        return False
-    # Check if they share most characters
-    common = sum(1 for c in a if c in b)
-    return common >= min(len(a), len(b)) * 0.6
+def _extract_location(message: str):
+    """Try to parse 'Line N, Column M' or 'Line N:' from message."""
+    m = re.search(r"[Ll]ine\s+(\d+)[,\s]+[Cc]ol(?:umn)?\s+(\d+)", message)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    m = re.search(r"[Ll]ine\s+(\d+)", message)
+    if m:
+        return int(m.group(1)), 0
+    return 0, 0
 
 
-def _suggest_fix(error_type: str,
-                 message: str,
-                 line: int) -> str:
-    """Suggest a quick fix for common errors."""
+def _did_you_mean(name: str, candidates: list) -> list:
+    """
+    Use difflib for real similarity — much better than the old char-overlap.
+    Returns up to 3 close matches.
+    """
+    if not candidates:
+        return []
+    matches = difflib.get_close_matches(
+        name, candidates,
+        n=3, cutoff=0.5
+    )
+    return matches
+
+
+def _quick_fix(error_type: str, message: str,
+               line: int, col: int) -> str:
+    """Return a one-line actionable fix string, or empty string."""
     if error_type == "NameError":
-        var = _extract_var_name(message)
+        var = _extract_token(message)
         if var:
-            return (f"Add before line {line}:  "
-                    f"{var} = \"your value here\"")
+            loc = f"line {line}" if line else "before use"
+            return f"Add before {loc}:  let {var} = \"your value\""
+
+    if error_type == "TypeError" and "strict" in message.lower():
+        return "Set  strict_types = false  in nekova.toml to allow dynamic types."
+
+    if error_type == "TypeError":
+        return "Use  let x: any = value  to allow any type for this variable."
 
     if error_type == "ZeroDivisionError":
-        return "Check divisor is not zero before dividing."
+        return "Guard with:  if divisor != 0: result = a / divisor"
 
     if error_type == "ImportError":
-        mod = _extract_var_name(message)
-        if mod:
-            return f"Available modules: math, text, files, ai, web, database"
+        mod = _extract_token(message)
+        return f"Check spelling of '{mod}'. Run  nekova info  to see stdlib." if mod else ""
 
     if "unclosed" in message.lower():
-        return "Check for missing closing quote \" or bracket"
+        return "Add a closing  \"  or  ]  to complete the expression."
 
     return ""
-
-
-def _shorten_path(filepath: str) -> str:
-    """Shorten long file paths for display."""
-    parts = filepath.replace("\\", "/").split("/")
-    if len(parts) > 3:
-        return "/".join(parts[-2:])
-    return filepath
