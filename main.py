@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # =============================================================
 # NEKOVA Language â€” Main Entry Point
 # =============================================================
@@ -260,8 +260,14 @@ def main():
                     sys.exit(1)
                 _apply_toml_config(config)
                 print_info(f"{config.project.name} v{config.project.version}")
+                if not args["debug"] and config.run.debug:
+                    args["debug"] = True
+                strict = config.run.strict_types
                 arg = config.entry_path
-            runner    = NEKOVARunner(filepath=arg, debug=args["debug"])
+                runner = NEKOVARunner(filepath=arg, debug=args["debug"],
+                                      strict_types=strict)
+            else:
+                runner = NEKOVARunner(filepath=arg, debug=args["debug"])
             exit_code = runner.run()
             sys.exit(exit_code)
         

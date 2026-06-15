@@ -46,10 +46,15 @@ class Interpreter(AsyncInterpreterMixin):
         interpreter.execute(program)
     """
 
-    def __init__(self):
+    def __init__(self, strict_types: bool = False):
         # Global environment — lives for the entire program
-        self.globals = Environment()
-        self.env     = self.globals
+        self.globals      = Environment()
+        self.env          = self.globals
+        self.strict_types = strict_types
+
+        # Type registry: tracks declared type of each variable name
+        # { var_name: type_hint_str }  — populated on first typed assignment
+        self._type_registry: dict = {}
 
         # Built-in functions available everywhere in NEKOVA
         self._register_builtins()
@@ -117,32 +122,73 @@ class Interpreter(AsyncInterpreterMixin):
 
     def _exec_AssignStatement(self, node: AssignStatement):
         """
-        Execute:  name = value
-        Also handles typed assignments:
-            name: text = "Emmanuel"
-            age: number = 25
-        Type hints are optional — only checked when declared.
+        Execute:  let name: type = value
+                  name = value
+
+        Type checking behaviour:
+          - Always enforced when a type hint is declared on the assignment.
+          - strict_types=True additionally:
+              • Tracks declared types across re-assignments.
+              • Raises on re-assignment if the new value's type doesn't match
+                the originally declared type, even without a hint on the
+                re-assignment.
+              • Raises on untyped assignments that change the type of an
+                already-declared variable.
         """
         value = self._execute_node(node.value)
 
-        # Deep copy dicts and lists to prevent mutation
-        if isinstance(value, dict):
-            import copy
-            value = copy.deepcopy(value)
-        elif isinstance(value, list):
+        # Deep copy mutable values to prevent aliasing bugs
+        if isinstance(value, (dict, list)):
             import copy
             value = copy.deepcopy(value)
 
-        # Type check if hint was declared
-        if node.type_hint and node.type_hint != "any":
-            expected = self._TYPE_MAP.get(node.type_hint)
-            if expected is not None and not isinstance(value, expected):
-                actual = type(value).__name__
-                raise TypeError(
-                    f"Type error on '{node.name}': "
-                    f"expected {node.type_hint}, got {actual}.\n"
-                    f"  Hint: use 'any' to allow any type."
-                )
+        hint = node.type_hint  # may be None
+
+        # ── 1. Explicit type hint on this assignment ──────────────────────────
+        if hint:
+            if hint != "any":
+                expected = self._TYPE_MAP.get(hint)
+                if expected is not None and not isinstance(value, expected):
+                    actual = type(value).__name__
+                    raise TypeError(
+                        f"Type error on '{node.name}': "
+                        f"expected '{hint}', got '{actual}'.\n"
+                        f"  Hint: use 'any' to allow any type."
+                    )
+            # Register declared type (including "any") for future strict checks
+            self._type_registry[node.name] = hint
+
+        # ── 2. strict_types re-assignment check ───────────────────────────────
+        elif self.strict_types and node.name in self._type_registry:
+            declared = self._type_registry[node.name]
+            if declared != "any":
+                expected = self._TYPE_MAP.get(declared)
+                if expected is not None and not isinstance(value, expected):
+                    actual = type(value).__name__
+                    raise TypeError(
+                        f"Type error on '{node.name}': "
+                        f"variable was declared as '{declared}', "
+                        f"cannot assign '{actual}'.\n"
+                        f"  Tip: disable strict_types in nekova.toml to allow dynamic typing."
+                    )
+            # declared == "any" → skip all checks, any value is fine
+
+        # ── 3. strict_types untyped assignment that changes type ──────────────
+        # Only applies when the variable has NO type declaration at all
+        elif self.strict_types and node.name not in self._type_registry and node.name in self.env:
+            try:
+                current = self.env[node.name]
+                if type(current) != type(value) and value is not None:
+                    current_t = type(current).__name__
+                    new_t     = type(value).__name__
+                    raise TypeError(
+                        f"Type error on '{node.name}': "
+                        f"cannot change type from '{current_t}' to '{new_t}' "
+                        f"in strict mode.\n"
+                        f"  Declare a type hint or set strict_types = false in nekova.toml."
+                    )
+            except (NameError, KeyError):
+                pass  # variable doesn't exist yet — first assignment is fine
 
         self.env[node.name] = value
         return value

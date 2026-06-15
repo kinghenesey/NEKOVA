@@ -1,4 +1,4 @@
-# =============================================================
+﻿# =============================================================
 # NEKOVA Language â€” File Runner
 # =============================================================
 # Loads .nk files and passes them through the pipeline.
@@ -32,11 +32,13 @@ class NEKOVARunner:
     file I/O and delegates to the pipeline.
     """
 
-    def __init__(self, filepath: str, debug: bool = False, compile_mode: bool = False):
-        self.filepath = filepath
-        self.debug    = debug
+    def __init__(self, filepath: str, debug: bool = False,
+                 compile_mode: bool = False, strict_types: bool = False):
+        self.filepath     = filepath
+        self.debug        = debug
         self.compile_mode = compile_mode
-        self.source   = ""
+        self.strict_types = strict_types
+        self.source       = ""
 
     def run(self):
         """Full execution pipeline. Returns exit code (0 = ok)."""
@@ -142,7 +144,7 @@ class NEKOVARunner:
                 vm = VirtualMachine()
                 vm.run(code)
             else:
-                interpreter = Interpreter()
+                interpreter = Interpreter(strict_types=self.strict_types)
                 interpreter.execute(
                     program,
                     filepath=os.path.abspath(self.filepath)
