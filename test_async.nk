@@ -1,6 +1,6 @@
-async task greet(name):
+async func greet(name: text):
     show f"Hello {name}!"
-    return f"Done {name}"
+    return f"Greeted {name}"
 
-result = await greet("Emmanuel")
+let result: text = await greet("Emmanuel")
 show result

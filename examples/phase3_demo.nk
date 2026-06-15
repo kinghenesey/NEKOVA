@@ -3,6 +3,9 @@
 # Run:  nekova run examples/phase3_demo.nk
 # ═══════════════════════════════════════════════════════════════
 
+# Note: stream think requires ANTHROPIC_API_KEY in your .env file
+# Without it, stream think will show an auth error (expected)
+
 # ── 1. Sync baseline ──────────────────────────────────────────
 show "NEKOVA Phase 3 — Async Demo"
 show "────────────────────────────"

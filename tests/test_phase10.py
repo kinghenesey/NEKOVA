@@ -130,7 +130,8 @@ class FakeInterpreter:
     from nekova.interpreter.async_interpreter import AsyncInterpreterMixin as _M
 
     def __init__(self):
-        self.env = {}
+        from nekova.interpreter.environment import Environment
+        self.env = Environment()
 
     def visit(self, node):
         if callable(node):
