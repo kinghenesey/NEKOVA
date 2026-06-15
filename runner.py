@@ -175,11 +175,17 @@ class NEKOVARunner:
         except NEKOVANameError as e:
             variables = {}
             try:
+                # Include both global and current local scope
                 variables = {
                     k: v for k, v in
                     interpreter.globals.variables.items()
                     if not callable(v)
                 }
+                variables.update({
+                    k: v for k, v in
+                    interpreter.env.variables.items()
+                    if not callable(v)
+                })
             except Exception:
                 pass
             display_error(
