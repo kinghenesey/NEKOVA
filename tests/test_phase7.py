@@ -115,6 +115,16 @@ class TestProviderRegistry(unittest.TestCase):
 
 class TestAIInNEKOVA(unittest.TestCase):
 
+    def setUp(self):
+        """Force mock provider so tests never hit real APIs."""
+        import os
+        os.environ['NEKOVA_AI_PROVIDER'] = 'mock'
+
+    def tearDown(self):
+        import os
+        os.environ.pop('NEKOVA_AI_PROVIDER', None)
+
+
     def test_ai_ask(self):
         source = (
             'use ai\n'

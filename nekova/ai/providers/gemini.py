@@ -109,8 +109,15 @@ class GeminiProvider(BaseProvider):
             return response.text
 
         except Exception as e:
+            err = str(e)
+            if '403' in err or 'PERMISSION_DENIED' in err or 'suspended' in err.lower():
+                raise RuntimeError(
+                    "Gemini API key is suspended or invalid.\n"
+                    "  Get a new free key at: https://aistudio.google.com\n"
+                    "  Then update GEMINI_API_KEY in your .env file."
+                )
             raise RuntimeError(
-                f"Gemini API error: {str(e)}\n"
+                f"Gemini API error: {err}\n"
                 f"  Check your API key and try again."
             )
     
