@@ -7,7 +7,8 @@ from nekova.parser.nodes import (
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
-    MethodCall
+    MethodCall,
+    PropertyAccess
 )
 from nekova.interpreter.environment import Environment
 from nekova.runtime import ReturnSignal
@@ -1119,6 +1120,38 @@ class Interpreter(AsyncInterpreterMixin):
                 f"'{type(collection).__name__}'."
             )
     
+    def _exec_PropertyAccess(self, node: PropertyAccess):
+        """
+        Execute property access: obj.prop (no parentheses).
+
+        Supports:
+          - ArgsObject:    args.name, args.port
+          - FetchResponse: res.status, res.ok, res.text
+          - Any Python object with __getattr__
+          - Dict key access as fallback: obj["prop"]
+        """
+        obj  = self._execute_node(node.object)
+        prop = node.property
+
+        # ArgsObject and FetchResponse use __getattr__
+        if hasattr(obj, prop):
+            value = getattr(obj, prop)
+            # If it's a bound method, return it callable
+            return value
+
+        # Dict fallback: treat prop as key
+        if isinstance(obj, dict):
+            if prop in obj:
+                return obj[prop]
+            raise KeyError(
+                f"Key '{prop}' not found in dict. "
+                f"Available keys: {list(obj.keys())}"
+            )
+
+        raise AttributeError(
+            f"'{type(obj).__name__}' has no property '{prop}'."
+        )
+
     def _exec_MethodCall(self, node: MethodCall):
         """Execute a method call like name.upper()."""
         obj    = self._execute_node(node.object)
@@ -1208,8 +1241,13 @@ class Interpreter(AsyncInterpreterMixin):
                 f"{', '.join(methods.keys())}"
             )
 
+        # ── Generic Python object fallback (ArgsObject, FetchResponse, etc.) ──
+        method_fn = getattr(obj, node.method, None)
+        if method_fn is not None and callable(method_fn):
+            return method_fn(*args)
+
         raise RuntimeError(
-            f"'{type(obj).__name__}' has no methods."
+            f"'{type(obj).__name__}' has no method '{node.method}'."
         )
 
     def _exec_Identifier(self, node: Identifier):
@@ -1333,6 +1371,9 @@ class Interpreter(AsyncInterpreterMixin):
 
     def _register_builtins(self):
         """Register built-in functions available in all NEKOVA programs."""
+        from nekova.cli.args_object import ArgsObject
+        # Default empty args — overwritten by runner when CLI args are passed
+        self.globals.set("args",      ArgsObject({}))
         self.globals.set("type_of",   lambda x: type(x).__name__)
         self.globals.set("to_number", lambda x: float(x)
                          if "." in str(x) else int(x))

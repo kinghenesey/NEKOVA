@@ -9,7 +9,8 @@ from nekova.parser.nodes import (
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
-    MethodCall
+    MethodCall,
+    PropertyAccess
 )
 from nekova.parser.async_nodes import (
     AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
@@ -828,19 +829,23 @@ class Parser(AsyncParserMixin):
                     self._consume(TokenType.RBRACKET)
                     expr = IndexExpression(expr, index)
 
-                # Method call: name.upper()
+                # Method call or property access: name.upper() or args.name
                 elif (self._current().type == TokenType.DOT):
                     self._advance()  # consume dot
-                    method = self._consume(
-                        TokenType.IDENTIFIER).value
-                    self._consume(TokenType.LPAREN)
-                    args = []
-                    while self._current().type != TokenType.RPAREN:
-                        args.append(self._parse_expression())
-                        if self._current().type == TokenType.COMMA:
-                            self._advance()
-                    self._consume(TokenType.RPAREN)
-                    expr = MethodCall(expr, method, args)
+                    prop = self._consume(TokenType.IDENTIFIER).value
+                    if self._current().type == TokenType.LPAREN:
+                        # Method call: obj.method(args)
+                        self._consume(TokenType.LPAREN)
+                        call_args = []
+                        while self._current().type != TokenType.RPAREN:
+                            call_args.append(self._parse_expression())
+                            if self._current().type == TokenType.COMMA:
+                                self._advance()
+                        self._consume(TokenType.RPAREN)
+                        expr = MethodCall(expr, prop, call_args)
+                    else:
+                        # Property access: obj.prop (no parentheses)
+                        expr = PropertyAccess(expr, prop)
 
                 else:
                     break

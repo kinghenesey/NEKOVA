@@ -102,44 +102,70 @@ v{NEKOVA_VERSION} Â· {NEKOVA_CODENAME}
 
 def parse_args(argv: list) -> dict:
     args = {
-        "file":      None,
-        "command":   None,
-        "arg":       None,
-        "debug":     False,
-        "compile":   False,
-        "version":   False,
-        "help":      False,
-        "packages":  False,
-        "install":   None,
-        "uninstall": None,
+        "file":        None,
+        "command":     None,
+        "arg":         None,
+        "debug":       False,
+        "compile":     False,
+        "version":     False,
+        "help":        False,
+        "packages":    False,
+        "install":     None,
+        "uninstall":   None,
+        "script_args": {},   # --key value pairs passed through to .nk scripts
     }
 
     if not argv:
         return args
 
-    flags  = {a for a in argv if a.startswith("--")}
-    values = [a for a in argv if not a.startswith("--")]
+    # ── Known NEKOVA CLI flags ────────────────────────────────
+    KNOWN_FLAGS = {"--debug", "--version", "--help", "--packages", "--compile"}
+    KNOWN_VALUE_FLAGS = {"--install", "--uninstall"}
 
-    args["debug"]    = "--debug"    in flags
-    args["version"]  = "--version"  in flags
-    args["help"]     = "--help"     in flags
-    args["packages"] = "--packages" in flags
-    args["compile"]  = "--compile"  in flags
-    # Handle --install and --uninstall
     argv_list = list(argv)
-    for i, arg in enumerate(argv_list):
-        if arg == "--install" and i + 1 < len(argv_list):
+
+    args["debug"]    = "--debug"    in argv_list
+    args["version"]  = "--version"  in argv_list
+    args["help"]     = "--help"     in argv_list
+    args["packages"] = "--packages" in argv_list
+    args["compile"]  = "--compile"  in argv_list
+
+    # Handle --install and --uninstall
+    for i, a in enumerate(argv_list):
+        if a == "--install" and i + 1 < len(argv_list):
             args["install"] = argv_list[i + 1]
-        if arg == "--uninstall" and i + 1 < len(argv_list):
+        if a == "--uninstall" and i + 1 < len(argv_list):
             args["uninstall"] = argv_list[i + 1]
 
-    # Handle subcommands: run, test, build, new, info, clean
-    commands = {"run", "test", "build", "new",
-                        "info", "clean", "export",
-                        "package", "publish", "deploy",
-                        "repl", "marketplace", "debug",
-                        "ide", "format", "notebook",
-                        "compile"}
+    # ── Separate positional values from flags ─────────────────
+    values = [a for a in argv_list if not a.startswith("--")]
+
+    # ── Extract script args: unknown --key value pairs ────────
+    # These are --key value pairs that aren't NEKOVA CLI flags.
+    # They get passed into the .nk script as args.key
+    script_args = {}
+    i = 0
+    while i < len(argv_list):
+        a = argv_list[i]
+        if a.startswith("--") and a not in KNOWN_FLAGS and a not in KNOWN_VALUE_FLAGS:
+            key = a[2:]  # strip leading --
+            if i + 1 < len(argv_list) and not argv_list[i + 1].startswith("--"):
+                script_args[key] = argv_list[i + 1]
+                i += 2
+                continue
+            else:
+                # Boolean flag with no value → "true"
+                script_args[key] = "true"
+        i += 1
+    args["script_args"] = script_args
+
+    # ── Subcommand dispatch ───────────────────────────────────
+    commands = {
+        "run", "test", "build", "new", "info", "clean",
+        "export", "package", "publish", "deploy", "repl",
+        "marketplace", "debug", "ide", "format", "notebook",
+        "compile",
+    }
     if values and values[0] in commands:
         args["command"] = values[0]
         if len(values) > 1:
@@ -265,9 +291,11 @@ def main():
                 strict = config.run.strict_types
                 arg = config.entry_path
                 runner = NEKOVARunner(filepath=arg, debug=args["debug"],
-                                      strict_types=strict)
+                                      strict_types=strict,
+                                      script_args=args["script_args"])
             else:
-                runner = NEKOVARunner(filepath=arg, debug=args["debug"])
+                runner = NEKOVARunner(filepath=arg, debug=args["debug"],
+                                      script_args=args["script_args"])
             exit_code = runner.run()
             sys.exit(exit_code)
         
@@ -375,7 +403,8 @@ def main():
         print_banner()
         runner    = NEKOVARunner(filepath=args["file"],
                                debug=args["debug"],
-                               compile_mode=args["compile"])
+                               compile_mode=args["compile"],
+                               script_args=args["script_args"])
         exit_code = runner.run()
         sys.exit(exit_code)
 

@@ -120,6 +120,21 @@ class MethodCall(Node):
     def __repr__(self):
         return f"MethodCall({self.object}.{self.method})"
 
+class PropertyAccess(Node):
+    """
+    Property access on an object (no parentheses).
+    Example:
+        args.name
+        args.port
+        response.status
+    """
+    def __init__(self, object: Node, property: str):
+        self.object   = object
+        self.property = property
+
+    def __repr__(self):
+        return f"PropertyAccess({self.object}.{self.property})"
+
 class DictLiteral(Node):
     """
     A dictionary of key-value pairs.

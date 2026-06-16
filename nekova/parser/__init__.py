@@ -8,7 +8,7 @@ from nekova.parser.parser import Parser, ParseError
 from nekova.parser.nodes import (
     Node, Program, IntegerLiteral, FloatLiteral, StringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
-    IndexExpression, MethodCall, Identifier, BinaryOp, UnaryOp,
+    IndexExpression, MethodCall, PropertyAccess, Identifier, BinaryOp, UnaryOp,
     AssignStatement, ShowStatement, ThinkStatement, PipelineStatement,
     ModelStatement, ParallelStatement, MemoryStatement, SandboxStatement,
     PipelineDefStatement, RunPipelineStatement, IfStatement,
@@ -16,4 +16,3 @@ from nekova.parser.nodes import (
     TaskStatement, ReturnStatement, UseStatement, ImportStatement,
     CallExpression
 )
-

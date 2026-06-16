@@ -33,11 +33,13 @@ class NEKOVARunner:
     """
 
     def __init__(self, filepath: str, debug: bool = False,
-                 compile_mode: bool = False, strict_types: bool = False):
+                 compile_mode: bool = False, strict_types: bool = False,
+                 script_args: dict = None):
         self.filepath     = filepath
         self.debug        = debug
         self.compile_mode = compile_mode
         self.strict_types = strict_types
+        self.script_args  = script_args or {}
         self.source       = ""
 
     def run(self):
@@ -145,6 +147,9 @@ class NEKOVARunner:
                 vm.run(code)
             else:
                 interpreter = Interpreter(strict_types=self.strict_types)
+                # Inject CLI script args as built-in 'args' object
+                from nekova.cli.args_object import ArgsObject
+                interpreter.env["args"] = ArgsObject(self.script_args)
                 interpreter.execute(
                     program,
                     filepath=os.path.abspath(self.filepath)
@@ -175,17 +180,11 @@ class NEKOVARunner:
         except NEKOVANameError as e:
             variables = {}
             try:
-                # Include both global and current local scope
                 variables = {
                     k: v for k, v in
                     interpreter.globals.variables.items()
                     if not callable(v)
                 }
-                variables.update({
-                    k: v for k, v in
-                    interpreter.env.variables.items()
-                    if not callable(v)
-                })
             except Exception:
                 pass
             display_error(
