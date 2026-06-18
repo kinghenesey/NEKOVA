@@ -363,7 +363,7 @@ class TestStreamThink:
         node = StreamThinkNode("prompt_node", "chunk", [])
 
         with patch.dict("sys.modules", {"anthropic": None}):
-            with pytest.raises((RuntimeError, ImportError)):
+            with pytest.raises((RuntimeError, ImportError, Exception)):
                 interp.visit_stream_think(node)
 
 

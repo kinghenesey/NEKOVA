@@ -2,6 +2,7 @@ import asyncio
 import aiohttp
 import sys
 
+from nekova.interpreter.exceptions import NEKOVARuntimeError
 from nekova.parser.async_nodes import (
     AsyncFunctionNode,
     AwaitNode,
@@ -67,6 +68,7 @@ class AsyncInterpreterMixin:
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
+            # asyncio raises built-in RuntimeError when there is no running loop
             loop = None
 
         if loop and loop.is_running():
@@ -160,7 +162,7 @@ class AsyncInterpreterMixin:
         try:
             import anthropic  # type: ignore
         except ImportError:
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 "The 'anthropic' package is required for `stream think`. "
                 "Install it: pip install anthropic"
             )

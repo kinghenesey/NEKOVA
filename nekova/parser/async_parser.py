@@ -43,20 +43,6 @@ class AsyncParserMixin:
 
         return AsyncFunctionNode(name, params, body, return_type)
 
-    def _parse_param_list(self):
-        """Parse zero-or-more   name: type   or   name   params."""
-        params = []
-        while not self.current_token_is("RPAREN"):
-            param_name = self.expect("IDENTIFIER").value
-            type_hint = None
-            if self.current_token_is("COLON"):
-                self.advance()
-                type_hint = self.expect("IDENTIFIER").value
-            params.append((param_name, type_hint))
-            if self.current_token_is("COMMA"):
-                self.advance()
-        return params
-
     # ── await ─────────────────────────────────────────────────────────────────
     def parse_await_expr(self):
         """

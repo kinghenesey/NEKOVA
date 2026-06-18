@@ -19,9 +19,9 @@ from nekova.cli import print_error, print_info, print_success, print_separator
 from nekova.cli.error_display import display_error
 from nekova.lexer import Lexer, LexerError
 from nekova.parser.parser import Parser, ParseError
-from nekova.interpreter.interpreter import (
-    Interpreter, RuntimeError,
-    NEKOVAImportError, NEKOVANameError
+from nekova.interpreter.interpreter import Interpreter
+from nekova.interpreter.exceptions import (
+    NEKOVARuntimeError, NEKOVAImportError, NEKOVANameError
 )
 
 
@@ -263,7 +263,7 @@ class NEKOVARunner:
             )
             return 1
 
-        except RuntimeError as e:
+        except NEKOVARuntimeError as e:
             display_error(
                 error_type="RuntimeError",
                 message=str(e),

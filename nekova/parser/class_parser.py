@@ -147,9 +147,9 @@ class ClassParserMixin:
         """
         self.attribute            → SelfAccess
         self.attribute = value    → SelfAssign
-        self.method(args)         → MethodCall on SelfAccess
+        self.method(args)         → MethodCall on __self__ identifier
         """
-        from nekova.parser.nodes import MethodCall
+        from nekova.parser.nodes import MethodCall, Identifier
         self._consume(TokenType.SELF)
         self._consume(TokenType.DOT)
         attr = self._consume(TokenType.IDENTIFIER).value
@@ -163,7 +163,7 @@ class ClassParserMixin:
                 if self._current().type == TokenType.COMMA:
                     self._advance()
             self._consume(TokenType.RPAREN)
-            return MethodCall(SelfAccess("__self__"), attr, args)
+            return MethodCall(Identifier("__self__"), attr, args)
 
         # self.attr = value  (assignment)
         if self._current().type == TokenType.ASSIGN:
@@ -195,9 +195,8 @@ class ClassParserMixin:
 
     def _peek_is(self, token_type) -> bool:
         """Check if the next token (pos+1) is of the given type."""
-        if self._current().type == TokenType.IDENTIFIER:
-            pos = getattr(self, 'pos', 0)
-            tokens = getattr(self, 'tokens', [])
-            if pos + 1 < len(tokens):
-                return tokens[pos + 1].type == token_type
+        pos = getattr(self, 'pos', 0)
+        tokens = getattr(self, 'tokens', [])
+        if pos + 1 < len(tokens):
+            return tokens[pos + 1].type == token_type
         return False

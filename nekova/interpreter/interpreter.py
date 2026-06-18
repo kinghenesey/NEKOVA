@@ -16,28 +16,11 @@ from nekova.runtime import ReturnSignal
 from nekova.parser.async_nodes import (
     AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
 )
+from nekova.interpreter.exceptions import (
+    NEKOVARuntimeError, NEKOVAImportError, NEKOVANameError
+)
 from nekova.interpreter.async_interpreter import AsyncInterpreterMixin
 from nekova.interpreter.class_interpreter import ClassInterpreterMixin
-
-
-class RuntimeError(Exception):
-    """Raised when something goes wrong during execution."""
-    def __init__(self, message: str, line: int = 0):
-        self.line = line
-        super().__init__(f"\n  {message}")
-
-class NEKOVAImportError(Exception):
-    """Raised when a module cannot be found."""
-    def __init__(self, message: str, line: int = 0):
-        self.line = line
-        super().__init__(f"\n  {message}")
-
-
-class NEKOVANameError(Exception):
-    """Raised when a variable is not found."""
-    def __init__(self, message: str, line: int = 0):
-        self.line = line
-        super().__init__(f"\n  {message}")
 
 
 class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
@@ -110,7 +93,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         method      = getattr(self, method_name, None)
 
         if method is None:
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"NEKOVA doesn't know how to execute "
                 f"'{type(node).__name__}' yet."
             )
@@ -504,7 +487,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # ── Install sandbox blockers ───────────────────────────
         def make_blocker(name, reason):
             def blocked_fn(*args, **kwargs):
-                raise RuntimeError(
+                raise NEKOVARuntimeError(
                     f"🔒 Sandbox [{mode}] blocked: "
                     f"'{name}' — {reason} not allowed.\n"
                     f"  Use 'sandbox relaxed' for read-only access."
@@ -521,7 +504,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         if mode == "strict":
             def safe_open(*args, **kwargs):
-                raise RuntimeError(
+                raise NEKOVARuntimeError(
                     "🔒 Sandbox [strict] blocked: "
                     "file access not allowed."
                 )
@@ -535,7 +518,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 f"completed safely{Style.RESET_ALL}"
             )
 
-        except RuntimeError as e:
+        except NEKOVARuntimeError as e:
             error_msg = str(e)
             if "Sandbox" in error_msg:
                 print(f"{Fore.RED}{error_msg}{Style.RESET_ALL}")
@@ -585,7 +568,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             pipeline = self.env.get(
                 f"__pipeline_{node.name}__")
         except Exception:
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"Pipeline '{node.name}' is not defined.\n"
                 f"  Define it first with:  pipeline {node.name}:"
             )
@@ -713,7 +696,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         count = self._execute_node(node.count)
 
         if not isinstance(count, (int, float)):
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"'repeat' needs a number, not '{count}'.\n"
                 f"  Example:  repeat 5:"
             )
@@ -736,7 +719,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             self._execute_block(node.body, new_scope=False)
             count += 1
             if count >= max_iterations:
-                raise RuntimeError(
+                raise NEKOVARuntimeError(
                     "While loop ran too many times.\n"
                     "  Check your loop condition."
                 )
@@ -782,7 +765,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         elif isinstance(iterable, range):
             items = list(iterable)
         else:
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"Cannot iterate over "
                 f"'{type(iterable).__name__}'.\n"
                 f"  Use a list, string, or range."
@@ -860,7 +843,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         # Check file exists
         if not os.path.isfile(filepath):
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"Cannot import '{node.filepath}'.\n"
                 f"  File not found: '{filepath}'\n"
                 f"  Make sure the file exists and the path is correct."
@@ -915,7 +898,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                         self.env.set(name, value)
                     except Exception:
                         available = list(child_env.variables.keys())
-                        raise RuntimeError(
+                        raise NEKOVARuntimeError(
                             f"Cannot import '{name}' from '{node.filepath}'.\n"
                             f"  '{name}' is not defined in that file.\n"
                             f"  Available names: {available}"
@@ -928,10 +911,10 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             else:
                 print(f"{Color.DIM}→ imported '{node.filepath}'{Color.RESET}")
 
-        except RuntimeError:
+        except NEKOVARuntimeError:
             raise
         except Exception as e:
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"Error importing '{node.filepath}':\n"
                 f"  {e}"
             )
@@ -962,10 +945,10 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             try:
                 asyncio.get_running_loop()
                 return callee.call_async(args)  # return coroutine to outer await
-            except RuntimeError:
+            except NEKOVARuntimeError:
                 return self._run_sync(callee.call_async(args))
 
-        raise RuntimeError(
+        raise NEKOVARuntimeError(
             f"'{node.name}' is not a task you can call.\n"
             f"  Define it first with:  task {node.name}(...):"
         )
@@ -990,7 +973,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             if op == "*":  return left * right
             if op == "/":
                 if right == 0:
-                    raise RuntimeError(
+                    raise NEKOVARuntimeError(
                         "Cannot divide by zero.\n"
                         "  Check your divisor value."
                     )
@@ -1005,13 +988,13 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             if op == ">=": return left >= right
 
         except TypeError:
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"Cannot use '{op}' between "
                 f"'{type(left).__name__}' and '{type(right).__name__}'.\n"
                 f"  Check that both values are the right type."
             )
 
-        raise RuntimeError(f"Unknown operator '{op}'.")
+        raise NEKOVARuntimeError(f"Unknown operator '{op}'.")
 
     def _exec_UnaryOp(self, node: UnaryOp):
         """Evaluate a unary operation like -x or not true."""
@@ -1022,7 +1005,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         if node.operator == "not":
             return not self._is_truthy(operand)
 
-        raise RuntimeError(f"Unknown operator '{node.operator}'.")
+        raise NEKOVARuntimeError(f"Unknown operator '{node.operator}'.")
 
     # ── Literals ──────────────────────────────────────────────
 
@@ -1103,7 +1086,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             if isinstance(collection, dict):
                 key = str(index)
                 if key not in collection:
-                    raise RuntimeError(
+                    raise NEKOVARuntimeError(
                         f"Key '{key}' not found "
                         f"in dictionary.\n"
                         f"  Available keys: "
@@ -1112,12 +1095,12 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 return collection[key]
             return collection[int(index)]
         except IndexError:
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"Index {index} is out of range.\n"
                 f"  List has {len(collection)} items."
             )
         except TypeError:
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"Cannot index into "
                 f"'{type(collection).__name__}'."
             )
@@ -1191,7 +1174,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             if method in methods:
                 return methods[method]()
 
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"String has no method '{method}'.\n"
                 f"  Available: "
                 f"{', '.join(methods.keys())}"
@@ -1218,7 +1201,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             if method in methods:
                 return methods[method]()
 
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"List has no method '{method}'.\n"
                 f"  Available: "
                 f"{', '.join(methods.keys())}"
@@ -1241,7 +1224,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             if method in methods:
                 return methods[method]()
 
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"Dictionary has no method '{method}'.\n"
                 f"  Available: "
                 f"{', '.join(methods.keys())}"
@@ -1257,7 +1240,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         if method_fn is not None and callable(method_fn):
             return method_fn(*args)
 
-        raise RuntimeError(
+        raise NEKOVARuntimeError(
             f"'{type(obj).__name__}' has no method '{node.method}'."
         )
 
@@ -1316,7 +1299,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         Creates a fresh local scope for the task.
         """
         if len(args) != len(task.params):
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"Task '{task.name}' expects "
                 f"{len(task.params)} argument(s) "
                 f"but got {len(args)}."

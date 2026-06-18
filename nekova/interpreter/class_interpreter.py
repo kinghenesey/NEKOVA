@@ -3,6 +3,7 @@
 # =============================================================
 
 from nekova.interpreter.nekova_class import NEKOVAClass, NEKOVAInstance
+from nekova.interpreter.exceptions import NEKOVARuntimeError
 from nekova.parser.nodes import (
     ClassDefinition, MethodDefinition, NewInstance,
     SelfAccess, SelfAssign, PropertyAccess, MethodCall,
@@ -20,7 +21,7 @@ class ClassInterpreterMixin:
         if node.parent:
             parent = self.env.get(node.parent)
             if not isinstance(parent, NEKOVAClass):
-                raise RuntimeError(
+                raise NEKOVARuntimeError(
                     f"'{node.parent}' is not a class — "
                     f"cannot extend it."
                 )
@@ -43,12 +44,12 @@ class ClassInterpreterMixin:
         """Instantiate a class: new Person("Emmanuel", 25)"""
         klass = self.env.get(node.class_name)
         if klass is None:
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"Class '{node.class_name}' is not defined.\n"
                 f"  Declare it with:  object {node.class_name}:"
             )
         if not isinstance(klass, NEKOVAClass):
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"'{node.class_name}' is not a class."
             )
 
@@ -98,7 +99,7 @@ class ClassInterpreterMixin:
         """Execute a method on an instance."""
         method = instance._class.get_method(method_name)
         if method is None:
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 f"'{instance._class.name}' has no method '{method_name}'.\n"
                 f"  Available methods: "
                 f"{list(instance._class.methods.keys()) or '(none)'}"
@@ -148,7 +149,7 @@ class ClassInterpreterMixin:
         except Exception:
             instance = None
         if not isinstance(instance, NEKOVAInstance):
-            raise RuntimeError(
+            raise NEKOVARuntimeError(
                 "'self' can only be used inside an object method or init."
             )
         return instance
