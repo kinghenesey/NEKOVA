@@ -10,12 +10,16 @@ from nekova.parser.nodes import (
     TaskStatement, ReturnStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
     MethodCall,
-    PropertyAccess
+    PropertyAccess,
+    ClassDefinition, MethodDefinition,
+    NewInstance, SelfAccess, SelfAssign
 )
 from nekova.parser.async_nodes import (
     AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
 )
 from nekova.parser.async_parser import AsyncParserMixin
+from nekova.parser.class_parser import ClassParserMixin
+
 
 
 class ParseError(Exception):
@@ -25,7 +29,7 @@ class ParseError(Exception):
         super().__init__(f"\n  Line {line}: {message}")
 
 
-class Parser(AsyncParserMixin):
+class Parser(AsyncParserMixin, ClassParserMixin):
     """
     Converts a list of Tokens into an AST.
 
@@ -140,6 +144,17 @@ class Parser(AsyncParserMixin):
 
         if token.type == TokenType.FETCH:
             return self.parse_fetch_expr()
+
+        if token.type == TokenType.OBJECT:
+            return self.parse_class_definition()
+
+        if token.type == TokenType.NEW:
+            node = self.parse_new_instance()
+            self._expect_newline_or_eof()
+            return node
+
+        if token.type == TokenType.SELF:
+            return self.parse_self_expr()
 
         if token.type == TokenType.LET:
             return self._parse_let()
@@ -676,6 +691,26 @@ class Parser(AsyncParserMixin):
         if token.type == TokenType.ARROW:
             return self._parse_pipeline(Identifier(name))
 
+        # Dot method call / property chain: obj.method() or obj.prop.method()
+        if token.type == TokenType.DOT:
+            expr = Identifier(name)
+            while self._current().type == TokenType.DOT:
+                self._advance()  # consume dot
+                prop = self._consume(TokenType.IDENTIFIER).value
+                if self._current().type == TokenType.LPAREN:
+                    self._consume(TokenType.LPAREN)
+                    call_args = []
+                    while self._current().type != TokenType.RPAREN:
+                        call_args.append(self._parse_expression())
+                        if self._current().type == TokenType.COMMA:
+                            self._advance()
+                    self._consume(TokenType.RPAREN)
+                    expr = MethodCall(expr, prop, call_args)
+                else:
+                    expr = PropertyAccess(expr, prop)
+            self._expect_newline_or_eof()
+            return expr
+
         raise ParseError(
             f"Expected '=' or '(' after '{name}'.",
             token.line
@@ -863,6 +898,12 @@ class Parser(AsyncParserMixin):
             expr = self._parse_expression()
             self._consume(TokenType.RPAREN)
             return expr
+
+        if token.type == TokenType.NEW:
+            return self.parse_new_instance()
+
+        if token.type == TokenType.SELF:
+            return self.parse_self_expr()
 
         raise ParseError(
             f"Unexpected '{token.value}' — "

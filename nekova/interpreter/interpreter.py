@@ -8,7 +8,8 @@ from nekova.parser.nodes import (
     TaskStatement, ReturnStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
     MethodCall,
-    PropertyAccess
+    PropertyAccess,
+    ClassDefinition, NewInstance, SelfAccess, SelfAssign
 )
 from nekova.interpreter.environment import Environment
 from nekova.runtime import ReturnSignal
@@ -16,6 +17,7 @@ from nekova.parser.async_nodes import (
     AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
 )
 from nekova.interpreter.async_interpreter import AsyncInterpreterMixin
+from nekova.interpreter.class_interpreter import ClassInterpreterMixin
 
 
 class RuntimeError(Exception):
@@ -38,7 +40,7 @@ class NEKOVANameError(Exception):
         super().__init__(f"\n  {message}")
 
 
-class Interpreter(AsyncInterpreterMixin):
+class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     """
     Executes a NEKOVA AST produced by the Parser.
 
@@ -1133,10 +1135,14 @@ class Interpreter(AsyncInterpreterMixin):
         obj  = self._execute_node(node.object)
         prop = node.property
 
+        # NEKOVA class instances — check first
+        from nekova.interpreter.nekova_class import NEKOVAInstance
+        if isinstance(obj, NEKOVAInstance):
+            return obj.get_attr(prop)
+
         # ArgsObject and FetchResponse use __getattr__
         if hasattr(obj, prop):
             value = getattr(obj, prop)
-            # If it's a bound method, return it callable
             return value
 
         # Dict fallback: treat prop as key
@@ -1240,6 +1246,11 @@ class Interpreter(AsyncInterpreterMixin):
                 f"  Available: "
                 f"{', '.join(methods.keys())}"
             )
+
+        # ── NEKOVAInstance method call ──────────────────────────────────────
+        from nekova.interpreter.nekova_class import NEKOVAInstance
+        if isinstance(obj, NEKOVAInstance):
+            return self._call_instance_method(obj, node.method, args)
 
         # ── Generic Python object fallback (ArgsObject, FetchResponse, etc.) ──
         method_fn = getattr(obj, node.method, None)
