@@ -555,3 +555,75 @@ class CallExpression(Node):
 
     def __repr__(self):
         return f"Call({self.name}, args={self.args})"
+
+
+# ── Classes / Objects (Phase 6) ──────────────────────────────────────
+
+class MethodDefinition(Node):
+    """
+    A method defined inside a class/object.
+    name: method name
+    params: list of (name, hint)
+    body: list of statements
+    is_async: whether the method is async
+    """
+    def __init__(self, name: str, params: list, body: list, is_async: bool = False):
+        self.name = name
+        self.params = params
+        self.body = body
+        self.is_async = is_async
+
+    def __repr__(self):
+        return f"Method({self.name}, params={self.params})"
+
+
+class ClassDefinition(Node):
+    """
+    Represents an object/class declaration.
+    name: class name
+    fields: list of (name, hint)
+    init_params: list of (name, hint)
+    init_body: list of statements
+    methods: list of MethodDefinition
+    parent: optional parent class name
+    """
+    def __init__(self, name: str, fields: list, init_params: list,
+                 init_body: list, methods: list, parent: str = None):
+        self.name = name
+        self.fields = fields
+        self.init_params = init_params
+        self.init_body = init_body
+        self.methods = methods
+        self.parent = parent
+
+    def __repr__(self):
+        return f"Class({self.name}, fields={len(self.fields)}, methods={len(self.methods)})"
+
+
+class NewInstance(Node):
+    """new ClassName(arg1, arg2)"""
+    def __init__(self, class_name: str, args: list):
+        self.class_name = class_name
+        self.args = args
+
+    def __repr__(self):
+        return f"NewInstance({self.class_name}, args={self.args})"
+
+
+class SelfAccess(Node):
+    """Represents `self.attribute` read inside methods/init."""
+    def __init__(self, attribute: str):
+        self.attribute = attribute
+
+    def __repr__(self):
+        return f"SelfAccess({self.attribute})"
+
+
+class SelfAssign(Node):
+    """Represents `self.attribute = value` inside methods/init."""
+    def __init__(self, attribute: str, value: Node):
+        self.attribute = attribute
+        self.value = value
+
+    def __repr__(self):
+        return f"SelfAssign({self.attribute} = {self.value})"

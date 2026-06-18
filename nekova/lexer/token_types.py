@@ -56,6 +56,10 @@ class TokenType(Enum):
     EACH        = auto()
     FETCH       = auto()
     FUNC        = auto()
+    OBJECT      = auto()
+    NEW         = auto()
+    INIT        = auto()
+    SELF        = auto()
     LET         = auto()
 
     # ── Operators ─────────────────────────────────────────────
@@ -138,4 +142,8 @@ KEYWORDS = {
     "fetch":      TokenType.FETCH,
     "func":       TokenType.FUNC,
     "let":        TokenType.LET,
+    "object":     TokenType.OBJECT,
+    "new":        TokenType.NEW,
+    "init":       TokenType.INIT,
+    "self":       TokenType.SELF,
 }
