@@ -110,7 +110,7 @@ class Router:
                     if isinstance(result, str):
                         return text_response(result)
                     if isinstance(result, dict):
-                        from web.response import json_response
+                        from nekova.web.response import json_response
                         return json_response(result)
                     if isinstance(result, NEKOVAResponse):
                         return result

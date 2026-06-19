@@ -40,9 +40,7 @@ class DatabaseConnection:
             # Enable foreign keys
             self.cursor.execute("PRAGMA foreign_keys = ON")
 
-            from config import Color
-            print(f"{Color.GREEN}✓ Database connected: "
-                  f"'{self.filepath}'{Color.RESET}")
+            print(f"\033[92m✓ Database connected: '{self.filepath}'\033[0m")
 
             return True
 

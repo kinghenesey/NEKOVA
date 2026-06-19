@@ -12,13 +12,17 @@ from nekova.parser.nodes import (
     MethodCall,
     PropertyAccess,
     ClassDefinition, MethodDefinition,
-    NewInstance, SelfAccess, SelfAssign
+    NewInstance, SelfAccess, SelfAssign,
+    # Phase 7
+    MatchStatement, MatchArm, RouteStatement, ServeStatement,
 )
 from nekova.parser.async_nodes import (
     AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
 )
 from nekova.parser.async_parser import AsyncParserMixin
 from nekova.parser.class_parser import ClassParserMixin
+from nekova.parser.match_parser import MatchParserMixin
+from nekova.parser.web_parser import WebParserMixin
 
 
 
@@ -29,7 +33,7 @@ class ParseError(Exception):
         super().__init__(f"\n  Line {line}: {message}")
 
 
-class Parser(AsyncParserMixin, ClassParserMixin):
+class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixin):
     """
     Converts a list of Tokens into an AST.
 
@@ -161,6 +165,15 @@ class Parser(AsyncParserMixin, ClassParserMixin):
 
         if token.type == TokenType.IDENTIFIER:
             return self._parse_identifier_statement()
+
+        if token.type == TokenType.MATCH:
+            return self._parse_match()
+
+        if token.type == TokenType.ROUTE:
+            return self._parse_route()
+
+        if token.type == TokenType.SERVE:
+            return self._parse_serve()
 
         if token.type in (TokenType.NEWLINE, TokenType.EOF):
             return None

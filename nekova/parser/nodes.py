@@ -627,3 +627,85 @@ class SelfAssign(Node):
 
     def __repr__(self):
         return f"SelfAssign({self.attribute} = {self.value})"
+
+# ── Pattern Matching (Phase 7) ────────────────────────────────
+
+class MatchArm(Node):
+    """
+    A single arm inside a match block.
+        when 200: show "OK"
+    pattern: the value/type to match against (Node or str)
+    is_type_check: True if matching a type name (e.g. when text:)
+    is_else: True if this is the else arm
+    body: list of statements
+    """
+    def __init__(self, pattern, body: list,
+                 is_type_check: bool = False,
+                 is_else: bool = False):
+        self.pattern       = pattern
+        self.body          = body
+        self.is_type_check = is_type_check
+        self.is_else       = is_else
+
+    def __repr__(self):
+        if self.is_else:
+            return "MatchArm(else)"
+        return f"MatchArm({self.pattern})"
+
+
+class MatchStatement(Node):
+    """
+    match <expr>:
+        when <pattern>: <body>
+        when <pattern>: <body>
+        else: <body>
+    """
+    def __init__(self, subject: Node, arms: list):
+        self.subject = subject
+        self.arms    = arms
+
+    def __repr__(self):
+        return f"Match({self.subject}, {len(self.arms)} arms)"
+
+
+# ── Web DSL (Phase 7) ─────────────────────────────────────────
+
+class RouteStatement(Node):
+    """
+    route GET "/path":
+        <body>
+    method: HTTP method string
+    path:   URL path string
+    body:   list of statements (handler body)
+    """
+    def __init__(self, method: str, path: str, body: list):
+        self.method = method
+        self.path   = path
+        self.body   = body
+
+    def __repr__(self):
+        return f"Route({self.method} {self.path})"
+
+
+class ServeStatement(Node):
+    """
+    serve port: 8080
+    serve              ← defaults to 8000
+    """
+    def __init__(self, port_expr=None):
+        self.port_expr = port_expr   # None → default 8000
+
+    def __repr__(self):
+        return f"Serve(port={self.port_expr})"
+
+
+# ── Database DSL (Phase 7) ────────────────────────────────────
+
+class DBConnectStatement(Node):
+    """db = connect("nekova.db")"""
+    def __init__(self, var_name: str, filepath_expr):
+        self.var_name     = var_name
+        self.filepath_expr = filepath_expr
+
+    def __repr__(self):
+        return f"DBConnect({self.var_name})"

@@ -62,6 +62,14 @@ class TokenType(Enum):
     SELF        = auto()
     LET         = auto()
 
+    # ── Pattern Matching (Phase 7) ────────────────────────────
+    MATCH       = auto()
+    WHEN        = auto()
+
+    # ── Web DSL (Phase 7) ─────────────────────────────────────
+    ROUTE       = auto()
+    SERVE       = auto()
+
     # ── Operators ─────────────────────────────────────────────
     PLUS        = auto()
     MINUS       = auto()
@@ -146,4 +154,9 @@ KEYWORDS = {
     "new":        TokenType.NEW,
     "init":       TokenType.INIT,
     "self":       TokenType.SELF,
+    # Phase 7
+    "match":      TokenType.MATCH,
+    "when":       TokenType.WHEN,
+    "route":      TokenType.ROUTE,
+    "serve":      TokenType.SERVE,
 }

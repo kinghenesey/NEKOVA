@@ -9,7 +9,9 @@ from nekova.parser.nodes import (
     ImportStatement, CallExpression, IndexExpression,
     MethodCall,
     PropertyAccess,
-    ClassDefinition, NewInstance, SelfAccess, SelfAssign
+    ClassDefinition, NewInstance, SelfAccess, SelfAssign,
+    # Phase 7
+    MatchStatement, MatchArm, RouteStatement, ServeStatement,
 )
 from nekova.interpreter.environment import Environment
 from nekova.runtime import ReturnSignal
@@ -1368,6 +1370,8 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         from nekova.cli.args_object import ArgsObject
         # Default empty args — overwritten by runner when CLI args are passed
         self.globals.set("args",      ArgsObject({}))
+        # Phase 7: database connect() built-in
+        self.globals.set("connect",   lambda fp="nekova.db": _DBObject(str(fp)))
         self.globals.set("type_of",   lambda x: type(x).__name__)
         self.globals.set("to_number", lambda x: float(x)
                          if "." in str(x) else int(x))
@@ -1388,3 +1392,368 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             return load_module(name)
         except ImportError:
             return None
+    # ----------------------------------------------------------
+    # Phase 7: Pattern Matching
+    # ----------------------------------------------------------
+
+    def _exec_MatchStatement(self, node: MatchStatement):
+        """
+        Evaluate the subject then iterate arms in order.
+        First matching arm wins; else arm is a catch-all.
+        """
+        from nekova.interpreter.nekova_class import NEKOVAInstance
+        subject = self._execute_node(node.subject)
+
+        for arm in node.arms:
+            # ── else arm ──────────────────────────────────────
+            if arm.is_else:
+                result = None
+                for stmt in arm.body:
+                    result = self._execute_node(stmt)
+                    if isinstance(result, ReturnSignal):
+                        return result
+                return result
+
+            # ── type-check arm ────────────────────────────────
+            if arm.is_type_check:
+                type_name = arm.pattern   # string like "text"
+                matched   = False
+
+                if type_name == "text":
+                    matched = isinstance(subject, str)
+                elif type_name == "number":
+                    matched = isinstance(subject, (int, float)) and not isinstance(subject, bool)
+                elif type_name == "boolean":
+                    matched = isinstance(subject, bool)
+                elif type_name == "list":
+                    matched = isinstance(subject, list)
+                elif type_name == "dict":
+                    matched = isinstance(subject, dict)
+                elif type_name == "null":
+                    matched = subject is None
+                elif type_name == "any":
+                    matched = True
+                else:
+                    # Class name check
+                    if isinstance(subject, NEKOVAInstance):
+                        matched = self._instance_is_a(subject, type_name)
+
+                if matched:
+                    result = None
+                    for stmt in arm.body:
+                        result = self._execute_node(stmt)
+                        if isinstance(result, ReturnSignal):
+                            return result
+                    return result
+                continue
+
+            # ── value-match arm ───────────────────────────────
+            pattern_val = self._execute_node(arm.pattern)
+            if subject == pattern_val:
+                result = None
+                for stmt in arm.body:
+                    result = self._execute_node(stmt)
+                    if isinstance(result, ReturnSignal):
+                        return result
+                return result
+
+        # No arm matched and no else — return None silently
+        return None
+
+    def _instance_is_a(self, instance, class_name: str) -> bool:
+        """Walk the inheritance chain to check type membership."""
+        cls = instance.nekova_class
+        while cls is not None:
+            if cls.name == class_name:
+                return True
+            parent_name = getattr(cls, "parent", None)
+            if parent_name and parent_name in self.env.vars:
+                cls = self.env.vars[parent_name]
+            else:
+                break
+        return False
+
+    # ----------------------------------------------------------
+    # Phase 7: Web DSL
+    # ----------------------------------------------------------
+
+    def _exec_RouteStatement(self, node: RouteStatement):
+        """
+        route GET "/path":
+            <body>
+
+        Registers a Flask route using the web module's server.
+        The body is captured as a closure over the current env.
+        """
+        from nekova.web import web_module as wm
+        from nekova.web.request import NEKOVARequest
+        from nekova.web.response import (
+            NEKOVAResponse, text_response, json_response, html_response
+        )
+
+        # Ensure a server exists
+        if wm._server is None:
+            wm._web_app("NEKOVA Web App")
+
+        body_stmts = node.body
+        interpreter = self
+
+        def handler(request: NEKOVARequest):
+            # Create a child env so route body has a fresh scope
+            child_env = Environment(parent=interpreter.env)
+            old_env   = interpreter.env
+            interpreter.env = child_env
+
+            # Expose `request` in the handler scope
+            child_env.set("request", _RequestObject(request))
+            # Expose response helpers
+            child_env.set("html",    lambda c: html_response(str(c)))
+            child_env.set("json",    lambda d: json_response(d))
+            child_env.set("text",    lambda c: text_response(str(c)))
+
+            result = None
+            try:
+                for stmt in body_stmts:
+                    result = interpreter._execute_node(stmt)
+            except ReturnSignal as rs:
+                result = rs.value
+            finally:
+                interpreter.env = old_env
+
+            if isinstance(result, NEKOVAResponse):
+                return result
+            if result is None:
+                return text_response("")
+            return text_response(str(result))
+
+        wm._server.router.add(node.path, handler, methods=[node.method])
+
+    def _exec_ServeStatement(self, node: ServeStatement):
+        """
+        serve port: 8080
+        Starts the web server (blocks until Ctrl+C).
+        """
+        from nekova.web import web_module as wm
+
+        port = 8000
+        if node.port_expr is not None:
+            port = int(self._execute_node(node.port_expr))
+
+        wm._web_start(port)
+
+
+class _RequestObject:
+    """Wraps NEKOVARequest for use inside route handlers.
+
+    Exposes:
+        request.method   → "GET"
+        request.path     → "/api/chat"
+        request.body     → raw body string  OR dict if JSON
+        request.params   → query params dict
+        request.headers  → headers dict
+        request.json     → parsed JSON dict
+    """
+
+    def __init__(self, req):
+        self._req = req
+
+    def __getattr__(self, key):
+        req = object.__getattribute__(self, "_req")
+        if key == "body":
+            # If JSON was parsed, expose the dict; else raw string
+            return req.json if req.json else req.body
+        if hasattr(req, key):
+            return getattr(req, key)
+        raise AttributeError(f"request has no attribute '{key}'")
+
+    def __repr__(self):
+        req = object.__getattribute__(self, "_req")
+        return f"Request({req.method} {req.path})"
+
+
+class _DBObject:
+    """
+    Wraps a DatabaseConnection + QueryBuilder so NEKOVA code
+    can call db.create(), db.insert(), db.query(), etc.
+
+    Usage in NEKOVA:
+        db = connect("app.db")
+        db.create("users", {"name": "text", "email": "text"})
+        db.insert("users", {"name": "Emmanuel", "email": "e@x.com"})
+        let rows = db.query("users").where("name", "Emmanuel").all()
+    """
+
+    def __init__(self, filepath: str):
+        from nekova.database.connection import DatabaseConnection
+        from nekova.database.query import QueryBuilder
+        self._conn = DatabaseConnection(filepath)
+        self._conn.connect()
+        self._qb   = QueryBuilder(self._conn)
+
+    # ── DDL ────────────────────────────────────────────────────
+
+    def create(self, table: str, schema):
+        """
+        db.create("users", {"name": "text", "email": "text"})
+        schema can be dict  → {col: type, ...}
+                  or string → "name text, email text"
+        """
+        if isinstance(schema, dict):
+            columns = {k: v.upper() for k, v in schema.items()}
+        else:
+            columns = {}
+            for part in str(schema).split(","):
+                part = part.strip()
+                if not part:
+                    continue
+                pieces = part.split()
+                if len(pieces) >= 2:
+                    columns[pieces[0]] = pieces[1].upper()
+                elif len(pieces) == 1:
+                    columns[pieces[0]] = "TEXT"
+        self._qb.create_table(table, columns)
+        return self
+
+    def drop(self, table: str):
+        self._qb.drop_table(table)
+        return self
+
+    def exists(self, table: str) -> bool:
+        return self._qb.table_exists(table)
+
+    def tables(self) -> list:
+        return self._conn.tables()
+
+    # ── DML ────────────────────────────────────────────────────
+
+    def insert(self, table: str, data: dict) -> int:
+        """db.insert("users", {"name": "Emmanuel", "email": "e@x.com"})"""
+        if not isinstance(data, dict):
+            raise RuntimeError(
+                "db.insert() requires a dict, e.g. {'name': 'Emmanuel'}"
+            )
+        return self._qb.insert(table, data)
+
+    def update(self, table: str, data: dict, where: str = None) -> bool:
+        """db.update("users", {"email": "new@x.com"}, "name = 'Emmanuel'")"""
+        return self._qb.update(table, data, where=where)
+
+    def delete(self, table: str, where: str = None) -> bool:
+        """db.delete("users", "id = 1")"""
+        return self._qb.delete(table, where=where)
+
+    # ── Query builder ──────────────────────────────────────────
+
+    def query(self, table: str) -> "_DBQuery":
+        return _DBQuery(self._qb, table)
+
+    def find(self, table: str, where: str = None) -> list:
+        rows = self._qb.select(table, where=where)
+        return [dict(r) for r in rows]
+
+    def find_one(self, table: str, where: str = None):
+        row = self._qb.find_one(table, where) if where else None
+        return dict(row) if row else None
+
+    def count(self, table: str, where: str = None) -> int:
+        return self._qb.count(table, where=where)
+
+    def sql(self, raw_sql: str) -> list:
+        """Execute raw SQL and return list of row dicts."""
+        rows = self._conn.execute(raw_sql)
+        return [dict(r) for r in rows]
+
+    def close(self):
+        self._conn.close()
+
+    def __repr__(self):
+        return f"DB({self._conn.filepath})"
+
+
+class _DBQuery:
+    """Chainable query builder returned by db.query('table')."""
+
+    def __init__(self, qb, table: str):
+        self._qb      = qb
+        self._table   = table
+        self._where   = None
+        self._order   = None
+        self._limit   = None
+
+    def where(self, col: str, val) -> "_DBQuery":
+        """db.query("users").where("name", "Emmanuel")"""
+        if isinstance(val, str):
+            clause = f"{col} = '{val}'"
+        else:
+            clause = f"{col} = {val}"
+        if self._where:
+            self._where += f" AND {clause}"
+        else:
+            self._where = clause
+        return self
+
+    def order(self, col: str, direction: str = "ASC") -> "_DBQuery":
+        self._order = f"{col} {direction.upper()}"
+        return self
+
+    def limit(self, n: int) -> "_DBQuery":
+        self._limit = int(n)
+        return self
+
+    def all(self) -> list:
+        rows = self._qb.select(
+            self._table,
+            where=self._where,
+            order_by=self._order,
+            limit=self._limit,
+        )
+        return [_DBRow(dict(r)) for r in rows]
+
+    def first(self):
+        rows = self._qb.select(
+            self._table,
+            where=self._where,
+            order_by=self._order,
+            limit=1,
+        )
+        return _DBRow(dict(rows[0])) if rows else None
+
+    def count(self) -> int:
+        return self._qb.count(self._table, where=self._where)
+
+    def __repr__(self):
+        return f"DBQuery({self._table}, where={self._where!r})"
+
+
+class _DBRow:
+    """
+    A single database row — fields accessible as attributes.
+        user.id, user.name, user.email
+    Also subscriptable: user["name"]
+    """
+
+    def __init__(self, data: dict):
+        object.__setattr__(self, "_data", data)
+
+    def __getattr__(self, key):
+        data = object.__getattribute__(self, "_data")
+        if key in data:
+            return data[key]
+        raise AttributeError(
+            f"Row has no column '{key}'. Available: {list(data.keys())}"
+        )
+
+    def __getitem__(self, key):
+        data = object.__getattribute__(self, "_data")
+        return data[key]
+
+    def __repr__(self):
+        data = object.__getattribute__(self, "_data")
+        pairs = ", ".join(f"{k}={v!r}" for k, v in data.items())
+        return f"Row({pairs})"
+
+    def to_dict(self) -> dict:
+        return dict(object.__getattribute__(self, "_data"))
+
+    def keys(self):
+        return object.__getattribute__(self, "_data").keys()
