@@ -17,6 +17,11 @@ from nekova.stdlib import (
     collections_module,
     vision_module,
     voice_module,
+    # Phase 8
+    json_module,
+    env_module,
+    uuid_module,
+    crypto_module,
 )
 
 from nekova.ai import ai_module
@@ -41,6 +46,11 @@ MODULES = {
     "database":    db_module,
     "vision":      vision_module,
     "voice":       voice_module,
+    # Phase 8
+    "json":        json_module,
+    "env":         env_module,
+    "uuid":        uuid_module,
+    "crypto":      crypto_module,
 }
 
 
