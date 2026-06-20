@@ -1,6 +1,0 @@
-async func greet(name: text):
-    show f"Hello {name}!"
-    return f"Greeted {name}"
-
-let result: text = await greet("Emmanuel")
-show result

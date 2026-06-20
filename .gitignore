@@ -43,3 +43,7 @@ nekova-vscode/out/
 nekova-vscode/.vscode-test/
 
 .NEKOVAmem/
+
+temp_test.txt
+test.db
+test_*.nk
