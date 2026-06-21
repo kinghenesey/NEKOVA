@@ -70,6 +70,12 @@ class TokenType(Enum):
     ROUTE       = auto()
     SERVE       = auto()
 
+    # ── AI Memory (Phase 9) ──────────────────────────────────
+    REMEMBER    = auto()
+    RECALL      = auto()
+    FORGET      = auto()
+    AS          = auto()
+
     # ── Operators ─────────────────────────────────────────────
     PLUS        = auto()
     MINUS       = auto()
@@ -159,4 +165,9 @@ KEYWORDS = {
     "when":       TokenType.WHEN,
     "route":      TokenType.ROUTE,
     "serve":      TokenType.SERVE,
+    # Phase 9
+    "remember":   TokenType.REMEMBER,
+    "recall":     TokenType.RECALL,
+    "forget":     TokenType.FORGET,
+    "as":         TokenType.AS,
 }

@@ -15,6 +15,8 @@ from nekova.parser.nodes import (
     NewInstance, SelfAccess, SelfAssign,
     # Phase 7
     MatchStatement, MatchArm, RouteStatement, ServeStatement,
+    # Phase 9
+    ThinkAsStatement, RememberStatement, RecallStatement, ForgetStatement,
 )
 from nekova.parser.async_nodes import (
     AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
@@ -166,6 +168,15 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         if token.type == TokenType.IDENTIFIER:
             return self._parse_identifier_statement()
 
+        if token.type == TokenType.REMEMBER:
+            return self._parse_remember()
+
+        if token.type == TokenType.RECALL:
+            return self._parse_recall()
+
+        if token.type == TokenType.FORGET:
+            return self._parse_forget()
+
         if token.type == TokenType.MATCH:
             return self._parse_match()
 
@@ -193,12 +204,163 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         return ShowStatement(expr)
 
     def _parse_think(self):
-        """Parse:  think <prompt>"""
+        """
+        Parse:
+            think <prompt>
+            think <prompt> as json
+            think <prompt> as list
+            think <prompt> as bool
+            think <prompt> as text
+            think <prompt> as schema {"key": "type", ...}
+        """
         line = self._current().line
         self._consume(TokenType.THINK)
         prompt = self._parse_expression()
+
+        # Check for optional  as <format>
+        if self._current().type == TokenType.AS:
+            self._advance()   # consume 'as'
+            fmt_tok = self._current()
+
+            # as json / as list / as bool / as text
+            if fmt_tok.type == TokenType.IDENTIFIER:
+                fmt = fmt_tok.value.lower()
+                self._advance()
+
+                if fmt in ("json", "list", "bool", "text", "number"):
+                    self._expect_newline_or_eof()
+                    return ThinkAsStatement(prompt, fmt, line=line)
+
+                # as schema {...}
+                if fmt == "schema":
+                    schema = self._parse_expression()
+                    self._expect_newline_or_eof()
+                    return ThinkAsStatement(prompt, "schema",
+                                           schema=schema, line=line)
+
+                # Unknown format — fall back
+                self._expect_newline_or_eof()
+                return ThinkAsStatement(prompt, fmt, line=line)
+
+            # as {...}  — treat as inline schema shorthand
+            elif fmt_tok.type == TokenType.LBRACE:
+                schema = self._parse_expression()
+                self._expect_newline_or_eof()
+                return ThinkAsStatement(prompt, "schema",
+                                        schema=schema, line=line)
+
         self._expect_newline_or_eof()
         return ThinkStatement(prompt, line=line)
+
+    def _parse_remember(self):
+        """
+        Parse:
+            remember "key" = <value>
+        """
+        line = self._current().line
+        self._advance()   # consume 'remember'
+
+        key_expr = self._parse_expression()
+
+        # Expect '='
+        self._consume(TokenType.ASSIGN)
+
+        value_expr = self._parse_expression()
+        self._expect_newline_or_eof()
+        return RememberStatement(key_expr, value_expr, line=line)
+
+    def _parse_recall(self):
+        """
+        Parse:
+            recall "key"
+            recall "key" or <default>
+        """
+        line = self._current().line
+        self._advance()   # consume 'recall'
+
+        key_expr = self._parse_expression()
+
+        # Optional:  or <default>
+        default = None
+        if (self._current().type == TokenType.IDENTIFIER and
+                self._current().value == "or"):
+            self._advance()
+            default = self._parse_expression()
+
+        self._expect_newline_or_eof()
+        return RecallStatement(key_expr, default=default, line=line)
+
+    def _parse_think_expr(self):
+        """
+        Parse think used as an expression (inside return, let, show, etc.)
+            return think "prompt" as json
+            let x = think f"..." as list
+        Delegates to _parse_think() which handles plain and 'as' variants.
+        Does NOT call _expect_newline_or_eof — the caller handles line endings.
+        """
+        line = self._current().line
+        self._advance()   # consume 'think'
+        prompt = self._parse_expression()
+
+        if self._current().type == TokenType.AS:
+            self._advance()   # consume 'as'
+            fmt_tok = self._current()
+
+            if fmt_tok.type == TokenType.IDENTIFIER:
+                fmt = fmt_tok.value.lower()
+                self._advance()
+
+                if fmt == "schema":
+                    schema = self._parse_expression()
+                    return ThinkAsStatement(prompt, "schema",
+                                            schema=schema, line=line)
+                return ThinkAsStatement(prompt, fmt, line=line)
+
+            elif fmt_tok.type == TokenType.LBRACE:
+                schema = self._parse_expression()
+                return ThinkAsStatement(prompt, "schema",
+                                        schema=schema, line=line)
+
+        return ThinkStatement(prompt, line=line)
+
+    def _parse_recall_expr(self):
+        """
+        Parse recall used as an expression (RHS of assignment, in show, etc.)
+            let x = recall "key"
+            show recall "name" or "default"
+
+        Uses _parse_addition (not _parse_expression) for key so that the OR
+        token is NOT consumed by the expression parser — allowing us to handle
+        the optional  or <default>  clause ourselves.
+        """
+        line = self._current().line
+        self._advance()   # consume 'recall'
+        # Use addition-level (not full expression) so OR stays unconsumed
+        key_expr = self._parse_addition()
+        default = None
+        if self._current().type == TokenType.OR:
+            self._advance()   # consume 'or'
+            default = self._parse_addition()
+        return RecallStatement(key_expr, default=default, line=line)
+
+    def _parse_forget(self):
+        """
+        Parse:
+            forget "key"
+            forget all
+        """
+        line = self._current().line
+        self._advance()   # consume 'forget'
+
+        cur = self._current()
+        if cur.type == TokenType.IDENTIFIER and cur.value == "all":
+            self._advance()
+            self._expect_newline_or_eof()
+            return ForgetStatement(forget_all=True, line=line)
+
+        key_expr = self._parse_expression()
+        self._expect_newline_or_eof()
+        return ForgetStatement(key_expr=key_expr, line=line)
 
     def _parse_model(self):
         """Parse:  model "provider-name" """
@@ -911,6 +1073,14 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             expr = self._parse_expression()
             self._consume(TokenType.RPAREN)
             return expr
+
+        # recall used as expression: let x = recall "key"
+        if token.type == TokenType.RECALL:
+            return self._parse_recall_expr()
+
+        # think as expression: let x = think "prompt" as json
+        if token.type == TokenType.THINK:
+            return self._parse_think_expr()
 
         if token.type == TokenType.NEW:
             return self.parse_new_instance()

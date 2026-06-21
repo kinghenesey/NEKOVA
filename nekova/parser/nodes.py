@@ -709,3 +709,94 @@ class DBConnectStatement(Node):
 
     def __repr__(self):
         return f"DBConnect({self.var_name})"
+
+# ── Phase 9: AI-Native Extensions ────────────────────────────
+
+class ThinkAsStatement(Node):
+    """
+    Extended think with output format:
+
+        think "prompt" as json
+        think "prompt" as list
+        think "prompt" as bool
+        think "prompt" as schema {"name": "text", "age": "number"}
+
+    prompt:     expression (string/f-string/variable)
+    as_format:  "json" | "list" | "bool" | "schema" | "text"
+    schema:     dict expression (only when as_format == "schema")
+    variable:   optional assignment target
+    """
+    def __init__(self, prompt, as_format: str,
+                 schema=None, variable: str = None, line: int = 0):
+        self.prompt     = prompt
+        self.as_format  = as_format
+        self.schema     = schema
+        self.variable   = variable
+        self.line       = line
+
+    def __repr__(self):
+        return f"ThinkAs({self.as_format})"
+
+
+class RememberStatement(Node):
+    """
+    Store a value in AI memory (persists across think calls).
+
+        remember "user_name" = "Emmanuel"
+        remember "context"   = some_variable
+        remember facts:
+            name = "Emmanuel"
+            role = "founder"
+
+    key_expr:   expression evaluating to a string key
+    value_expr: expression for the value
+    """
+    def __init__(self, key_expr, value_expr, line: int = 0):
+        self.key_expr   = key_expr
+        self.value_expr = value_expr
+        self.line       = line
+
+    def __repr__(self):
+        return f"Remember({self.key_expr})"
+
+
+class RecallStatement(Node):
+    """
+    Retrieve a value from AI memory.
+
+        let name = recall "user_name"
+        show recall "context"
+
+    key_expr:  expression evaluating to a string key
+    variable:  optional assignment target
+    default:   optional default expression if key missing
+    """
+    def __init__(self, key_expr, variable: str = None,
+                 default=None, line: int = 0):
+        self.key_expr = key_expr
+        self.variable = variable
+        self.default  = default
+        self.line     = line
+
+    def __repr__(self):
+        return f"Recall({self.key_expr})"
+
+
+class ForgetStatement(Node):
+    """
+    Remove a key from AI memory, or clear all memory.
+
+        forget "user_name"
+        forget all
+
+    key_expr:  expression for key, or None if forget_all
+    forget_all: True if "forget all"
+    """
+    def __init__(self, key_expr=None, forget_all: bool = False,
+                 line: int = 0):
+        self.key_expr  = key_expr
+        self.forget_all = forget_all
+        self.line      = line
+
+    def __repr__(self):
+        return "ForgetAll()" if self.forget_all else f"Forget({self.key_expr})"

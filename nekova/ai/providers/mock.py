@@ -34,6 +34,58 @@ class MockProvider(BaseProvider):
 
     def ask(self, prompt: str) -> str:
         """Return a mock answer to any question."""
+        import json as _json
+        import re as _re
+
+        # ── Structured format detection ───────────────────────
+        # When the prompt contains format instructions injected by
+        # think_engine, return an appropriate structured response.
+
+        p = prompt.strip()
+
+        # JSON schema response
+        if "Respond ONLY with a valid JSON object matching this schema" in p:
+            # Extract schema from prompt
+            try:
+                schema_match = _re.search(r'\{[^{}]+\}', p, _re.DOTALL)
+                if schema_match:
+                    schema = _json.loads(schema_match.group())
+                    result = {}
+                    for key, typ in schema.items():
+                        if str(typ).lower() in ("text", "str", "string"):
+                            result[key] = f"mock_{key}"
+                        elif str(typ).lower() in ("number", "int", "float"):
+                            result[key] = 42
+                        elif str(typ).lower() in ("boolean", "bool"):
+                            result[key] = True
+                        elif str(typ).lower() == "list":
+                            result[key] = ["item1", "item2"]
+                        else:
+                            result[key] = f"mock_{key}"
+                    return _json.dumps(result)
+            except Exception:
+                pass
+            return '{"result": "mock_value", "status": "ok"}'
+
+        # Plain JSON response
+        if "Respond ONLY with valid JSON" in p:
+            return '{"result": "mock_value", "status": "ok", "count": 1}'
+
+        # List response
+        if "Respond ONLY with a JSON array" in p:
+            return '["item one", "item two", "item three"]'
+
+        # Boolean response
+        if "Respond with only 'true' or 'false'" in p:
+            # Check the QUESTION part only (before the instruction line)
+            question = p.split('\n')[0].lower()
+            neg_words = ("not ", " no ", "never", "false", "incorrect", "wrong")
+            return "false" if any(w in question for w in neg_words) else "true"
+
+        # Number response
+        if "Respond with only a number" in p:
+            return "42"
+
         # Include memory context
         if self.memory:
             facts = [m["content"] for m in self.memory

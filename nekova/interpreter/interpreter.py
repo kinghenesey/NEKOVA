@@ -12,6 +12,8 @@ from nekova.parser.nodes import (
     ClassDefinition, NewInstance, SelfAccess, SelfAssign,
     # Phase 7
     MatchStatement, MatchArm, RouteStatement, ServeStatement,
+    # Phase 9
+    ThinkAsStatement, RememberStatement, RecallStatement, ForgetStatement,
 )
 from nekova.interpreter.environment import Environment
 from nekova.runtime import ReturnSignal
@@ -1542,6 +1544,77 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         wm._web_start(port)
 
 
+    # ----------------------------------------------------------
+
+    def _exec_ThinkAsStatement(self, node):
+        """
+        Execute:
+            think "prompt" as json
+            think "prompt" as list
+            think "prompt" as bool
+            think "prompt" as schema {"name": "text"}
+        """
+        from nekova.ai.providers import get_provider
+        from nekova.ai.think_engine import ask_structured
+
+        prompt = str(self._execute_node(node.prompt))
+        fmt    = node.as_format
+
+        # Evaluate schema if present
+        schema = None
+        if node.schema is not None:
+            schema = self._execute_node(node.schema)
+            if not isinstance(schema, dict):
+                schema = None
+
+        try:
+            provider = get_provider()
+            result   = ask_structured(provider, prompt, fmt, schema=schema)
+        except Exception as e:
+            result = f"[think error: {e}]"
+
+        if node.variable:
+            self.env.set(node.variable, result)
+
+        return result
+
+    # ----------------------------------------------------------
+    # Phase 9: Remember / Recall / Forget
+    # ----------------------------------------------------------
+
+    def _exec_RememberStatement(self, node):
+        """remember "key" = value"""
+        from nekova.ai.memory_store import remember as _remember
+        key   = str(self._execute_node(node.key_expr))
+        value = self._execute_node(node.value_expr)
+        _remember(key, value)
+        return value
+
+    def _exec_RecallStatement(self, node):
+        """recall "key"  or  recall "key" or <default>"""
+        from nekova.ai.memory_store import recall as _recall
+        key     = str(self._execute_node(node.key_expr))
+        default = None
+        if node.default is not None:
+            default = self._execute_node(node.default)
+        result = _recall(key, default)
+
+        if node.variable:
+            self.env.set(node.variable, result)
+
+        return result
+
+    def _exec_ForgetStatement(self, node):
+        """forget "key"  or  forget all"""
+        from nekova.ai.memory_store import forget as _forget, forget_all as _forget_all
+        if node.forget_all:
+            _forget_all()
+        else:
+            key = str(self._execute_node(node.key_expr))
+            _forget(key)
+        return None
+
+
 class _RequestObject:
     """Wraps NEKOVARequest for use inside route handlers.
 
@@ -1757,3 +1830,6 @@ class _DBRow:
 
     def keys(self):
         return object.__getattribute__(self, "_data").keys()
+
+    # ----------------------------------------------------------
+    # Phase 9: Structured Think (think ... as json/list/bool/schema)
