@@ -246,7 +246,8 @@ def main():
 
         from nekova.cli.commands import (
             cmd_info, cmd_new, cmd_test,
-            cmd_build, cmd_clean
+            cmd_build, cmd_clean,
+            cmd_fmt, cmd_check,
         )
 
         if cmd == "info":
@@ -267,6 +268,15 @@ def main():
 
         if cmd == "build":
             success = cmd_build(arg)
+            sys.exit(0 if success else 1)
+
+        if cmd == "fmt":
+            dry_run = "--check" in argv or "--dry-run" in argv
+            success = cmd_fmt(arg, dry_run=dry_run)
+            sys.exit(0 if success else 1)
+
+        if cmd == "check":
+            success = cmd_check(arg)
             sys.exit(0 if success else 1)
 
         if cmd == "run":

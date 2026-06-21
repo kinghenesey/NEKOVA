@@ -101,6 +101,24 @@ _CATALOGUE = {
         "hint":    "A function kept calling itself without stopping.",
         "example": "Make sure your recursive function has a base case.",
     },
+    "KeywordConflict": {
+        "code":    "E011",
+        "title":   "Reserved Keyword Used as Name",
+        "hint":    "This word is reserved by NEKOVA and cannot be a variable or task name.",
+        "example": "Rename it (e.g. add _fn or my_ prefix).",
+    },
+    "UnreachableCode": {
+        "code":    "W006",
+        "title":   "Unreachable Code",
+        "hint":    "Code after a return statement will never execute.",
+        "example": "Remove the dead code or move it before the return.",
+    },
+    "ShadowedBuiltin": {
+        "code":    "W005",
+        "title":   "Built-in Name Shadowed",
+        "hint":    "This name overwrites a built-in NEKOVA function.",
+        "example": "Rename to avoid conflicts.",
+    },
 }
 
 
@@ -337,5 +355,17 @@ def _quick_fix(error_type: str, message: str,
 
     if "unclosed" in message.lower():
         return "Add a closing  \"  or  ]  to complete the expression."
+
+    if "reserved keyword" in message.lower() or "keyword" in message.lower():
+        token = _extract_token(message)
+        if token:
+            return f"Rename '{token}' to '{token}_fn' (tasks) or 'my_{token}' (variables)."
+
+    if "unreachable" in message.lower():
+        return "Move this code before the 'return' statement."
+
+    if "shadows" in message.lower():
+        token = _extract_token(message)
+        return f"Rename '{token}' to avoid shadowing the built-in." if token else ""
 
     return ""

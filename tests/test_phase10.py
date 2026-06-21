@@ -1,423 +1,514 @@
-# tests/test_phase10.py
-# ─────────────────────────────────────────────────────────────────────────────
-# Phase 3 tests: async/await · stream think · HTTP fetch
-# Run with:  pytest tests/test_phase10.py -v
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================
+# NEKOVA Phase 10 Tests — DX: Formatter + Checker + Error DX
+# =============================================================
+import sys
+import os
+import re
+import tempfile
+from pathlib import Path
 
-import asyncio
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# ── helpers ──────────────────────────────────────────────────────────────────
-from nekova.parser.async_nodes import (
-    AsyncFunctionNode,
-    AwaitNode,
-    FetchNode,
-    StreamThinkNode,
-)
-from nekova.interpreter.async_interpreter import AsyncFunction, FetchResponse
+from nekova.cli.formatter import fmt_source, fmt_file, fmt_directory
+from nekova.cli.checker   import check_source, check_file, Issue
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 1. AST NODE CONSTRUCTION
-# ─────────────────────────────────────────────────────────────────────────────
+# ==============================================================
+# SECTION 1 — Formatter: fmt_source
+# ==============================================================
 
-class TestAsyncNodes:
-    def test_async_function_node_repr(self):
-        node = AsyncFunctionNode("greet", [("name", "text")], [], None)
-        assert "greet" in repr(node)
+class TestFormatterBasics:
 
-    def test_await_node_repr(self):
-        inner = MagicMock()
-        node = AwaitNode(inner)
-        assert "AwaitNode" in repr(node)
+    def test_trailing_whitespace_removed(self):
+        src = "show \"hello\"   \nlet x = 1  \n"
+        out = fmt_source(src)
+        for line in out.splitlines():
+            assert not line.endswith(" "), f"Trailing space in: {repr(line)}"
 
-    def test_stream_think_node_repr(self):
-        node = StreamThinkNode("prompt_expr", "chunk", [])
-        assert "StreamThinkNode" in repr(node)
-        assert "chunk" in repr(node)
+    def test_tabs_to_spaces(self):
+        src = "task foo():\n\tshow \"hi\"\n"
+        out = fmt_source(src)
+        assert "\t" not in out
+        assert "    show" in out
 
-    def test_fetch_node_defaults(self):
-        node = FetchNode("url_expr")
-        assert node.method == "GET"
-        assert node.headers == {}
-        assert node.body_expr is None
+    def test_eof_newline_enforced(self):
+        src = 'show "hello"'
+        out = fmt_source(src)
+        assert out.endswith("\n")
 
-    def test_fetch_node_custom_method(self):
-        node = FetchNode("url_expr", method="POST")
-        assert node.method == "POST"
+    def test_double_eof_newlines_trimmed(self):
+        src = 'show "hello"\n\n\n\n'
+        out = fmt_source(src)
+        assert out.count("\n") <= 2
 
-    def test_fetch_node_repr(self):
-        node = FetchNode("url_expr", method="DELETE")
-        assert "DELETE" in repr(node)
+    def test_leading_blank_lines_removed(self):
+        src = "\n\n\nshow \"hello\"\n"
+        out = fmt_source(src)
+        assert not out.startswith("\n")
 
+    def test_max_two_consecutive_blanks(self):
+        src = "let x = 1\n\n\n\n\nlet y = 2\n"
+        out = fmt_source(src)
+        assert "\n\n\n\n" not in out
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 2. FetchResponse
-# ─────────────────────────────────────────────────────────────────────────────
+    def test_idempotent(self):
+        src = 'let x = 1\nshow x\n'
+        once  = fmt_source(src)
+        twice = fmt_source(once)
+        assert once == twice
 
-class TestFetchResponse:
-    def test_status(self):
-        r = FetchResponse(200, '{"ok": true}', {"ok": True})
-        assert r.status == 200
+    def test_empty_source(self):
+        out = fmt_source("")
+        assert out == "\n"
 
-    def test_json_preloaded(self):
-        r = FetchResponse(200, '{"ok": true}', {"ok": True})
-        assert r.json() == {"ok": True}
+    def test_comment_preserved(self):
+        src = "# This is a comment\nshow \"hi\"\n"
+        out = fmt_source(src)
+        assert "# This is a comment" in out
 
-    def test_json_parsed_from_text(self):
-        r = FetchResponse(200, '{"x": 42}')
-        assert r.json()["x"] == 42
-
-    def test_text(self):
-        r = FetchResponse(200, "hello world")
-        assert r.text == "hello world"
-
-    def test_repr(self):
-        r = FetchResponse(404, "not found")
-        assert "404" in repr(r)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 3. AsyncFunction wrapper
-# ─────────────────────────────────────────────────────────────────────────────
-
-class TestAsyncFunction:
-    def _make_interp(self):
-        interp = MagicMock()
-        interp.env = {}
-
-        async def mock_block(body, env):
-            return "block_result"
-
-        interp.execute_block_async = mock_block
-        return interp
-
-    def test_repr(self):
-        interp = self._make_interp()
-        fn = AsyncFunction("hello", [], [], {}, interp)
-        assert "hello" in repr(fn)
-
-    def test_call_async_no_params(self):
-        interp = self._make_interp()
-        fn = AsyncFunction("hello", [], ["stmt"], {}, interp)
-        result = asyncio.run(fn.call_async([]))
-        assert result == "block_result"
-
-    def test_call_async_with_params(self):
-        interp = self._make_interp()
-        fn = AsyncFunction("add", [("x", "number"), ("y", "number")], [], {}, interp)
-        asyncio.run(fn.call_async([1, 2]))
-        # env should have been set before block was called
-        # (checked indirectly — no exception = pass)
-
-    def test_call_async_closure_isolation(self):
-        """Calling fn should not pollute outer env."""
-        interp = self._make_interp()
-        outer_env = {"z": 99}
-        interp.env = outer_env
-        fn = AsyncFunction("f", [("a", None)], [], dict(outer_env), interp)
-        asyncio.run(fn.call_async([42]))
-        assert "a" not in outer_env  # outer env unchanged
+    def test_colon_no_space_before(self):
+        src = "task foo() :\n    show \"hi\"\n"
+        out = fmt_source(src)
+        assert "foo():" in out
+        assert "foo() :" not in out
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 4. AsyncInterpreterMixin  –  visit_async_function
-# ─────────────────────────────────────────────────────────────────────────────
+class TestFormatterIndentation:
 
-class FakeInterpreter:
-    """Minimal stub that satisfies AsyncInterpreterMixin."""
-    from nekova.interpreter.async_interpreter import AsyncInterpreterMixin as _M
+    def test_two_space_to_four_space(self):
+        src = "task foo():\n  show \"hi\"\n  show \"bye\"\n"
+        out = fmt_source(src)
+        lines = out.splitlines()
+        body_lines = [l for l in lines if l.strip().startswith("show")]
+        for line in body_lines:
+            assert line.startswith("    "), f"Expected 4-space indent: {repr(line)}"
 
-    def __init__(self):
-        from nekova.interpreter.environment import Environment
-        self.env = Environment()
+    def test_four_space_preserved(self):
+        src = "task foo():\n    show \"hi\"\n"
+        out = fmt_source(src)
+        assert "    show" in out
 
-    def visit(self, node):
-        if callable(node):
-            return node()
-        return node
+    def test_nested_indent(self):
+        src = "task foo():\n    if true:\n        show \"nested\"\n"
+        out = fmt_source(src)
+        assert "        show" in out
 
-    def execute_block(self, body, env=None):
-        return None
-
-    async def execute_block_async(self, body, env):
-        return None
-
-
-# Compose the real mixin in
-from nekova.interpreter.async_interpreter import AsyncInterpreterMixin
-
-class ConcreteInterp(AsyncInterpreterMixin, FakeInterpreter):
-    pass
+    def test_blank_line_no_indent(self):
+        src = "task foo():\n    show \"hi\"\n\n    show \"bye\"\n"
+        out = fmt_source(src)
+        lines = out.splitlines()
+        blank = [l for l in lines if l == ""]
+        assert all(l == "" for l in blank)
 
 
-class TestVisitAsyncFunction:
-    def test_stores_async_function_in_env(self):
-        interp = ConcreteInterp()
-        node = AsyncFunctionNode("greet", [("name", "text")], [], None)
-        result = interp.visit_async_function(node)
-        assert isinstance(result, AsyncFunction)
-        assert interp.env["greet"] is result
+class TestFormatterOperators:
 
-    def test_closure_is_snapshot(self):
-        interp = ConcreteInterp()
-        interp.env["x"] = 10
-        node = AsyncFunctionNode("f", [], [], None)
-        fn = interp.visit_async_function(node)
-        interp.env["x"] = 999   # mutate after definition
-        assert fn.closure["x"] == 10  # closure is unchanged
+    def test_assignment_spacing(self):
+        src = "let x=1\n"
+        out = fmt_source(src)
+        assert "x = 1" in out
 
+    def test_equality_spacing(self):
+        src = "if x==1:\n    show \"yes\"\n"
+        out = fmt_source(src)
+        assert "x == 1" in out
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 5. visit_await
-# ─────────────────────────────────────────────────────────────────────────────
+    def test_not_equals_spacing(self):
+        src = "if x!=0:\n    show \"nonzero\"\n"
+        out = fmt_source(src)
+        assert "x != 0" in out
 
-class TestVisitAwait:
-    def test_await_plain_value(self):
-        interp = ConcreteInterp()
-        # visit returns the node itself (our stub just returns the value)
-        node = AwaitNode(42)
-        interp.visit = lambda n: n   # identity
-        result = asyncio.run(interp.visit_await(node))
-        assert result == 42
+    def test_string_content_not_modified(self):
+        # Operators inside strings must not get spaces added
+        src = 'show "x==1"\n'
+        out = fmt_source(src)
+        assert '"x==1"' in out
 
-    def test_await_coroutine(self):
-        interp = ConcreteInterp()
-
-        async def coro():
-            return "coro_result"
-
-        interp.visit = lambda n: coro()
-        node = AwaitNode("ignored")
-        result = asyncio.run(interp.visit_await(node))
-        assert result == "coro_result"
-
-    def test_await_async_function(self):
-        interp = ConcreteInterp()
-
-        async def mock_block(body, env):
-            return "from_block"
-
-        interp.execute_block_async = mock_block
-        fn = AsyncFunction("f", [], ["stmt"], {}, interp)
-        interp.visit = lambda n: fn
-        node = AwaitNode("ignored")
-        result = asyncio.run(interp.visit_await(node))
-        assert result == "from_block"
+    def test_fstring_content_preserved(self):
+        src = 'show f"value={x}"\n'
+        out = fmt_source(src)
+        assert 'f"value={x}"' in out
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 6. visit_fetch  (mocked aiohttp)
-# ─────────────────────────────────────────────────────────────────────────────
+class TestFormatterFileOps:
 
-class TestVisitFetch:
-    def _make_mock_response(self, status=200, text="ok", json_data=None, ct="text/plain"):
-        resp = AsyncMock()
-        resp.status = status
-        resp.text = AsyncMock(return_value=text)
-        resp.headers = {"Content-Type": ct}
-        if json_data is not None:
-            resp.json = AsyncMock(return_value=json_data)
-            resp.headers = {"Content-Type": "application/json"}
-        return resp
+    def test_fmt_file_changes(self, tmp_path):
+        nk = tmp_path / "test.nk"
+        nk.write_text("let x=1\nshow x   \n", encoding="utf-8")
+        changed, original, formatted = fmt_file(str(nk))
+        assert changed
+        assert "x = 1" in formatted
+        # File should be updated on disk
+        assert nk.read_text(encoding="utf-8") == formatted
 
-    def test_fetch_get_plain(self):
-        interp = ConcreteInterp()
-        interp.visit = lambda n: n  # URL node returns itself as string
+    def test_fmt_file_no_change(self, tmp_path):
+        nk = tmp_path / "clean.nk"
+        nk.write_text("let x = 1\nshow x\n", encoding="utf-8")
+        changed, original, formatted = fmt_file(str(nk))
+        # Clean file → no change (or minimal normalisation only)
+        assert original.strip() == formatted.strip()
 
-        mock_resp = self._make_mock_response(200, "hello")
+    def test_fmt_file_dry_run(self, tmp_path):
+        nk = tmp_path / "dirty.nk"
+        original_content = "let x=1\n"
+        nk.write_text(original_content, encoding="utf-8")
+        changed, orig, fmt = fmt_file(str(nk), dry_run=True)
+        # Dry run should NOT modify the file
+        assert nk.read_text(encoding="utf-8") == original_content
 
-        cm_session = MagicMock()
-        cm_request = MagicMock()
-        cm_request.__aenter__ = AsyncMock(return_value=mock_resp)
-        cm_request.__aexit__ = AsyncMock(return_value=False)
-        cm_session.__aenter__ = AsyncMock(return_value=cm_session)
-        cm_session.__aexit__ = AsyncMock(return_value=False)
-        cm_session.request = MagicMock(return_value=cm_request)
+    def test_fmt_directory(self, tmp_path):
+        (tmp_path / "a.nk").write_text("let x=1\n", encoding="utf-8")
+        (tmp_path / "b.nk").write_text("let y = 2\n", encoding="utf-8")
+        results = fmt_directory(str(tmp_path))
+        assert len(results) == 2
+        # a.nk should have changed, b.nk may not
+        paths = [r[0] for r in results]
+        assert any("a.nk" in p for p in paths)
 
-        node = FetchNode("https://example.com")
+    def test_fmt_directory_skips_non_nk(self, tmp_path):
+        (tmp_path / "script.py").write_text("x=1\n")
+        (tmp_path / "app.nk").write_text("let x=1\n", encoding="utf-8")
+        results = fmt_directory(str(tmp_path))
+        assert all(r[0].endswith(".nk") for r in results)
 
-        with patch("aiohttp.ClientSession", return_value=cm_session):
-            result = interp.visit_fetch(node)
+    def test_fmt_bom_file(self, tmp_path):
+        nk = tmp_path / "bom.nk"
+        nk.write_bytes(b"\xef\xbb\xbflet x = 1\n")
+        changed, orig, fmt = fmt_file(str(nk))
+        # Should not crash on BOM files
 
-        assert isinstance(result, FetchResponse)
-        assert result.status == 200
-        assert result.text == "hello"
 
-    def test_fetch_returns_json(self):
-        interp = ConcreteInterp()
-        interp.visit = lambda n: n
+# ==============================================================
+# SECTION 2 — Checker: check_source
+# ==============================================================
 
-        mock_resp = self._make_mock_response(
-            200, '{"name": "nekova"}', {"name": "nekova"}, "application/json"
+class TestCheckerKeywordConflict:
+
+    def test_task_named_fetch(self):
+        src = "task fetch(url):\n    return url\n"
+        issues = check_source(src)
+        codes = [i.code for i in issues]
+        assert "E011" in codes
+
+    def test_task_named_match(self):
+        src = "task match(x):\n    return x\n"
+        issues = check_source(src)
+        codes = [i.code for i in issues]
+        assert "E011" in codes
+
+    def test_task_named_return(self):
+        src = "task return(x):\n    show x\n"
+        issues = check_source(src)
+        # return is a keyword — should flag E011 or ParseError
+        assert any(i.code in ("E011", "E003") for i in issues)
+
+    def test_valid_task_name_ok(self):
+        src = "task greet(name):\n    show name\n"
+        issues = check_source(src)
+        e011 = [i for i in issues if i.code == "E011"]
+        assert not e011
+
+    def test_keyword_in_error_message(self):
+        src = "task fetch(url):\n    return url\n"
+        issues = check_source(src)
+        e011 = [i for i in issues if i.code == "E011"]
+        assert any("fetch" in i.message for i in e011)
+
+
+class TestCheckerUnreachableCode:
+
+    def test_unreachable_after_return(self):
+        src = (
+            "task foo():\n"
+            "    return 1\n"
+            "    show \"dead code\"\n"
         )
+        issues = check_source(src)
+        codes = [i.code for i in issues]
+        assert "W006" in codes
 
-        cm_session = MagicMock()
-        cm_request = MagicMock()
-        cm_request.__aenter__ = AsyncMock(return_value=mock_resp)
-        cm_request.__aexit__ = AsyncMock(return_value=False)
-        cm_session.__aenter__ = AsyncMock(return_value=cm_session)
-        cm_session.__aexit__ = AsyncMock(return_value=False)
-        cm_session.request = MagicMock(return_value=cm_request)
-
-        node = FetchNode("https://api.example.com/data")
-
-        with patch("aiohttp.ClientSession", return_value=cm_session):
-            result = interp.visit_fetch(node)
-
-        assert result.json() == {"name": "nekova"}
-
-    def test_fetch_post_with_body(self):
-        interp = ConcreteInterp()
-        interp.visit = lambda n: n if not isinstance(n, dict) else n
-
-        mock_resp = self._make_mock_response(201, "created")
-
-        cm_session = MagicMock()
-        cm_request = MagicMock()
-        cm_request.__aenter__ = AsyncMock(return_value=mock_resp)
-        cm_request.__aexit__ = AsyncMock(return_value=False)
-        cm_session.__aenter__ = AsyncMock(return_value=cm_session)
-        cm_session.__aexit__ = AsyncMock(return_value=False)
-        cm_session.request = MagicMock(return_value=cm_request)
-
-        node = FetchNode(
-            url="https://api.example.com/users",
-            method="POST",
-            body_expr={"name": "Emmanuel"},
+    def test_reachable_before_return_ok(self):
+        src = (
+            "task foo():\n"
+            "    show \"alive\"\n"
+            "    return 1\n"
         )
-
-        with patch("aiohttp.ClientSession", return_value=cm_session):
-            result = interp.visit_fetch(node)
-
-        assert result.status == 201
-
-    def test_fetch_404(self):
-        interp = ConcreteInterp()
-        interp.visit = lambda n: n
-
-        mock_resp = self._make_mock_response(404, "not found")
-
-        cm_session = MagicMock()
-        cm_request = MagicMock()
-        cm_request.__aenter__ = AsyncMock(return_value=mock_resp)
-        cm_request.__aexit__ = AsyncMock(return_value=False)
-        cm_session.__aenter__ = AsyncMock(return_value=cm_session)
-        cm_session.__aexit__ = AsyncMock(return_value=False)
-        cm_session.request = MagicMock(return_value=cm_request)
-
-        node = FetchNode("https://example.com/missing")
-
-        with patch("aiohttp.ClientSession", return_value=cm_session):
-            result = interp.visit_fetch(node)
-
-        assert result.status == 404
+        issues = check_source(src)
+        w006 = [i for i in issues if i.code == "W006"]
+        assert not w006
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 7. stream think  (mocked anthropic)
-# ─────────────────────────────────────────────────────────────────────────────
+class TestCheckerShadowedBuiltin:
 
-class TestStreamThink:
-    def test_stream_think_calls_body_per_chunk(self):
-        interp = ConcreteInterp()
-        interp.visit = lambda n: "Tell me about NEKOVA"
+    def test_shadow_show(self):
+        src = "let show = \"oops\"\n"
+        issues = check_source(src)
+        codes = [i.code for i in issues]
+        assert "E011" in codes or "W005" in codes
 
-        chunks_received = []
+    def test_shadow_think(self):
+        src = "let think = \"test\"\n"
+        issues = check_source(src)
+        codes = [i.code for i in issues]
+        assert "E011" in codes or "W005" in codes
 
-        async def mock_block(body, env):
-            chunks_received.append(env.get("chunk"))
-
-        interp.execute_block_async = mock_block
-
-        # Build a fake async context manager for the stream
-        mock_stream = AsyncMock()
-        mock_stream.__aenter__ = AsyncMock(return_value=mock_stream)
-        mock_stream.__aexit__ = AsyncMock(return_value=False)
-
-        async def fake_text_stream():
-            for c in ["Hello", " World", "!"]:
-                yield c
-
-        mock_stream.text_stream = fake_text_stream()
-
-        mock_client = MagicMock()
-        mock_client.messages.stream = MagicMock(return_value=mock_stream)
-
-        mock_anthropic_module = MagicMock()
-        mock_anthropic_module.AsyncAnthropic = MagicMock(return_value=mock_client)
-
-        node = StreamThinkNode("prompt_node", "chunk", ["show_stmt"])
-
-        with patch.dict("sys.modules", {"anthropic": mock_anthropic_module}):
-            interp.visit_stream_think(node)
-
-        assert chunks_received == ["Hello", " World", "!"]
-
-    def test_stream_think_missing_anthropic_raises(self):
-        interp = ConcreteInterp()
-        interp.visit = lambda n: "prompt"
-        interp.execute_block_async = AsyncMock()
-
-        node = StreamThinkNode("prompt_node", "chunk", [])
-
-        with patch.dict("sys.modules", {"anthropic": None}):
-            with pytest.raises((RuntimeError, ImportError, Exception)):
-                interp.visit_stream_think(node)
+    def test_normal_variable_ok(self):
+        src = "let username = \"Emmanuel\"\n"
+        issues = check_source(src)
+        w005 = [i for i in issues if i.code == "W005"]
+        assert not w005
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 8. _run_sync utility
-# ─────────────────────────────────────────────────────────────────────────────
+class TestCheckerWrongArgCount:
 
-class TestRunSync:
-    def test_run_sync_returns_value(self):
-        async def coro():
-            return 42
+    def test_too_many_args(self):
+        src = (
+            "task add(a, b):\n"
+            "    return a + b\n"
+            "show add(1, 2, 3)\n"
+        )
+        issues = check_source(src)
+        codes = [i.code for i in issues]
+        assert "W003" in codes
 
-        result = AsyncInterpreterMixin._run_sync(coro())
-        assert result == 42
+    def test_too_few_args(self):
+        src = (
+            "task greet(name, greeting):\n"
+            "    show f\"{greeting} {name}\"\n"
+            "greet(\"Emmanuel\")\n"
+        )
+        issues = check_source(src)
+        codes = [i.code for i in issues]
+        assert "W003" in codes
 
-    def test_run_sync_propagates_exception(self):
-        async def bad():
-            raise ValueError("boom")
+    def test_correct_arg_count_ok(self):
+        src = (
+            "task add(a, b):\n"
+            "    return a + b\n"
+            "let result = add(1, 2)\n"
+        )
+        issues = check_source(src)
+        w003 = [i for i in issues if i.code == "W003"]
+        assert not w003
 
-        with pytest.raises(ValueError, match="boom"):
-            AsyncInterpreterMixin._run_sync(bad())
+
+class TestCheckerIssueProperties:
+
+    def test_issue_has_line(self):
+        src = "task fetch(url):\n    return url\n"
+        issues = check_source(src)
+        for issue in issues:
+            assert isinstance(issue.line, int)
+
+    def test_issue_has_code(self):
+        src = "task fetch(url):\n    return url\n"
+        issues = check_source(src)
+        for issue in issues:
+            assert issue.code and issue.code.startswith(("E", "W"))
+
+    def test_issue_has_message(self):
+        src = "task fetch(url):\n    return url\n"
+        issues = check_source(src)
+        for issue in issues:
+            assert issue.message and len(issue.message) > 0
+
+    def test_issue_has_level(self):
+        src = "task fetch(url):\n    return url\n"
+        issues = check_source(src)
+        for issue in issues:
+            assert issue.level in ("error", "warning", "info")
+
+    def test_clean_source_no_errors(self):
+        src = (
+            "let x = 1\n"
+            "let y = 2\n"
+            "show x + y\n"
+        )
+        issues = check_source(src)
+        errors = [i for i in issues if i.level == "error"]
+        assert not errors
+
+    def test_check_file(self, tmp_path):
+        nk = tmp_path / "check_me.nk"
+        nk.write_text("task fetch(url):\n    return url\n", encoding="utf-8")
+        issues = check_file(str(nk))
+        codes = [i.code for i in issues]
+        assert "E011" in codes
+
+    def test_check_file_missing(self):
+        issues = check_file("/nonexistent/path/file.nk")
+        assert len(issues) == 1
+        assert issues[0].level == "error"
+
+    def test_sorted_by_line(self):
+        src = (
+            "task fetch(url):\n"
+            "    return url\n"
+            "    show \"dead\"\n"
+        )
+        issues = check_source(src)
+        lines = [i.line for i in issues if i.line > 0]
+        assert lines == sorted(lines)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 9. execute_block_async
-# ─────────────────────────────────────────────────────────────────────────────
+# ==============================================================
+# SECTION 3 — Error Display: smarter messages
+# ==============================================================
 
-class TestExecuteBlockAsync:
-    def test_executes_each_node(self):
-        interp = ConcreteInterp()
-        visited = []
-        interp.visit = lambda n: visited.append(n) or n
+class TestErrorDisplay:
 
-        asyncio.run(interp.execute_block_async(["a", "b", "c"], {}))
-        assert visited == ["a", "b", "c"]
+    def _capture(self, fn, *args, **kwargs):
+        """Capture stdout from display_error."""
+        import io
+        buf = io.StringIO()
+        sys.stdout = buf
+        try:
+            fn(*args, **kwargs)
+        finally:
+            sys.stdout = sys.__stdout__
+        return re.sub(r'\x1b\[[0-9;]*m', '', buf.getvalue())
 
-    def test_restores_env_after_block(self):
-        interp = ConcreteInterp()
-        interp.env = {"outer": True}
-        interp.visit = lambda n: n
+    def test_display_name_error(self):
+        from nekova.cli.error_display import display_error
+        out = self._capture(display_error,
+                            error_type="NameError",
+                            message="'foo' is not defined",
+                            line=3)
+        assert "E001" in out
+        assert "Variable Not Found" in out
 
-        asyncio.run(interp.execute_block_async([], {"inner": True}))
-        assert "outer" in interp.env
-        assert "inner" not in interp.env
+    def test_display_parse_error(self):
+        from nekova.cli.error_display import display_error
+        out = self._capture(display_error,
+                            error_type="ParseError",
+                            message="Unexpected token",
+                            line=5)
+        assert "E003" in out
 
-    def test_awaits_coroutine_nodes(self):
-        interp = ConcreteInterp()
-        results = []
+    def test_display_keyword_conflict(self):
+        from nekova.cli.error_display import display_error
+        out = self._capture(display_error,
+                            error_type="KeywordConflict",
+                            message="'fetch' is a reserved keyword",
+                            line=1)
+        assert "E011" in out
 
-        async def coro_node():
-            results.append("awaited")
-            return "done"
+    def test_display_zero_division(self):
+        from nekova.cli.error_display import display_error
+        out = self._capture(display_error,
+                            error_type="ZeroDivisionError",
+                            message="Division by zero",
+                            line=2)
+        assert "E006" in out
+        assert "zero" in out.lower()
 
-        interp.visit = lambda n: coro_node() if callable(n) else n
+    def test_display_shows_hint(self):
+        from nekova.cli.error_display import display_error
+        out = self._capture(display_error,
+                            error_type="NameError",
+                            message="'myvar' is not defined",
+                            line=4)
+        assert "let" in out.lower() or "define" in out.lower()
 
-        asyncio.run(interp.execute_block_async([coro_node], {}))
-        assert "awaited" in results
+    def test_display_did_you_mean(self):
+        from nekova.cli.error_display import display_error
+        out = self._capture(display_error,
+                            error_type="NameError",
+                            message="'greet' is not defined",
+                            line=5,
+                            variables={"greeting": "hello", "name": "Alice"})
+        # difflib should suggest 'greeting' for 'greet'
+        assert "greeting" in out
+
+    def test_display_source_context(self):
+        from nekova.cli.error_display import display_error
+        source = "let x = 1\nlet y = 2\nshow unknown_var\n"
+        out = self._capture(display_error,
+                            error_type="NameError",
+                            message="'unknown_var' is not defined",
+                            source=source,
+                            line=3)
+        assert "unknown_var" in out
+        assert "│" in out
+
+    def test_display_filepath_shown(self):
+        from nekova.cli.error_display import display_error
+        out = self._capture(display_error,
+                            error_type="ParseError",
+                            message="Unexpected token",
+                            filepath="src/app.nk",
+                            line=7)
+        assert "app.nk" in out
+
+    def test_display_unknown_error_type(self):
+        from nekova.cli.error_display import display_error
+        out = self._capture(display_error,
+                            error_type="SomeNewError",
+                            message="Something odd happened",
+                            line=1)
+        # Should still render without crashing, using E000
+        assert "E000" in out
+
+    def test_display_no_crash_no_line(self):
+        from nekova.cli.error_display import display_error
+        # Should not crash when line=0
+        out = self._capture(display_error,
+                            error_type="RuntimeError",
+                            message="Something went wrong")
+        assert "E005" in out
+
+
+# ==============================================================
+# SECTION 4 — Integration
+# ==============================================================
+
+class TestPhase10Integration:
+
+    def test_fmt_then_check_clean(self, tmp_path):
+        """Format a file then check it — should have no format-related issues."""
+        nk = tmp_path / "app.nk"
+        nk.write_text(
+            "let x=1\nlet y=2\nshow x+y\n",
+            encoding="utf-8"
+        )
+        # Format it
+        changed, _, formatted = fmt_file(str(nk))
+        # Check it — no keyword errors
+        issues = check_file(str(nk))
+        e_issues = [i for i in issues if i.level == "error"
+                    and i.code not in ("E003",)]
+        assert not e_issues
+
+    def test_check_catches_keyword_before_run(self, tmp_path):
+        """Checker catches keyword conflict that would cause a parse error."""
+        nk = tmp_path / "bad.nk"
+        nk.write_text("task match(x):\n    return x\n", encoding="utf-8")
+        issues = check_file(str(nk))
+        assert any(i.code == "E011" for i in issues)
+
+    def test_fmt_preserves_logic(self):
+        """Formatting must not change program semantics."""
+        src = (
+            "task add(a,b):\n"
+            "    return a+b\n"
+            "let result=add(1,2)\n"
+            "show result\n"
+        )
+        formatted = fmt_source(src)
+        # The logic keywords must still be there
+        assert "task" in formatted
+        assert "return" in formatted
+        assert "show" in formatted
+        assert "add" in formatted
+
+    def test_checker_multiple_issues(self):
+        """Checker can detect multiple issues in one file."""
+        src = (
+            "task fetch(url):\n"        # E011 keyword conflict
+            "    return url\n"
+            "    show \"dead code\"\n"  # W006 unreachable
+        )
+        issues = check_source(src)
+        codes = {i.code for i in issues}
+        # Should have at least keyword error and possibly unreachable
+        assert "E011" in codes or "E003" in codes

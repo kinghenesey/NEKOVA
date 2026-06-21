@@ -263,3 +263,135 @@ def cmd_clean():
                 removed += 1
 
     print_success(f"Cleaned {removed} cache items.")
+
+# =============================================================
+# Phase 10: fmt and check commands
+# =============================================================
+
+def cmd_fmt(target: str = None, dry_run: bool = False):
+    """
+    Format NEKOVA source files.
+    nekova fmt            → format all .nk files in project
+    nekova fmt app.nk     → format a single file
+    nekova fmt --check    → dry-run (show what would change)
+    """
+    from nekova.cli.formatter import fmt_file, fmt_directory
+
+    _RED   = "[38;5;196m"
+    _GREEN = "[92m"
+    _GOLD  = "[38;5;172m"
+    _DIM   = "[2m"
+    _BOLD  = "[1m"
+    _RESET = "[0m"
+
+    if target and target.endswith(".nk"):
+        # Single file
+        try:
+            changed, original, formatted = fmt_file(target, dry_run=dry_run)
+            if changed:
+                if dry_run:
+                    print(f"{_GOLD}  would reformat  {target}{_RESET}")
+                else:
+                    print(f"{_GREEN}  ✓ reformatted   {target}{_RESET}")
+            else:
+                print(f"{_DIM}  unchanged       {target}{_RESET}")
+        except Exception as e:
+            print(f"{_RED}  ✗ error         {target}: {e}{_RESET}")
+        return True
+    else:
+        # Format directory
+        dirpath = target or "."
+        results = fmt_directory(dirpath, dry_run=dry_run)
+
+        if not results:
+            print(f"{_DIM}  No .nk files found in '{dirpath}'{_RESET}")
+            return True
+
+        changed_count = 0
+        for fpath, changed in results:
+            if isinstance(changed, str) and changed.startswith("ERROR"):
+                print(f"{_RED}  ✗ {changed}  {fpath}{_RESET}")
+            elif changed:
+                changed_count += 1
+                if dry_run:
+                    print(f"{_GOLD}  would reformat  {fpath}{_RESET}")
+                else:
+                    print(f"{_GREEN}  ✓ reformatted   {fpath}{_RESET}")
+            else:
+                print(f"{_DIM}  unchanged       {fpath}{_RESET}")
+
+        action = "would reformat" if dry_run else "reformatted"
+        print()
+        print(f"  {_BOLD}{changed_count} file(s) {action}{_RESET} "              f"{_DIM}(of {len(results)} total){_RESET}")
+        return True
+
+
+def cmd_check(target: str = None):
+    """
+    Statically analyse NEKOVA source files.
+    nekova check            → check all .nk files in project
+    nekova check app.nk     → check a single file
+    Returns True if no errors found.
+    """
+    from nekova.cli.checker import check_file, check_directory
+
+    _RED   = "[38;5;196m"
+    _GOLD  = "[38;5;172m"
+    _CYAN  = "[96m"
+    _GREEN = "[92m"
+    _DIM   = "[2m"
+    _BOLD  = "[1m"
+    _RESET = "[0m"
+
+    def _render_issue(issue, filepath):
+        level_colour = {
+            "error":   _RED,
+            "warning": _GOLD,
+            "info":    _CYAN,
+        }.get(issue.level, _DIM)
+
+        level_label = {
+            "error":   "error",
+            "warning": "warn ",
+            "info":    "info ",
+        }.get(issue.level, issue.level)
+
+        print(f"  {level_colour}{_BOLD}[{issue.code}]{_RESET} "              f"{level_colour}{level_label}{_RESET} "              f"{_DIM}{filepath}:{issue.line}{_RESET}"              f"  {issue.message}")
+        if issue.hint:
+            print(f"         {_DIM}hint: {issue.hint}{_RESET}")
+
+    all_clean  = True
+    total_errs = 0
+    total_warn = 0
+
+    if target and target.endswith(".nk"):
+        files = {target: check_file(target)}
+    else:
+        files = check_directory(target or ".")
+
+    if not files:
+        print(f"{_DIM}  No .nk files found to check.{_RESET}")
+        return True
+
+    for fpath, issues in files.items():
+        if issues:
+            print()
+            print(f"  {_BOLD}{fpath}{_RESET}")
+            for issue in issues:
+                _render_issue(issue, fpath)
+                if issue.level == "error":
+                    total_errs += 1
+                    all_clean = False
+                elif issue.level == "warning":
+                    total_warn += 1
+
+    print()
+    if all_clean and total_warn == 0:
+        print(f"  {_GREEN}✓ No issues found — all files look good!{_RESET}")
+    else:
+        if total_errs:
+            print(f"  {_RED}{total_errs} error(s)  {total_warn} warning(s){_RESET}")
+        else:
+            print(f"  {_GOLD}{total_warn} warning(s) — no errors{_RESET}")
+
+    return all_clean
