@@ -164,7 +164,7 @@ def parse_args(argv: list) -> dict:
         "run", "test", "build", "new", "info", "clean",
         "export", "package", "publish", "deploy", "repl",
         "marketplace", "debug", "ide", "format", "notebook",
-        "compile",
+        "compile", "fmt", "check",
     }
     if values and values[0] in commands:
         args["command"] = values[0]

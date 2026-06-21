@@ -389,8 +389,17 @@ class _Analyser:
 
     def _check_unused(self):
         """Warn about variables defined but never used."""
+        # Stdlib functions pre-seeded into scope must never be
+        # reported as unused -- they are builtins, not user variables.
+        _STDLIB_PRESEEDED = {
+            "connect", "uuid", "token", "hash",
+            "json_encode", "json_decode",
+            "env_get", "env_set", "recall",
+        }
         for name, line in self.scope.defined.items():
             if name in _BUILTINS:
+                continue
+            if name in _STDLIB_PRESEEDED:
                 continue
             if name in self.scope.tasks:
                 continue
