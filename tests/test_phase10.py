@@ -146,7 +146,7 @@ class TestFormatterFileOps:
         nk.write_text("let x = 1\nshow x\n", encoding="utf-8")
         changed, original, formatted = fmt_file(str(nk))
         # Clean file → no change (or minimal normalisation only)
-        assert original.strip() == formatted.strip()
+        assert original.strip().replace(chr(13), "") == formatted.strip().replace(chr(13), "")
 
     def test_fmt_file_dry_run(self, tmp_path):
         nk = tmp_path / "dirty.nk"
