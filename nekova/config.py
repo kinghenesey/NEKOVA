@@ -1,7 +1,7 @@
 # =============================================================
 # NEKOVA Language — Configuration & Version Info
 # =============================================================
-NEKOVA_VERSION  = "1.2.0"
+NEKOVA_VERSION  = "1.3.0"
 NEKOVA_CODENAME = "Genesis"
 NEKOVA_EXTENSION = ".nk"
 # Legacy aliases — keeps old imports working during transition

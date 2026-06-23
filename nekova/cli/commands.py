@@ -16,7 +16,7 @@ def cmd_info():
     """Show NEKOVA system information."""
     print()
     print(f"{Color.CYAN}{Color.BOLD}  NEKOVA System Information{Color.RESET}")
-    print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
+    print(f"  {Color.DIM}{chr(9472) * 40}{Color.RESET}")
     print(f"  {'Language':<20} NEKOVA")
     print(f"  {'Version':<20} {NEKOVA_VERSION}")
     print(f"  {'Codename':<20} {NEKOVA_CODENAME}")
@@ -35,131 +35,81 @@ def cmd_info():
     print()
 
 
-# ── nekova new ────────────────────────────────────────────────────────────────
+# ── nekova new [--template <name>] ────────────────────────────────────────────
 
-_MAIN_NK = '''\
-# {name} — NEKOVA Project
-# Created with nekova v{version}
+def cmd_new(project_name: str, template: str = "default"):
+    """Create a new NEKOVA project, optionally from a template.
 
-show "Welcome to {name}!"
-show "Built with NEKOVA {version} · {codename}"
-'''
-
-_TOML = '''\
-# nekova.toml — project configuration
-# Run your project with:  nekova run
-
-[project]
-name        = "{name}"
-version     = "0.1.0"
-author      = ""
-description = "A NEKOVA project"
-entry       = "src/main.nk"
-
-[ai]
-# "claude" | "gemini" | "openai" | "mock"
-model   = "claude"
-api_key = ""
-
-[dependencies]
-packages = []
-
-[run]
-strict_types = false
-show_imports = false
-debug        = false
-'''
-
-_README = '''\
-# {name}
-
-A NEKOVA language project.
-
-## Run
-
-```bash
-nekova run
-```
-
-Or run a specific file:
-
-```bash
-nekova run src/main.nk
-```
-
-## Structure
-
-```
-{name}/
-├── src/
-│   └── main.nk      ← entry point
-├── tests/
-├── nekova.toml       ← project config
-└── README.md
-```
-
-## Built with
-
-NEKOVA v{version} · {codename}
-'''
-
-_GITIGNORE = '''\
-__pycache__/
-*.pyc
-.env
-*.nkpkg
-dist/
-'''
-
-
-def cmd_new(project_name: str):
-    """Create a new NEKOVA project with starter files."""
+    Templates: default | web | ai | fullstack
+    Usage:
+        nekova new myapp
+        nekova new myapp --template web
+        nekova new myapp --template ai
+        nekova new myapp --template fullstack
+    """
     if not project_name:
         print_error("Please provide a project name.")
-        print_info("Usage:  nekova new myproject")
+        print_info("Usage:  nekova new myproject [--template web|ai|fullstack]")
         return False
 
     if os.path.exists(project_name):
         print_error(f"Folder '{project_name}' already exists.")
         return False
 
-    print_info(f"Creating project '{project_name}'...")
+    from nekova.cli.templates import scaffold_project, list_templates, TEMPLATE_DESCRIPTIONS
 
-    dirs = [
-        project_name,
-        os.path.join(project_name, "src"),
-        os.path.join(project_name, "tests"),
-    ]
-    for d in dirs:
-        os.makedirs(d, exist_ok=True)
+    valid = [t for t, _ in list_templates()]
+    if template not in valid:
+        print_error(f"Unknown template '{template}'.")
+        print_info(f"Available templates: {', '.join(valid)}")
+        return False
 
-    ctx = dict(name=project_name, version=NEKOVA_VERSION, codename=NEKOVA_CODENAME)
+    tpl_desc = TEMPLATE_DESCRIPTIONS.get(template, "")
+    print_info(f"Creating project '{project_name}' [{template}] — {tpl_desc}...")
 
-    _write(os.path.join(project_name, "src", "main.nk"),
-           _MAIN_NK.format(**ctx))
-    _write(os.path.join(project_name, "nekova.toml"),
-           _TOML.format(**ctx))
-    _write(os.path.join(project_name, "README.md"),
-           _README.format(**ctx))
-    _write(os.path.join(project_name, ".gitignore"),
-           _GITIGNORE)
-    _write(os.path.join(project_name, "tests", ".gitkeep"), "")
+    ok = scaffold_project(project_name, template)
+    if not ok:
+        print_error("Failed to create project.")
+        return False
 
     print_success(f"Project '{project_name}' created!")
     print()
-    print(f"  {Color.DIM}Structure:{Color.RESET}")
-    print(f"  {project_name}/")
-    print(f"  ├── src/")
-    print(f"  │   └── main.nk")
-    print(f"  ├── tests/")
-    print(f"  ├── nekova.toml")
-    print(f"  └── README.md")
-    print()
-    print_info("Run your project:")
+
+    # Show template-aware structure
+    _print_project_structure(project_name, template)
+
+    print_info("Get started:")
     print(f"  {Color.CYAN}cd {project_name}{Color.RESET}")
     print(f"  {Color.CYAN}nekova run{Color.RESET}")
     print()
     return True
+
+
+def _print_project_structure(project_name: str, template: str):
+    print(f"  {Color.DIM}Structure:{Color.RESET}")
+    print(f"  {project_name}/")
+    if template == "fullstack":
+        print(f"  {chr(9500)}{chr(9472)}{chr(9472) * 2} src/")
+        print(f"  {chr(9474)}   {chr(9500)}{chr(9472)}{chr(9472)} main.nk       {Color.DIM}(routes + server){Color.RESET}")
+        print(f"  {chr(9474)}   {chr(9500)}{chr(9472)}{chr(9472)} db.nk         {Color.DIM}(database helpers){Color.RESET}")
+        print(f"  {chr(9474)}   {chr(9492)}{chr(9472)}{chr(9472)} ai.nk         {Color.DIM}(AI helpers){Color.RESET}")
+    elif template == "ai":
+        print(f"  {chr(9500)}{chr(9472)}{chr(9472) * 2} src/")
+        print(f"  {chr(9474)}   {chr(9500)}{chr(9472)}{chr(9472)} main.nk       {Color.DIM}(think / remember){Color.RESET}")
+        print(f"  {chr(9474)}   {chr(9492)}{chr(9472)}{chr(9472)} agent.nk      {Color.DIM}(AI tasks){Color.RESET}")
+    elif template == "web":
+        print(f"  {chr(9500)}{chr(9472)}{chr(9472) * 2} src/")
+        print(f"  {chr(9474)}   {chr(9500)}{chr(9472)}{chr(9472)} main.nk       {Color.DIM}(routes + serve){Color.RESET}")
+        print(f"  {chr(9474)}   {chr(9492)}{chr(9472)}{chr(9472)} routes/api.nk {Color.DIM}(API routes){Color.RESET}")
+    else:
+        print(f"  {chr(9500)}{chr(9472)}{chr(9472) * 2} src/")
+        print(f"  {chr(9474)}   {chr(9492)}{chr(9472)}{chr(9472)} main.nk")
+    print(f"  {chr(9500)}{chr(9472)}{chr(9472) * 2} tests/")
+    print(f"  {chr(9500)}{chr(9472)}{chr(9472) * 2} nekova.toml")
+    if template != "default":
+        print(f"  {chr(9500)}{chr(9472)}{chr(9472) * 2} .env.example")
+    print(f"  {chr(9492)}{chr(9472)}{chr(9472) * 2} README.md")
+    print()
 
 
 def _write(path: str, content: str):
@@ -174,12 +124,11 @@ def cmd_test():
     """Run all NEKOVA test suites via pytest."""
     print()
     print(f"{Color.CYAN}{Color.BOLD}  NEKOVA Test Runner{Color.RESET}")
-    print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
+    print(f"  {Color.DIM}{chr(9472) * 40}{Color.RESET}")
     print()
 
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    # Try pytest first (gives us richer output)
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "tests/", "-q", "--tb=short"],
         capture_output=True,
@@ -188,7 +137,6 @@ def cmd_test():
         env={**os.environ, "PYTHONIOENCODING": "utf-8"},
     )
 
-    # Print pytest output
     output = result.stdout + result.stderr
     for line in output.splitlines():
         print(f"  {line}")
@@ -271,35 +219,33 @@ def cmd_clean():
 def cmd_fmt(target: str = None, dry_run: bool = False):
     """
     Format NEKOVA source files.
-    nekova fmt            → format all .nk files in project
-    nekova fmt app.nk     → format a single file
-    nekova fmt --check    → dry-run (show what would change)
+    nekova fmt            format all .nk files in project
+    nekova fmt app.nk     format a single file
+    nekova fmt --check    dry-run (show what would change)
     """
     from nekova.cli.formatter import fmt_file, fmt_directory
 
-    _RED   = "[38;5;196m"
-    _GREEN = "[92m"
-    _GOLD  = "[38;5;172m"
-    _DIM   = "[2m"
-    _BOLD  = "[1m"
-    _RESET = "[0m"
+    _RED   = "\033[38;5;196m"
+    _GREEN = "\033[92m"
+    _GOLD  = "\033[38;5;172m"
+    _DIM   = "\033[2m"
+    _BOLD  = "\033[1m"
+    _RESET = "\033[0m"
 
     if target and target.endswith(".nk"):
-        # Single file
         try:
             changed, original, formatted = fmt_file(target, dry_run=dry_run)
             if changed:
                 if dry_run:
                     print(f"{_GOLD}  would reformat  {target}{_RESET}")
                 else:
-                    print(f"{_GREEN}  ✓ reformatted   {target}{_RESET}")
+                    print(f"{_GREEN}  reformatted   {target}{_RESET}")
             else:
                 print(f"{_DIM}  unchanged       {target}{_RESET}")
         except Exception as e:
-            print(f"{_RED}  ✗ error         {target}: {e}{_RESET}")
+            print(f"{_RED}  error         {target}: {e}{_RESET}")
         return True
     else:
-        # Format directory
         dirpath = target or "."
         results = fmt_directory(dirpath, dry_run=dry_run)
 
@@ -310,53 +256,43 @@ def cmd_fmt(target: str = None, dry_run: bool = False):
         changed_count = 0
         for fpath, changed in results:
             if isinstance(changed, str) and changed.startswith("ERROR"):
-                print(f"{_RED}  ✗ {changed}  {fpath}{_RESET}")
+                print(f"{_RED}  {changed}  {fpath}{_RESET}")
             elif changed:
                 changed_count += 1
                 if dry_run:
                     print(f"{_GOLD}  would reformat  {fpath}{_RESET}")
                 else:
-                    print(f"{_GREEN}  ✓ reformatted   {fpath}{_RESET}")
+                    print(f"{_GREEN}  reformatted   {fpath}{_RESET}")
             else:
                 print(f"{_DIM}  unchanged       {fpath}{_RESET}")
 
         action = "would reformat" if dry_run else "reformatted"
         print()
-        print(f"  {_BOLD}{changed_count} file(s) {action}{_RESET} "              f"{_DIM}(of {len(results)} total){_RESET}")
+        print(f"  {_BOLD}{changed_count} file(s) {action}{_RESET} {_DIM}(of {len(results)} total){_RESET}")
         return True
 
 
 def cmd_check(target: str = None):
     """
     Statically analyse NEKOVA source files.
-    nekova check            → check all .nk files in project
-    nekova check app.nk     → check a single file
-    Returns True if no errors found.
+    nekova check            check all .nk files in project
+    nekova check app.nk     check a single file
     """
     from nekova.cli.checker import check_file, check_directory
 
-    _RED   = "[38;5;196m"
-    _GOLD  = "[38;5;172m"
-    _CYAN  = "[96m"
-    _GREEN = "[92m"
-    _DIM   = "[2m"
-    _BOLD  = "[1m"
-    _RESET = "[0m"
+    _RED   = "\033[38;5;196m"
+    _GOLD  = "\033[38;5;172m"
+    _CYAN  = "\033[96m"
+    _GREEN = "\033[92m"
+    _DIM   = "\033[2m"
+    _BOLD  = "\033[1m"
+    _RESET = "\033[0m"
 
     def _render_issue(issue, filepath):
-        level_colour = {
-            "error":   _RED,
-            "warning": _GOLD,
-            "info":    _CYAN,
-        }.get(issue.level, _DIM)
-
-        level_label = {
-            "error":   "error",
-            "warning": "warn ",
-            "info":    "info ",
-        }.get(issue.level, issue.level)
-
-        print(f"  {level_colour}{_BOLD}[{issue.code}]{_RESET} "              f"{level_colour}{level_label}{_RESET} "              f"{_DIM}{filepath}:{issue.line}{_RESET}"              f"  {issue.message}")
+        level_colour = {"error": _RED, "warning": _GOLD, "info": _CYAN}.get(issue.level, _DIM)
+        level_label  = {"error": "error", "warning": "warn ", "info": "info "}.get(issue.level, issue.level)
+        print(f"  {level_colour}{_BOLD}[{issue.code}]{_RESET} {level_colour}{level_label}{_RESET} "
+              f"{_DIM}{filepath}:{issue.line}{_RESET}  {issue.message}")
         if issue.hint:
             print(f"         {_DIM}hint: {issue.hint}{_RESET}")
 
@@ -387,7 +323,7 @@ def cmd_check(target: str = None):
 
     print()
     if all_clean and total_warn == 0:
-        print(f"  {_GREEN}✓ No issues found — all files look good!{_RESET}")
+        print(f"  {_GREEN}No issues found — all files look good!{_RESET}")
     else:
         if total_errs:
             print(f"  {_RED}{total_errs} error(s)  {total_warn} warning(s){_RESET}")

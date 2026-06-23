@@ -1,0 +1,76 @@
+# NEKOVA Changelog
+
+All notable changes to NEKOVA are documented here.
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+---
+
+## [1.3.0] — 2024-06-23 · Phase 12 "Forge Tools"
+
+### Added
+
+#### 12A — Project Templates (`nekova new --template`)
+- `nekova new myapp --template web` — web server scaffold with `route`/`serve` structure
+- `nekova new myapp --template ai` — AI-native scaffold with `think`/`remember`/`recall`
+- `nekova new myapp --template fullstack` — web + AI + SQLite database scaffold
+- Default template (`nekova new myapp`) unchanged — blank NEKOVA project
+- New module: `nekova/cli/templates.py` with full file scaffolding per template
+- Each template generates `src/`, `tests/`, `nekova.toml`, `.gitignore`, `README.md`, `.env.example`
+
+#### 12B — REPL Improvements
+- **Arrow-key history** — Up/Down arrows navigate previous commands (via `readline` on Unix, `pyreadline3` on Windows)
+- **Persistent history** — session history saved to `~/.nekova_history` (max 500 entries)
+- **`?help` shorthand** — `?help` now works as an alias for `help`
+- **`?<cmd>` aliases** — any command can be prefixed with `?` (e.g. `?vars`, `?history`)
+- **`templates` command** — list available project templates from inside the REPL
+- Improved welcome message and help text
+
+#### 12C — `nekova run --watch` Auto-rerun
+- `nekova run app.nk --watch` — re-runs file on every save
+- `nekova run --watch` — resolves entry from `nekova.toml`, then watches
+- `nekova watch app.nk` — standalone subcommand alias
+- Event-based watching via `watchdog` when installed; falls back to polling (0.5s interval)
+- Timestamped run separators in output for clarity
+- New module: `watcher.py`
+
+#### 12D — Version & Release Prep
+- Version bumped: `1.2.0` → `1.3.0`
+- Codename: `Genesis` (unchanged)
+- `CHANGELOG.md` added
+- `pyproject.toml` version updated
+
+---
+
+## [1.2.0] — Phase 11 "Package Forge"
+
+### Added
+- Full package system: `nekova install`, `nekova uninstall`, `nekova search`, `nekova info`, `nekova deps`, `nekova publish`
+- 11 bundled packages: `requests`, `validation`, `crypto`, `charts`, `ui`, `scheduler`, `forms`, `auth`, `email`, `storage`, `ml`
+- Test suite: 663 passing tests
+
+---
+
+## [1.1.0] — Phase 10 "Developer Experience"
+
+### Added
+- `nekova fmt` — NEKOVA code formatter
+- `nekova check` — static analyser (error codes E011, W003, W005, W006)
+- Smarter error messages with hints
+
+---
+
+## [1.0.0] — Phases 1–9 "Foundation"
+
+### Added
+- Core language: lexer, parser, interpreter
+- AI primitives: `think as json/list/bool/schema/text`, `remember`/`recall`/`forget`
+- Web DSL: `route`, `serve`
+- Database DSL: `connect`, `query`, `insert`, `create`
+- Stdlib: `use json/env/uuid/crypto/math`
+- Class system: `object`/`init`/`self`/`new`/`extends`
+- Pattern matching: `match`/`when`
+- Async/await, streaming `think`, HTTP `fetch`
+- REPL, multi-file imports, optional type hints
+- `nekova.toml` configuration
+- Rust-style error display with `did-you-mean` suggestions
+- Published to PyPI (`nekova-lang`) and VS Code Marketplace

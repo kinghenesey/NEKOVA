@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # =============================================================
 # NEKOVA Language â€” Main Entry Point
 # =============================================================
@@ -113,18 +113,25 @@ def parse_args(argv: list) -> dict:
         "install":     None,
         "uninstall":   None,
         "script_args": {},   # --key value pairs passed through to .nk scripts
+        "watch":       False,
+        "template":    "default",
     }
 
     if not argv:
         return args
 
     # ── Known NEKOVA CLI flags ────────────────────────────────
-    KNOWN_FLAGS = {"--debug", "--version", "--help", "--packages", "--compile"}
+    KNOWN_FLAGS = {"--debug", "--version", "--help", "--packages", "--compile", "--watch"}
     KNOWN_VALUE_FLAGS = {"--install", "--uninstall"}
 
     argv_list = list(argv)
 
     args["debug"]    = "--debug"    in argv_list
+    args["watch"]    = "--watch"    in argv_list
+    # --template <name>
+    for i, a in enumerate(argv_list):
+        if a == "--template" and i + 1 < len(argv_list):
+            args["template"] = argv_list[i + 1]
     args["version"]  = "--version"  in argv_list
     args["help"]     = "--help"     in argv_list
     args["packages"] = "--packages" in argv_list
@@ -168,6 +175,8 @@ def parse_args(argv: list) -> dict:
         # Phase 11
         "install", "uninstall", "search", "packages",
         "pkg-info", "deps",
+        # Phase 12
+        "watch",
     }
     if values and values[0] in commands:
         args["command"] = values[0]
@@ -271,7 +280,7 @@ def main():
             sys.exit(0)
 
         if cmd == "new":
-            success = cmd_new(arg)
+            success = cmd_new(arg, template=args["template"])
             sys.exit(0 if success else 1)
 
         if cmd == "build":
@@ -288,6 +297,23 @@ def main():
             sys.exit(0 if success else 1)
 
         if cmd == "run":
+            if args["watch"]:
+                from watcher import watch
+                # resolve filepath first (may come from toml)
+                run_file = arg
+                if not run_file:
+                    from nekova.toml_loader import load_config, ConfigError
+                    try:
+                        _cfg = load_config()
+                        if _cfg:
+                            run_file = _cfg.entry_path
+                    except Exception:
+                        pass
+                if not run_file:
+                    print_error("No file specified and no nekova.toml found.")
+                    sys.exit(1)
+                watch(run_file)
+                sys.exit(0)
             if not arg:
                 from nekova.toml_loader import load_config, ConfigError
                 try:
@@ -317,6 +343,21 @@ def main():
             exit_code = runner.run()
             sys.exit(exit_code)
         
+        if cmd == "watch":
+            from watcher import watch
+            if not arg:
+                from nekova.toml_loader import load_config, ConfigError
+                try:
+                    _cfg = load_config()
+                    arg = _cfg.entry_path if _cfg else None
+                except Exception:
+                    arg = None
+            if not arg:
+                print_error("No file specified. Usage: nekova watch app.nk")
+                sys.exit(1)
+            watch(arg)
+            sys.exit(0)
+
         if cmd == "repl":
             from repl import REPL
             repl = REPL()

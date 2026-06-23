@@ -1,8 +1,12 @@
+﻿# =============================================================
+# NEKOVA Language — Interactive REPL  (Phase 12B)
 # =============================================================
-# NEKOVA Language — Interactive REPL
-# =============================================================
-# Read-Eval-Print Loop for NEKOVA.
-# Run with: nekova repl
+# Improvements over v1.2.0:
+#   - Arrow-key history  (readline on Unix; pyreadline3 on Windows)
+#   - ?help  shorthand for help
+#   - ?<command>  alias for any REPL command
+#   - Persistent history file (~/.nekova_history)
+#   - Multiline blocks (unchanged — already working)
 # =============================================================
 
 import sys
@@ -11,23 +15,52 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
-import sys
 import os
 
 from nekova.config import Color, NEKOVA_VERSION, NEKOVA_CODENAME
 
+# ── Readline / history setup ──────────────────────────────────────────────────
+
+HISTORY_FILE = os.path.expanduser("~/.nekova_history")
+MAX_HISTORY  = 500
+
+def _setup_readline():
+    """Enable arrow-key history on all platforms."""
+    try:
+        import readline
+        try:
+            readline.read_history_file(HISTORY_FILE)
+        except FileNotFoundError:
+            pass
+        readline.set_history_length(MAX_HISTORY)
+        return readline
+    except ImportError:
+        # Windows fallback: try pyreadline3
+        try:
+            import pyreadline3  # noqa: F401 — importing activates arrow-key support
+        except ImportError:
+            pass
+        return None
+
+def _save_history(readline_mod):
+    if readline_mod is not None:
+        try:
+            readline_mod.write_history_file(HISTORY_FILE)
+        except Exception:
+            pass
+
+# ── REPL ──────────────────────────────────────────────────────────────────────
 
 class REPL:
     """
     Interactive NEKOVA shell.
     Maintains state between inputs so variables persist across lines.
+    Phase 12B: arrow-key history, ?help / ?<cmd> aliases, persistent history.
     """
 
     PROMPT      = f"{Color.CYAN}nekova>{Color.RESET} "
     PROMPT_CONT = f"{Color.DIM}   ...>{Color.RESET} "
 
-    # Statements that produce side effects (show, use, etc.)
-    # — don't auto-print their return value
     SILENT_NODES = (
         "AssignStatement", "ShowStatement", "UseStatement",
         "ImportStatement", "TaskStatement", "ThinkStatement",
@@ -39,8 +72,9 @@ class REPL:
     def __init__(self):
         from nekova.interpreter.interpreter import Interpreter
         self.interpreter = Interpreter()
-        self.history     = []
+        self.history     = []          # session history (REPL-level)
         self.running     = True
+        self._readline   = _setup_readline()
 
     def start(self):
         """Start the REPL session."""
@@ -61,14 +95,12 @@ class REPL:
             except EOFError:
                 self._quit()
 
-    # ── Input ──────────────────────────────────────────────────────────────
+        _save_history(self._readline)
+
+    # ── Input ─────────────────────────────────────────────────────────────────
 
     def _read_input(self) -> str:
-        """
-        Read one line or a complete block.
-        Detects block starters (lines ending with :) and
-        reads continuation lines until the block is complete.
-        """
+        """Read one line or a complete block."""
         try:
             line = input(self.PROMPT)
         except EOFError:
@@ -84,19 +116,17 @@ class REPL:
                 try:
                     cont = input(self.PROMPT_CONT)
                     if not cont.strip():
-                        # Empty line — check if more blocks expected
                         last = self._last_keyword(lines)
                         if last == "try":
-                            continue  # need catch block
+                            continue
                         break
                     lines.append(cont)
                     stripped = cont.strip()
                     if stripped.startswith("catch") or stripped == "else:":
-                        continue  # these need their own body
+                        continue
                 except EOFError:
                     break
 
-            # Indent non-block continuation lines
             result = [lines[0]]
             for l in lines[1:]:
                 if l.strip() and not l.startswith(" ") and not l.startswith("\t"):
@@ -115,7 +145,7 @@ class REPL:
                     return kw
         return ""
 
-    # ── Execute ────────────────────────────────────────────────────────────
+    # ── Execute ───────────────────────────────────────────────────────────────
 
     def _execute(self, source: str):
         """Execute NEKOVA source code and display results."""
@@ -131,8 +161,6 @@ class REPL:
 
             for stmt in program.statements:
                 result = self.interpreter._execute_node(stmt)
-
-                # Auto-print expression results (not side-effect statements)
                 node_type = type(stmt).__name__
                 if result is not None and node_type not in self.SILENT_NODES:
                     display = self.interpreter._to_string(result)
@@ -141,7 +169,6 @@ class REPL:
             self.history.append(source)
 
         except Exception as e:
-            # Try wrapping as expression if it looks like one
             stripped = source.strip()
             if not any(stripped.startswith(kw) for kw in (
                 "show", "think", "use", "import", "if", "while",
@@ -171,11 +198,17 @@ class REPL:
                     if line.strip():
                         print(f"{Color.DIM}  {line.strip()}{Color.RESET}")
 
-    # ── Commands ───────────────────────────────────────────────────────────
+    # ── Commands ──────────────────────────────────────────────────────────────
 
     def _handle_command(self, source: str) -> bool:
         """Handle special REPL commands. Returns True if handled."""
-        cmd = source.strip().lower()
+        raw = source.strip()
+
+        # ?help  and ?<cmd>  shortcuts
+        if raw.startswith("?"):
+            raw = raw[1:].strip() or "help"
+
+        cmd = raw.lower()
 
         if cmd in ("exit", "quit", "q", ":q"):
             self._quit()
@@ -185,7 +218,7 @@ class REPL:
             os.system("cls" if os.name == "nt" else "clear")
             return True
 
-        if cmd == "help":
+        if cmd in ("help", "?"):
             self._print_help()
             return True
 
@@ -201,45 +234,62 @@ class REPL:
             from nekova.interpreter.interpreter import Interpreter
             self.interpreter = Interpreter()
             self.history = []
-            print(f"{Color.GREEN}✓ Session reset{Color.RESET}")
+            print(f"{Color.GREEN}Session reset{Color.RESET}")
             return True
 
         if cmd == "version":
             print(f"NEKOVA v{NEKOVA_VERSION} · {NEKOVA_CODENAME}")
             return True
 
+        if cmd == "templates":
+            self._print_templates()
+            return True
+
         return False
 
-    # ── Display ────────────────────────────────────────────────────────────
+    # ── Display ───────────────────────────────────────────────────────────────
 
     def _print_welcome(self):
-        border = "─" * 42
+        border = chr(9472) * 42
         print(f"""
 {Color.CYAN}{Color.BOLD}  NEKOVA Interactive Shell{Color.RESET}
 {Color.DIM}  {border}{Color.RESET}
 {Color.DIM}  Version {NEKOVA_VERSION} · {NEKOVA_CODENAME}{Color.RESET}
 {Color.DIM}  Connected Forge · SYNEKCOT Tech{Color.RESET}
 {Color.DIM}  {border}{Color.RESET}
-{Color.DIM}  Type 'help' for commands · 'exit' to quit{Color.RESET}
+{Color.DIM}  Type 'help' or '?help' for commands · 'exit' to quit{Color.RESET}
 """)
 
     def _print_help(self):
         print(f"""
-{Color.CYAN}Commands:{Color.RESET}
-  {Color.BOLD}exit{Color.RESET}      Quit the REPL
-  {Color.BOLD}clear{Color.RESET}     Clear the screen
-  {Color.BOLD}vars{Color.RESET}      Show all variables in scope
-  {Color.BOLD}history{Color.RESET}   Show last 10 commands
-  {Color.BOLD}reset{Color.RESET}     Reset session (clear all vars)
-  {Color.BOLD}version{Color.RESET}   Show NEKOVA version
+{Color.CYAN}REPL Commands:{Color.RESET}
+  {Color.BOLD}exit{Color.RESET}        Quit the REPL  (also: quit, q, :q)
+  {Color.BOLD}clear{Color.RESET}       Clear the screen
+  {Color.BOLD}vars{Color.RESET}        Show all variables in scope
+  {Color.BOLD}history{Color.RESET}     Show last 10 commands
+  {Color.BOLD}reset{Color.RESET}       Reset session (clear all vars)
+  {Color.BOLD}version{Color.RESET}     Show NEKOVA version
+  {Color.BOLD}templates{Color.RESET}   List available project templates
 
-{Color.CYAN}Examples:{Color.RESET}
+{Color.CYAN}Shorthand:{Color.RESET}
+  {Color.DIM}?help{Color.RESET}  →  help
+  {Color.DIM}?vars{Color.RESET}  →  vars
+  {Color.DIM}?<cmd>{Color.RESET} →  <cmd>
+
+{Color.CYAN}Navigation:{Color.RESET}
+  {Color.DIM}Up/Down arrow keys{Color.RESET}   Browse command history
+  {Color.DIM}Ctrl+C{Color.RESET}               Cancel current input
+  {Color.DIM}Ctrl+D{Color.RESET}               Exit REPL
+
+{Color.CYAN}NEKOVA Examples:{Color.RESET}
   {Color.DIM}name = "Emmanuel"{Color.RESET}
   {Color.DIM}show f"Hello {{name}}!"{Color.RESET}
   {Color.DIM}use math{Color.RESET}
   {Color.DIM}show sqrt(144){Color.RESET}
-  {Color.DIM}think "What is the capital of Nigeria?"{Color.RESET}
+  {Color.DIM}think "What is the capital of Nigeria?" as text{Color.RESET}
   {Color.DIM}task greet(n): show f"Hello {{n}}!"{Color.RESET}
+  {Color.DIM}remember "key" as "value"{Color.RESET}
+  {Color.DIM}recall "key"{Color.RESET}
 """)
 
     def _print_history(self):
@@ -248,13 +298,12 @@ class REPL:
             return
         print(f"{Color.CYAN}History:{Color.RESET}")
         for i, cmd in enumerate(self.history[-10:], 1):
-            preview = cmd.replace("\n", " ↵ ")[:60]
+            preview = cmd.replace("\n", " ") [:60]
             print(f"  {Color.DIM}{i:>2}.{Color.RESET} {preview}")
 
     def _print_vars(self):
         try:
             variables = self.interpreter.env.variables
-            # Filter out built-in callables
             user_vars = {
                 k: v for k, v in variables.items()
                 if not callable(v) and not isinstance(v, type)
@@ -269,7 +318,17 @@ class REPL:
         except Exception:
             print(f"{Color.DIM}  Could not read variables.{Color.RESET}")
 
+    def _print_templates(self):
+        from nekova.cli.templates import list_templates
+        print(f"{Color.CYAN}Project Templates:{Color.RESET}")
+        for name, desc in list_templates():
+            print(f"  {Color.BOLD}{name:<12}{Color.RESET} {Color.DIM}{desc}{Color.RESET}")
+        print()
+        print(f"  {Color.DIM}Usage: nekova new myapp --template <name>{Color.RESET}")
+        print()
+
     def _quit(self):
-        print(f"\n{Color.CYAN}Goodbye! Keep forging with NEKOVA. 🔥{Color.RESET}\n")
+        print(f"\n{Color.CYAN}Goodbye! Keep forging with NEKOVA.{Color.RESET}\n")
         self.running = False
+        _save_history(self._readline)
         sys.exit(0)
