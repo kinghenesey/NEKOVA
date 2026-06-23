@@ -375,6 +375,44 @@ def main():
         if cmd == "publish":
             from nekova.cli.deploy import cmd_publish
             success = cmd_publish(arg)
+
+        # Phase 11: Package system subcommands
+        if cmd == "install":
+            from nekova.cli.package_manager import install_package, install_from_toml
+            if arg:
+                success = install_package(arg)
+            else:
+                success = install_from_toml()
+            sys.exit(0 if success else 1)
+
+        if cmd == "uninstall":
+            from nekova.cli.package_manager import uninstall_package
+            if not arg:
+                print_error("Usage: nekova uninstall <package>")
+                sys.exit(1)
+            success = uninstall_package(arg)
+            sys.exit(0 if success else 1)
+
+        if cmd == "search":
+            from nekova.cli.package_manager import search, list_packages
+            if arg:
+                success = search(arg)
+            else:
+                success = list_packages()
+            sys.exit(0 if success else 1)
+
+        if cmd == "info":
+            from nekova.cli.package_manager import package_info
+            if not arg:
+                print_error("Usage: nekova info <package>")
+                sys.exit(1)
+            success = package_info(arg)
+            sys.exit(0 if success else 1)
+
+        if cmd == "deps":
+            from nekova.cli.package_manager import install_from_toml
+            success = install_from_toml()
+            sys.exit(0 if success else 1)
             sys.exit(0 if success else 1)
 
         if cmd == "deploy":

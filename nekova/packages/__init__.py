@@ -1,101 +1,186 @@
 # =============================================================
-# NEKOVA Package Manager — Package Registry
+# NEKOVA Package Manager — Package Registry  (Phase 11)
 # =============================================================
-# This module manages all installed NEKOVA packages.
-# Packages are stored in the packages/ folder and made
-# available via "use <package>" in NEKOVA code.
 
 import os
 import json
 
-# Path to the packages directory — always points to root packages/
-# regardless of whether running from nekova/ package or root
-_this_dir     = os.path.dirname(os.path.abspath(__file__))
-_root_dir     = os.path.dirname(_this_dir) if os.path.basename(_this_dir) == 'packages' and 'nekova' in _this_dir else _this_dir
-PACKAGES_DIR  = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "packages") \
-                if "nekova" in os.path.abspath(__file__) else _this_dir
+# ── Directory layout ─────────────────────────────────────────
+# All installed package modules live in  <repo_root>/packages/
+_THIS_DIR     = os.path.dirname(os.path.abspath(__file__))
+_ROOT_DIR     = os.path.dirname(_THIS_DIR)          # repo root
+PACKAGES_DIR  = os.path.join(_ROOT_DIR, "packages")
 REGISTRY_FILE = os.path.join(PACKAGES_DIR, "registry.json")
 
+os.makedirs(PACKAGES_DIR, exist_ok=True)
 
-# ── Built-in package registry ─────────────────────────────────
-# These are packages that come with NEKOVA out of the box.
-# Future versions will download from a remote registry.
+# ── Built-in / bundled packages ───────────────────────────────
+# Every entry here is available via  nekova install <name>
+# without a network connection.
 
 BUILTIN_PACKAGES = {
+    # ── Existing ──────────────────────────────────────────────
     "charts": {
         "name":        "charts",
         "version":     "1.0.0",
         "description": "Simple ASCII charts and graphs",
-        "author":      "NEKOVA Core Team",
+        "author":      "Emmanuel King Christopher",
         "functions":   ["bar_chart", "line_chart", "pie_chart"],
+        "category":    "visualisation",
     },
     "auth": {
         "name":        "auth",
-        "version":     "1.0.0",
-        "description": "Basic authentication utilities",
-        "author":      "NEKOVA Core Team",
-        "functions":   ["hash_password", "check_password",
-                        "generate_token"],
+        "version":     "1.1.0",
+        "description": "Password hashing and token generation",
+        "author":      "Emmanuel King Christopher",
+        "functions":   ["hash_password", "check_password", "generate_token"],
+        "category":    "security",
     },
     "validation": {
         "name":        "validation",
         "version":     "1.0.0",
         "description": "Input validation helpers",
-        "author":      "NEKOVA Core Team",
-        "functions":   ["is_email", "is_phone", "is_url",
-                        "is_strong_password"],
+        "author":      "Emmanuel King Christopher",
+        "functions":   ["is_email", "is_phone", "is_url", "is_strong_password"],
+        "category":    "utilities",
     },
     "colors": {
         "name":        "colors",
         "version":     "1.0.0",
-        "description": "Terminal color and styling utilities",
-        "author":      "NEKOVA Core Team",
-        "functions":   ["red", "green", "blue", "yellow",
-                        "bold", "dim"],
+        "description": "Terminal colour and styling utilities",
+        "author":      "Emmanuel King Christopher",
+        "functions":   ["red", "green", "blue", "yellow", "bold", "dim"],
+        "category":    "utilities",
     },
     "random": {
         "name":        "random",
         "version":     "1.0.0",
         "description": "Random number and value generation",
-        "author":      "NEKOVA Core Team",
-        "functions":   ["random_int", "random_float",
-                        "random_choice", "shuffle"],
+        "author":      "Emmanuel King Christopher",
+        "functions":   ["random_int", "random_float", "random_choice", "shuffle"],
+        "category":    "utilities",
+    },
+
+    # ── Phase 11: New packages ────────────────────────────────
+    "requests": {
+        "name":        "requests",
+        "version":     "1.0.0",
+        "description": "Simple HTTP client (GET, POST, PUT, DELETE)",
+        "author":      "Emmanuel King Christopher",
+        "functions":   ["http_get", "http_post", "http_put",
+                        "http_delete", "http_headers"],
+        "category":    "networking",
+        "requires":    ["requests"],
+    },
+    "openai": {
+        "name":        "openai",
+        "version":     "1.0.0",
+        "description": "OpenAI GPT integration (chat, embeddings, images)",
+        "author":      "Emmanuel King Christopher",
+        "functions":   ["gpt_chat", "gpt_complete", "gpt_embed",
+                        "gpt_image", "gpt_models"],
+        "category":    "ai",
+        "requires":    ["openai"],
+    },
+    "stripe": {
+        "name":        "stripe",
+        "version":     "1.0.0",
+        "description": "Stripe payments (charges, customers, subscriptions)",
+        "author":      "Emmanuel King Christopher",
+        "functions":   ["stripe_charge", "stripe_customer",
+                        "stripe_subscription", "stripe_refund"],
+        "category":    "payments",
+        "requires":    ["stripe"],
+    },
+    "sendmail": {
+        "name":        "sendmail",
+        "version":     "1.0.0",
+        "description": "Send emails via SMTP or SendGrid",
+        "author":      "Emmanuel King Christopher",
+        "functions":   ["send_email", "send_html_email",
+                        "email_template"],
+        "category":    "communication",
+        "requires":    [],
+    },
+    "csv": {
+        "name":        "csv",
+        "version":     "1.0.0",
+        "description": "Read, write, and process CSV files",
+        "author":      "Emmanuel King Christopher",
+        "functions":   ["csv_read", "csv_write", "csv_append",
+                        "csv_to_dict", "csv_from_dict",
+                        "csv_filter", "csv_columns"],
+        "category":    "data",
+        "requires":    [],
+    },
+    "slug": {
+        "name":        "slug",
+        "version":     "1.0.0",
+        "description": "URL slug generation and text utilities",
+        "author":      "Emmanuel King Christopher",
+        "functions":   ["slugify", "truncate", "word_count",
+                        "capitalize_words", "strip_html"],
+        "category":    "text",
+        "requires":    [],
     },
 }
 
 
+# ── Registry helpers ──────────────────────────────────────────
+
 def load_registry() -> dict:
-    """Load the local installed packages registry."""
+    """Load the local installed-packages registry."""
     if not os.path.exists(REGISTRY_FILE):
         return {}
     try:
-        with open(REGISTRY_FILE, "r") as f:
+        with open(REGISTRY_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return {}
 
 
 def save_registry(registry: dict):
-    """Save the local installed packages registry."""
-    with open(REGISTRY_FILE, "w") as f:
+    """Persist the local installed-packages registry."""
+    os.makedirs(PACKAGES_DIR, exist_ok=True)
+    with open(REGISTRY_FILE, "w", encoding="utf-8") as f:
         json.dump(registry, f, indent=2)
 
 
 def is_installed(name: str) -> bool:
-    """Check if a package is installed — checks registry AND file on disk."""
+    """True if a package is registered AND its file exists."""
     registry = load_registry()
     if name in registry:
         return True
-    # Also check if the .py file physically exists (handles migration edge cases)
     pkg_file = os.path.join(PACKAGES_DIR, f"{name}.py")
     return os.path.exists(pkg_file)
 
 
 def get_installed() -> dict:
-    """Return all installed packages."""
     return load_registry()
 
 
 def get_available() -> dict:
-    """Return all available packages."""
     return BUILTIN_PACKAGES
+
+
+def search_packages(query: str) -> list:
+    """
+    Search available packages by name, description, or category.
+    Returns a list of (name, info) tuples sorted by relevance.
+    """
+    q = query.lower().strip()
+    results = []
+    for name, info in BUILTIN_PACKAGES.items():
+        score = 0
+        if q in name:
+            score += 10
+        if q in info["description"].lower():
+            score += 5
+        if q in info.get("category", "").lower():
+            score += 3
+        if any(q in fn for fn in info.get("functions", [])):
+            score += 2
+        if score > 0:
+            results.append((score, name, info))
+    results.sort(reverse=True)
+    return [(name, info) for _, name, info in results]
