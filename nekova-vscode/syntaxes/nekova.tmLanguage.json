@@ -1,24 +1,93 @@
 ﻿{
     "name": "NEKOVA",
     "scopeName": "source.nekova",
-    "fileTypes": ["nk"],
+    "fileTypes": [
+        "nk"
+    ],
     "patterns": [
-        { "include": "#comments" },
-        { "include": "#strings" },
-        { "include": "#keywords" },
-        { "include": "#builtins" },
-        { "include": "#modules" },
-        { "include": "#numbers" },
-        { "include": "#booleans" },
-        { "include": "#operators" },
-        { "include": "#functions" },
-        { "include": "#variables" },
-        { "include": "#interpolation" }
+        {
+            "include": "#comments"
+        },
+        {
+            "include": "#fstrings"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#think_types"
+        },
+        {
+            "include": "#keywords_control"
+        },
+        {
+            "include": "#keywords_declaration"
+        },
+        {
+            "include": "#keywords_ai"
+        },
+        {
+            "include": "#keywords_web"
+        },
+        {
+            "include": "#keywords_db"
+        },
+        {
+            "include": "#keywords_class"
+        },
+        {
+            "include": "#keywords_memory"
+        },
+        {
+            "include": "#keywords_logic"
+        },
+        {
+            "include": "#stdlib_modules"
+        },
+        {
+            "include": "#builtins"
+        },
+        {
+            "include": "#booleans"
+        },
+        {
+            "include": "#numbers"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#functions"
+        },
+        {
+            "include": "#variables"
+        }
     ],
     "repository": {
         "comments": {
             "name": "comment.line.hash.nekova",
             "match": "#.*$"
+        },
+        "fstrings": {
+            "name": "string.quoted.double.nekova meta.fstring.nekova",
+            "begin": "f\"",
+            "end": "\"",
+            "patterns": [
+                {
+                    "name": "meta.interpolation.nekova",
+                    "begin": "\\{",
+                    "end": "\\}",
+                    "patterns": [
+                        {
+                            "include": "#variables"
+                        }
+                    ]
+                },
+                {
+                    "name": "constant.character.escape.nekova",
+                    "match": "\\\\."
+                }
+            ]
         },
         "strings": {
             "patterns": [
@@ -27,7 +96,15 @@
                     "begin": "\"",
                     "end": "\"",
                     "patterns": [
-                        { "include": "#interpolation" },
+                        {
+                            "name": "meta.interpolation.nekova",
+                            "match": "\\{([a-zA-Z_][a-zA-Z0-9_.]*)\\}",
+                            "captures": {
+                                "1": {
+                                    "name": "variable.other.nekova"
+                                }
+                            }
+                        },
                         {
                             "name": "constant.character.escape.nekova",
                             "match": "\\\\."
@@ -47,46 +124,61 @@
                 }
             ]
         },
-        "interpolation": {
-            "name": "meta.interpolation.nekova",
-            "match": "\\{([a-zA-Z_][a-zA-Z0-9_]*)\\}",
+        "think_types": {
+            "comment": "as <type> after think",
+            "match": "\\bas\\s+(text|json|list|bool|schema)\\b",
             "captures": {
+                "0": {
+                    "name": "keyword.ai.nekova"
+                },
                 "1": {
-                    "name": "variable.other.nekova"
+                    "name": "support.type.nekova"
                 }
             }
         },
-        "keywords": {
-            "patterns": [
-                {
-                    "name": "keyword.control.nekova",
-                    "match": "\\b(if|else|repeat|while|for|in|return|try|catch)\\b"
-                },
-                {
-                    "name": "keyword.declaration.nekova",
-                    "match": "\\b(task|use|import|pipeline|memory|sandbox)\\b"
-                },
-                {
-                    "name": "keyword.operator.logical.nekova",
-                    "match": "\\b(and|or|not)\\b"
-                },
-                {
-                    "name": "keyword.ai.nekova",
-                    "match": "\\b(think|model|autonomous|parallel|collect|generate|save|with|run|strict|relaxed)\\b"
-                },
-                {
-                    "name": "support.function.nekova",
-                    "match": "\\b(show)\\b"
-                }
-            ]
+        "keywords_control": {
+            "name": "keyword.control.nekova",
+            "match": "\\b(if|else|elif|repeat|while|for|in|return|break|continue|try|catch|finally|raise|pass|match|when)\\b"
+        },
+        "keywords_declaration": {
+            "name": "keyword.declaration.nekova",
+            "match": "\\b(task|use|import|from|let|async|await|pipeline|sandbox|strict|relaxed)\\b"
+        },
+        "keywords_ai": {
+            "name": "keyword.ai.nekova",
+            "match": "\\b(think|model|autonomous|parallel|collect|generate|process|save|with|run|stream)\\b"
+        },
+        "keywords_web": {
+            "name": "keyword.web.nekova",
+            "match": "\\b(route|serve|GET|POST|PUT|DELETE|PATCH|request|response|port)\\b"
+        },
+        "keywords_db": {
+            "name": "keyword.db.nekova",
+            "match": "\\b(connect|query|insert|create|update|delete)\\b"
+        },
+        "keywords_class": {
+            "name": "keyword.class.nekova",
+            "match": "\\b(object|init|self|new|extends|super)\\b"
+        },
+        "keywords_memory": {
+            "name": "keyword.memory.nekova",
+            "match": "\\b(remember|recall|forget|memory)\\b"
+        },
+        "keywords_logic": {
+            "name": "keyword.operator.logical.nekova",
+            "match": "\\b(and|or|not|is|as)\\b"
+        },
+        "stdlib_modules": {
+            "name": "entity.name.namespace.nekova",
+            "match": "(?<=use )\\b(math|text|files|datetime|collections|json|env|uuid|crypto|ai|agents|ui|web|database|vision|voice)\\b"
         },
         "builtins": {
             "name": "support.function.builtin.nekova",
-            "match": "\\b(to_text|to_number|length|ask|clear|sleep|type_of|random_num|sqrt|floor|ceil|abs|round|upper|lower|trim|replace|contains|split|join|today|now|year|month|day|ai_ask|ai_summarize|ai_generate|ai_classify|ai_stream|ai_remember|ai_forget|ai_image|db_connect|db_create|db_insert|db_find|db_update|db_delete|db_count|db_close|web_app|web_route|web_start|ui_app|ui_page|ui_title|ui_text|ui_button|ui_save|agent_create|agent_run|agent_tool|workflow_create|workflow_run|vision_scan|vision_compare|voice_speak|voice_listen|voice_save)\\b"
+            "match": "\\b(show|ask|sleep|clear|type_of|length|range|to_text|to_number|to_list|random_num|sqrt|floor|ceil|abs|round|pi|upper|lower|trim|replace|contains|split|join|today|now|year|month|day|hour|minute|second|read_file|write_file|file_exists|sha256|md5|encrypt|decrypt|uuid|json_parse|json_stringify|env|ai_ask|ai_summarize|ai_generate|ai_classify|ai_stream|db_connect|db_create|db_insert|db_find|db_update|db_delete|web_app|web_route|web_start|ui_app|ui_page|ui_title|ui_text|ui_button|ui_save|agent_create|agent_run|vision_scan|vision_compare|voice_speak|voice_listen|voice_save|print)\\b"
         },
-        "modules": {
-            "name": "entity.name.namespace.nekova",
-            "match": "(?<=use )\\b(math|text|files|datetime|collections|ai|agents|ui|web|database|vision|voice)\\b"
+        "booleans": {
+            "name": "constant.language.nekova",
+            "match": "\\b(true|false|null|none|True|False|None)\\b"
         },
         "numbers": {
             "patterns": [
@@ -99,10 +191,6 @@
                     "match": "\\b[0-9]+\\b"
                 }
             ]
-        },
-        "booleans": {
-            "name": "constant.language.nekova",
-            "match": "\\b(true|false|null)\\b"
         },
         "operators": {
             "patterns": [
@@ -121,6 +209,10 @@
                 {
                     "name": "keyword.operator.pipeline.nekova",
                     "match": "->"
+                },
+                {
+                    "name": "keyword.operator.walrus.nekova",
+                    "match": ":="
                 }
             ]
         },

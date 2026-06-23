@@ -3,31 +3,70 @@
         "lineComment": "#"
     },
     "brackets": [
-        ["{", "}"],
-        ["[", "]"],
-        ["(", ")"]
+        [
+            "{",
+            "}"
+        ],
+        [
+            "[",
+            "]"
+        ],
+        [
+            "(",
+            ")"
+        ]
     ],
     "autoClosingPairs": [
-        { "open": "{", "close": "}" },
-        { "open": "[", "close": "]" },
-        { "open": "(", "close": ")" },
-        { "open": "\"", "close": "\"" },
-        { "open": "'", "close": "'" }
+        {
+            "open": "{",
+            "close": "}"
+        },
+        {
+            "open": "[",
+            "close": "]"
+        },
+        {
+            "open": "(",
+            "close": ")"
+        },
+        {
+            "open": "\"",
+            "close": "\""
+        },
+        {
+            "open": "'",
+            "close": "'"
+        }
     ],
     "surroundingPairs": [
-        ["{", "}"],
-        ["[", "]"],
-        ["(", ")"],
-        ["\"", "\""],
-        ["'", "'"]
+        [
+            "{",
+            "}"
+        ],
+        [
+            "[",
+            "]"
+        ],
+        [
+            "(",
+            ")"
+        ],
+        [
+            "\"",
+            "\""
+        ],
+        [
+            "'",
+            "'"
+        ]
     ],
     "indentationRules": {
-        "increaseIndentPattern": "^\\s*(if|else|repeat|while|for|task|try|catch)\\b.*:\\s*$",
-        "decreaseIndentPattern": "^\\s*(else|catch)\\b"
+        "increaseIndentPattern": "^\\s*(if|else|elif|repeat|while|for|task|try|catch|finally|object|route|pipeline|sandbox|autonomous|memory|match|when|async)\\b.*:\\s*$",
+        "decreaseIndentPattern": "^\\s*(else|elif|catch|finally)\\b"
     },
     "onEnterRules": [
         {
-            "beforeText": "^\\s*(if|else|repeat|while|for|task|try|catch)\\b.*:\\s*$",
+            "beforeText": "^\\s*(if|else|elif|repeat|while|for|task|try|catch|object|route|pipeline|sandbox|autonomous|match|when|async)\\b.*:\\s*$",
             "action": {
                 "indent": "indent"
             }

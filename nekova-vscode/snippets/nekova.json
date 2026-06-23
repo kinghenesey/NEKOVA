@@ -1,0 +1,287 @@
+{
+  "Think as text": {
+    "prefix": [
+      "think",
+      "tk"
+    ],
+    "body": [
+      "think \"${1:prompt}\" as text"
+    ],
+    "description": "AI think \u2014 text response"
+  },
+  "Think as json": {
+    "prefix": "thinkj",
+    "body": [
+      "think \"${1:prompt}\" as json"
+    ],
+    "description": "AI think \u2014 JSON response"
+  },
+  "Think as list": {
+    "prefix": "thinkl",
+    "body": [
+      "think \"${1:prompt}\" as list"
+    ],
+    "description": "AI think \u2014 list response"
+  },
+  "Think captured": {
+    "prefix": "thinkcap",
+    "body": [
+      "${1:result} = think \"${2:prompt}\" as ${3:text}"
+    ],
+    "description": "Capture AI think result"
+  },
+  "Remember": {
+    "prefix": "rem",
+    "body": [
+      "remember \"${1:key}\" as \"${2:value}\""
+    ],
+    "description": "Store a value in AI memory"
+  },
+  "Recall": {
+    "prefix": "rec",
+    "body": [
+      "recall \"${1:key}\""
+    ],
+    "description": "Recall a value from AI memory"
+  },
+  "Task definition": {
+    "prefix": "task",
+    "body": [
+      "task ${1:name}(${2:args}):",
+      "    ${3:pass}"
+    ],
+    "description": "Define a NEKOVA task (function)"
+  },
+  "Async task": {
+    "prefix": "atask",
+    "body": [
+      "async task ${1:name}(${2:args}):",
+      "    ${3:pass}"
+    ],
+    "description": "Define an async task"
+  },
+  "If statement": {
+    "prefix": "if",
+    "body": [
+      "if ${1:condition}:",
+      "    ${2:pass}"
+    ],
+    "description": "If statement"
+  },
+  "If else": {
+    "prefix": "ife",
+    "body": [
+      "if ${1:condition}:",
+      "    ${2:pass}",
+      "else:",
+      "    ${3:pass}"
+    ],
+    "description": "If / else statement"
+  },
+  "For loop": {
+    "prefix": "for",
+    "body": [
+      "for ${1:item} in ${2:items}:",
+      "    ${3:show item}"
+    ],
+    "description": "For loop"
+  },
+  "Repeat loop": {
+    "prefix": "repeat",
+    "body": [
+      "repeat ${1:5}:",
+      "    ${2:pass}"
+    ],
+    "description": "Repeat N times"
+  },
+  "While loop": {
+    "prefix": "while",
+    "body": [
+      "while ${1:condition}:",
+      "    ${2:pass}"
+    ],
+    "description": "While loop"
+  },
+  "Match statement": {
+    "prefix": "match",
+    "body": [
+      "match ${1:value}:",
+      "    when \"${2:case1}\":  ${3:pass}",
+      "    when \"${4:case2}\":  ${5:pass}",
+      "    else:               ${6:pass}"
+    ],
+    "description": "Pattern matching"
+  },
+  "Object class": {
+    "prefix": "obj",
+    "body": [
+      "object ${1:Name}:",
+      "    init(${2:self, args}):",
+      "        self.${3:attr} = ${3:attr}",
+      "",
+      "    task ${4:method}(self):",
+      "        ${5:pass}"
+    ],
+    "description": "Define a NEKOVA object (class)"
+  },
+  "Object with extends": {
+    "prefix": "objext",
+    "body": [
+      "object ${1:Child} extends ${2:Parent}:",
+      "    init(${3:args}):",
+      "        super(${4:args})",
+      "",
+      "    task ${5:method}(self):",
+      "        ${6:pass}"
+    ],
+    "description": "Object with inheritance"
+  },
+  "New instance": {
+    "prefix": "new",
+    "body": [
+      "${1:instance} = new ${2:ClassName}(${3:args})"
+    ],
+    "description": "Create a new object instance"
+  },
+  "Route GET": {
+    "prefix": "routeg",
+    "body": [
+      "route GET \"${1:/path}\":",
+      "    return \"${2:Hello!}\""
+    ],
+    "description": "GET route handler"
+  },
+  "Route POST": {
+    "prefix": "routep",
+    "body": [
+      "route POST \"${1:/path}\":",
+      "    ${2:pass}"
+    ],
+    "description": "POST route handler"
+  },
+  "Serve": {
+    "prefix": "serve",
+    "body": [
+      "serve port: ${1:8080}"
+    ],
+    "description": "Start NEKOVA web server"
+  },
+  "DB connect": {
+    "prefix": "dbcon",
+    "body": [
+      "let ${1:db} = connect(\"${2:myapp.db}\")"
+    ],
+    "description": "Connect to SQLite database"
+  },
+  "DB create table": {
+    "prefix": "dbcreate",
+    "body": [
+      "${1:db}.create(\"${2:table}\", \"${3:col text, col2 integer}\")"
+    ],
+    "description": "Create a database table"
+  },
+  "DB insert": {
+    "prefix": "dbins",
+    "body": [
+      "${1:db}.insert(\"${2:table}\", ${3:data})"
+    ],
+    "description": "Insert into database"
+  },
+  "DB query": {
+    "prefix": "dbq",
+    "body": [
+      "let ${1:rows} = ${2:db}.query(\"${3:table}\")"
+    ],
+    "description": "Query database table"
+  },
+  "Use module": {
+    "prefix": "use",
+    "body": [
+      "use ${1:json}"
+    ],
+    "description": "Import stdlib module"
+  },
+  "Try catch": {
+    "prefix": "try",
+    "body": [
+      "try:",
+      "    ${1:pass}",
+      "catch ${2:e}:",
+      "    show ${2:e}"
+    ],
+    "description": "Try / catch block"
+  },
+  "Pipeline": {
+    "prefix": "pipeline",
+    "body": [
+      "pipeline ${1:name}:",
+      "    collect \"${2:input}\"",
+      "    process with ai",
+      "    generate ${3:report}",
+      "    save to ${4:database}"
+    ],
+    "description": "Neural pipeline block"
+  },
+  "Parallel": {
+    "prefix": "parallel",
+    "body": [
+      "autonomous parallel:",
+      "    think \"${1:prompt 1}\" as text",
+      "    think \"${2:prompt 2}\" as text"
+    ],
+    "description": "Parallel AI execution"
+  },
+  "Sandbox": {
+    "prefix": "sandbox",
+    "body": [
+      "sandbox ${1:strict}:",
+      "    ${2:pass}"
+    ],
+    "description": "Sandbox block"
+  },
+  "Agent pipeline": {
+    "prefix": "agent",
+    "body": [
+      "\"${1:input}\" -> ${2:researcher} -> ${3:writer}"
+    ],
+    "description": "Chain AI agents"
+  },
+  "Show": {
+    "prefix": "show",
+    "body": [
+      "show \"${1:message}\""
+    ],
+    "description": "Print to output"
+  },
+  "F-string": {
+    "prefix": "fs",
+    "body": [
+      "f\"{${1:variable}}\""
+    ],
+    "description": "NEKOVA f-string interpolation"
+  },
+  "Let variable": {
+    "prefix": "let",
+    "body": [
+      "let ${1:name} = ${2:value}"
+    ],
+    "description": "Declare a variable with let"
+  },
+  "Model switch": {
+    "prefix": "model",
+    "body": [
+      "model \"${1:claude}\""
+    ],
+    "description": "Switch AI provider"
+  },
+  "NEKOVA file header": {
+    "prefix": "header",
+    "body": [
+      "# ${1:Project Name} \u2014 NEKOVA v1.3.0",
+      "# Built by ${2:SYNEKCOT Tech}",
+      "",
+      "${3:show \"Hello, NEKOVA!\"}"
+    ],
+    "description": "Standard NEKOVA file header"
+  }
+}

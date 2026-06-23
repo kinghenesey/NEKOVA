@@ -1,23 +1,30 @@
 {
   "name": "nekova-lang",
   "displayName": "NEKOVA - AI Native Programming Language",
-  "description": "Syntax highlighting for the NEKOVA AI-Native Programming Language. Built by SYNEKCOT Tech.",
-  "version": "1.1.0",
+  "description": "Syntax highlighting, snippets, and commands for the NEKOVA AI-Native Programming Language. Built by SYNEKCOT Tech.",
+  "version": "1.3.0",
   "publisher": "SYNEKCOTTech",
   "engines": {
     "vscode": "^1.60.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Snippets",
+    "Other"
   ],
   "keywords": [
     "nekova",
     "ai",
+    "ai-native",
     "programming language",
     "nigeria",
     "synekcot",
     "think",
-    "connected forge"
+    "connected forge",
+    "llm",
+    "claude",
+    "gemini",
+    "openai"
   ],
   "repository": {
     "type": "git",
@@ -44,12 +51,133 @@
         "scopeName": "source.nekova",
         "path": "./syntaxes/nekova.tmLanguage.json"
       }
-    ]
+    ],
+    "snippets": [
+      {
+        "language": "nekova",
+        "path": "./snippets/nekova.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "nekova.runFile",
+        "title": "NEKOVA: Run File",
+        "icon": "$(play)"
+      },
+      {
+        "command": "nekova.runWatch",
+        "title": "NEKOVA: Run with Watch",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "nekova.openRepl",
+        "title": "NEKOVA: Open REPL",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "nekova.fmtFile",
+        "title": "NEKOVA: Format File"
+      },
+      {
+        "command": "nekova.checkFile",
+        "title": "NEKOVA: Check File (Lint)"
+      },
+      {
+        "command": "nekova.newProject",
+        "title": "NEKOVA: New Project"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "nekova.runFile",
+          "when": "resourceExtname == .nk",
+          "group": "navigation"
+        },
+        {
+          "command": "nekova.runWatch",
+          "when": "resourceExtname == .nk",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "nekova.runFile",
+          "when": "resourceExtname == .nk",
+          "group": "nekova"
+        },
+        {
+          "command": "nekova.runWatch",
+          "when": "resourceExtname == .nk",
+          "group": "nekova"
+        },
+        {
+          "command": "nekova.fmtFile",
+          "when": "resourceExtname == .nk",
+          "group": "nekova"
+        },
+        {
+          "command": "nekova.checkFile",
+          "when": "resourceExtname == .nk",
+          "group": "nekova"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "nekova.runFile",
+        "key": "f5",
+        "when": "resourceExtname == .nk"
+      },
+      {
+        "command": "nekova.runWatch",
+        "key": "ctrl+f5",
+        "when": "resourceExtname == .nk"
+      },
+      {
+        "command": "nekova.fmtFile",
+        "key": "shift+alt+f",
+        "when": "resourceExtname == .nk"
+      }
+    ],
+    "configuration": {
+      "title": "NEKOVA",
+      "properties": {
+        "nekova.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Path to the Python interpreter used to run NEKOVA."
+        },
+        "nekova.aiProvider": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "claude",
+            "gemini",
+            "openai",
+            "mock"
+          ],
+          "description": "Default AI provider for NEKOVA programs."
+        },
+        "nekova.formatOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run nekova fmt automatically when saving .nk files."
+        },
+        "nekova.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show NEKOVA status bar item for .nk files."
+        }
+      }
+    }
   },
   "main": "./extension.js",
   "activationEvents": [
     "onLanguage:nekova",
-    "workspaceContains:**/*.nk"
+    "workspaceContains:**/*.nk",
+    "workspaceContains:nekova.toml"
   ],
   "scripts": {
     "package": "vsce package"
