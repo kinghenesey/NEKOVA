@@ -4,5 +4,19 @@
     "version": "1.0.0",
     "description": "Simple ASCII charts and graphs",
     "installed": true
+  },
+  "slug": {
+    "name": "slug",
+    "version": "1.0.0",
+    "description": "URL slug generation and text utilities",
+    "category": "text",
+    "installed": true
+  },
+  "csv": {
+    "name": "csv",
+    "version": "1.0.0",
+    "description": "Read, write, and process CSV files",
+    "category": "data",
+    "installed": true
   }
 }

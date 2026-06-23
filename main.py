@@ -165,6 +165,9 @@ def parse_args(argv: list) -> dict:
         "export", "package", "publish", "deploy", "repl",
         "marketplace", "debug", "ide", "format", "notebook",
         "compile", "fmt", "check",
+        # Phase 11
+        "install", "uninstall", "search", "packages",
+        "pkg-info", "deps",
     }
     if values and values[0] in commands:
         args["command"] = values[0]
@@ -251,8 +254,13 @@ def main():
         )
 
         if cmd == "info":
-            cmd_info()
-            sys.exit(0)
+            if arg:
+                from nekova.cli.package_manager import package_info
+                success = package_info(arg)
+                sys.exit(0 if success else 1)
+            else:
+                cmd_info()
+                sys.exit(0)
 
         if cmd == "test":
             success = cmd_test()
