@@ -560,7 +560,13 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
         self._skip_newlines()
 
-        # Parse any number of elif chains
+        # Parse any number of elif branches.
+        # We track _tail — the last elif node — so each new elif
+        # is attached directly to the previous one's else_body.
+        # This avoids the broken pattern of assigning _tail but
+        # never using it for subsequent attachments.
+        _tail = None  # points to the last IfStatement node in the chain
+
         while (not self._at_end() and
                self._current().type == TokenType.ELIF):
             self._consume(TokenType.ELIF)
@@ -570,15 +576,17 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             self._skip_newlines()
             elif_body = self._parse_block()
             self._skip_newlines()
-            # Each elif becomes a nested IfStatement in the else_body
+
             elif_node = IfStatement(elif_condition, elif_body, [])
-            if else_body:
-                # Attach to previous elif's else slot
-                else_body[-1].else_body = [elif_node]
-            else:
+
+            if _tail is None:
+                # First elif — attach to the top-level else_body
                 else_body = [elif_node]
-            # point current tail for further elif/else attachment
-            _tail = elif_node
+            else:
+                # Subsequent elif — attach to the previous elif's else_body
+                _tail.else_body = [elif_node]
+
+            _tail = elif_node  # advance tail to the new node
 
         if (not self._at_end() and
                 self._current().type == TokenType.ELSE):
@@ -587,14 +595,13 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             self._expect_newline_or_eof()
             self._skip_newlines()
             final_else = self._parse_block()
-            # attach to the last elif node
-            if else_body:
-                _last = else_body[-1]
-                while _last.else_body:
-                    _last = _last.else_body[-1]
-                _last.else_body = final_else
-            else:
+
+            if _tail is None:
+                # No elif at all — else attaches directly to the if
                 else_body = final_else
+            else:
+                # Attach final else to the last elif node
+                _tail.else_body = final_else
 
         return IfStatement(condition, then_body, else_body)
 
