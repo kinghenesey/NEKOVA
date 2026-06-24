@@ -27,7 +27,15 @@ class ReturnSignal(Exception):
 
 class BreakSignal(Exception):
     """
-    Raised when NEKOVA needs to break out of a loop.
-    Reserved for future use in Phase 5+.
+    Raised when NEKOVA executes a break statement.
+    Caught by the enclosing loop to stop iteration.
+    """
+    pass
+
+
+class ContinueSignal(Exception):
+    """
+    Raised when NEKOVA executes a continue statement.
+    Caught by the enclosing loop to skip to the next iteration.
     """
     pass

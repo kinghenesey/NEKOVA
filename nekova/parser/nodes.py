@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 class Node:
     """Base class for all AST nodes."""
-    pass
+    line: int = 0  # source line — stamped by the parser at construction time
 
 
 # ── Program ───────────────────────────────────────────────────
@@ -446,6 +446,27 @@ class ReturnStatement(Node):
 
     def __repr__(self):
         return f"Return({self.value})"
+
+
+class BreakStatement(Node):
+    """
+    Exits the nearest enclosing loop immediately.
+    Example:
+        break
+    """
+    def __repr__(self):
+        return "Break"
+
+
+class ContinueStatement(Node):
+    """
+    Skips the rest of the current loop iteration
+    and jumps to the next one.
+    Example:
+        continue
+    """
+    def __repr__(self):
+        return "Continue"
 
 
 class UseStatement(Node):

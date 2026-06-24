@@ -5,7 +5,7 @@ from nekova.parser.nodes import (
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
     MemoryStatement, SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
-    TaskStatement, ReturnStatement, UseStatement,
+    TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
     MethodCall,
     PropertyAccess,
@@ -16,7 +16,7 @@ from nekova.parser.nodes import (
     ThinkAsStatement, RememberStatement, RecallStatement, ForgetStatement,
 )
 from nekova.interpreter.environment import Environment
-from nekova.runtime import ReturnSignal
+from nekova.runtime import ReturnSignal, BreakSignal, ContinueSignal
 from nekova.parser.async_nodes import (
     AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
 )
@@ -63,8 +63,8 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         if not hasattr(self, '_imported_files'):
             self._imported_files = set()
         for statement in program.statements:
-            # Track line for error display (tokens carry line, nodes don't yet)
-            if hasattr(statement, "line"):
+            # All stamped nodes now carry .line directly
+            if hasattr(statement, "line") and statement.line:
                 self._current_line = statement.line
             try:
                 self._execute_node(statement)
@@ -84,6 +84,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         Route a node to its matching execute method.
         This is the heart of the interpreter.
         """
+        # Update current line whenever a stamped node is executed
+        # so error messages point to the exact source line
+        if hasattr(node, "line") and node.line:
+            self._current_line = node.line
+
         if isinstance(node, AsyncFunctionNode):
             return self.visit_async_function(node)
         if isinstance(node, AwaitNode):
@@ -691,6 +696,14 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         else:
             self._execute_block(node.else_body)
 
+    def _exec_BreakStatement(self, node: BreakStatement):
+        """Execute: break — exits the nearest enclosing loop."""
+        raise BreakSignal()
+
+    def _exec_ContinueStatement(self, node: ContinueStatement):
+        """Execute: continue — skips to the next loop iteration."""
+        raise ContinueSignal()
+
     def _exec_RepeatStatement(self, node: RepeatStatement):
         """
         Execute:
@@ -706,7 +719,12 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             )
 
         for _ in range(int(count)):
-            self._execute_block(node.body)
+            try:
+                self._execute_block(node.body, new_scope=False)
+            except BreakSignal:
+                break
+            except ContinueSignal:
+                continue
     
     def _exec_WhileStatement(self, node: WhileStatement):
         """
@@ -719,8 +737,12 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         while self._is_truthy(
                 self._execute_node(node.condition)):
-            # No new scope — variables update in current scope
-            self._execute_block(node.body, new_scope=False)
+            try:
+                self._execute_block(node.body, new_scope=False)
+            except BreakSignal:
+                break
+            except ContinueSignal:
+                pass  # condition is re-evaluated naturally
             count += 1
             if count >= max_iterations:
                 raise NEKOVARuntimeError(
@@ -778,17 +800,23 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         for item in items:
             # Set loop variable in current scope
             self.env.set(node.variable, item)
-            # Execute body without new scope so
-            # loop variable is accessible
-            self._execute_block(
-                node.body, new_scope=False)
+            try:
+                self._execute_block(
+                    node.body, new_scope=False)
+            except BreakSignal:
+                break
+            except ContinueSignal:
+                continue
 
     def _exec_TaskStatement(self, node: TaskStatement):
         """
         Execute:  task greet(name): ...
         Stores the task definition in the environment.
         The task body is NOT executed yet — only when called.
+        We also capture the current environment here so the task
+        can close over variables from its definition scope (closure).
         """
+        node.closure_env = self.env  # snapshot the defining scope
         self.env.set(node.name, node)
 
     def _exec_ReturnStatement(self, node: ReturnStatement):
@@ -1306,7 +1334,9 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     def _call_task(self, task: TaskStatement, args: list):
         """
         Execute a task with the given arguments.
-        Creates a fresh local scope for the task.
+        Creates a fresh local scope whose parent is the environment
+        where the task was DEFINED (its closure), not always globals.
+        This gives NEKOVA real lexical closures.
         """
         if len(args) != len(task.params):
             raise NEKOVARuntimeError(
@@ -1315,8 +1345,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 f"but got {len(args)}."
             )
 
-        # Create a new local scope with params as variables
-        local_env    = Environment(parent=self.globals)
+        # Parent is the closure scope captured at definition time.
+        # Falls back to globals for tasks defined at the top level
+        # (where closure_env IS globals anyway).
+        closure      = getattr(task, "closure_env", self.globals)
+        local_env    = Environment(parent=closure)
         previous_env = self.env
 
         for param, value in zip(task.params, args):

@@ -7,7 +7,7 @@ from nekova.parser.nodes import (
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement, MemoryStatement,
     SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
-    TaskStatement, ReturnStatement, UseStatement,
+    TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
     MethodCall,
     PropertyAccess,
@@ -48,6 +48,11 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         # Filter out blank newlines at the start
         self.tokens  = tokens
         self.pos     = 0
+
+    def _stamp(self, node, line: int):
+        """Stamp a source line number onto any AST node and return it."""
+        node.line = line
+        return node
 
     # ----------------------------------------------------------
     # Public interface
@@ -133,6 +138,16 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         if token.type == TokenType.RETURN:
             return self._parse_return()
 
+        if token.type == TokenType.BREAK:
+            self._advance()
+            self._expect_newline_or_eof()
+            return BreakStatement()
+
+        if token.type == TokenType.CONTINUE:
+            self._advance()
+            self._expect_newline_or_eof()
+            return ContinueStatement()
+
         if token.type == TokenType.USE:
             return self._parse_use()
 
@@ -201,7 +216,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         self._consume(TokenType.SHOW)
         expr = self._parse_expression()
         self._expect_newline_or_eof()
-        return ShowStatement(expr)
+        return self._stamp(ShowStatement(expr), line)
 
     def _parse_think(self):
         """
@@ -603,7 +618,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                 # Attach final else to the last elif node
                 _tail.else_body = final_else
 
-        return IfStatement(condition, then_body, else_body)
+        return self._stamp(IfStatement(condition, then_body, else_body), line)
 
     def _parse_repeat(self):
         """
@@ -611,28 +626,30 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             repeat <count>:
                 <body>
         """
+        line = self._current().line
         self._consume(TokenType.REPEAT)
         count = self._parse_expression()
         self._consume(TokenType.COLON)
         self._expect_newline_or_eof()
         self._skip_newlines()
         body = self._parse_block()
-        return RepeatStatement(count, body)
-    
+        return self._stamp(RepeatStatement(count, body), line)
+
     def _parse_while(self):
         """
         Parse:
             while <condition>:
                 <body>
         """
+        line = self._current().line
         self._consume(TokenType.WHILE)
         condition = self._parse_expression()
         self._consume(TokenType.COLON)
         self._expect_newline_or_eof()
         self._skip_newlines()
         body = self._parse_block()
-        return WhileStatement(condition, body)
-    
+        return self._stamp(WhileStatement(condition, body), line)
+
     def _parse_try(self):
         """
         Parse:
@@ -646,6 +663,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             catch error:
                 <handler>
         """
+        line = self._current().line
         self._consume(TokenType.TRY)
         self._consume(TokenType.COLON)
         self._expect_newline_or_eof()
@@ -665,15 +683,15 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         self._skip_newlines()
         catch_body = self._parse_block()
 
-        return TryStatement(try_body, catch_body,
-                            error_var)
-    
+        return self._stamp(TryStatement(try_body, catch_body, error_var), line)
+
     def _parse_for(self):
         """
         Parse:
             for <variable> in <iterable>:
                 <body>
         """
+        line = self._current().line
         self._consume(TokenType.FOR)
 
         # Variable name
@@ -691,7 +709,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
         body = self._parse_block()
 
-        return ForStatement(variable, iterable, body)
+        return self._stamp(ForStatement(variable, iterable, body), line)
 
     def _parse_task(self):
         """
@@ -699,6 +717,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             task <name>(<params>):
                 <body>
         """
+        line = self._current().line
         self._consume(TokenType.TASK)
         name = self._consume(TokenType.IDENTIFIER).value
 
@@ -713,16 +732,17 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         self._expect_newline_or_eof()
         self._skip_newlines()
         body = self._parse_block()
-        return TaskStatement(name, params, body)
+        return self._stamp(TaskStatement(name, params, body), line)
 
     def _parse_return(self):
         """Parse:  return <expression>"""
+        line = self._current().line
         self._consume(TokenType.RETURN)
         if self._current().type in (TokenType.NEWLINE, TokenType.EOF):
-            return ReturnStatement(None)
+            return self._stamp(ReturnStatement(None), line)
         value = self._parse_expression()
         self._expect_newline_or_eof()
-        return ReturnStatement(value)
+        return self._stamp(ReturnStatement(value), line)
 
     def _parse_use(self):
         """Parse:  use <module>"""
@@ -783,6 +803,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         The 'let' keyword makes declarations unambiguous — the name
         always follows immediately, then an optional ': type', then '= value'.
         """
+        line  = self._current().line
         self._consume(TokenType.LET)
         name  = self._consume(TokenType.IDENTIFIER).value
 
@@ -800,31 +821,31 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         if self._current().type == TokenType.THINK:
             node = self._parse_think()
             node.variable = name
-            return node
+            return self._stamp(node, line)
 
         # Captured parallel: let results = autonomous parallel:
         if self._current().type == TokenType.AUTONOMOUS:
             node = self._parse_autonomous()
             node.variable = name
-            return node
+            return self._stamp(node, line)
 
         # Captured pipeline run: let result = run pipeline name
         if self._current().type == TokenType.RUN:
             node = self._parse_run_pipeline()
             node.variable = name
-            return node
+            return self._stamp(node, line)
 
         # Awaited expression: let result = await asyncFn()
         if self._current().type == TokenType.AWAIT:
             value = self.parse_await_expr()
             self._expect_newline_or_eof()
-            return AssignStatement(name, value, type_hint=type_hint)
+            return self._stamp(AssignStatement(name, value, type_hint=type_hint), line)
 
         # Fetch expression: let res = fetch "url" method "GET"
         if self._current().type == TokenType.FETCH:
             value = self.parse_fetch_expr()
             self._expect_newline_or_eof()
-            return AssignStatement(name, value, type_hint=type_hint)
+            return self._stamp(AssignStatement(name, value, type_hint=type_hint), line)
 
         value = self._parse_expression()
 
@@ -832,10 +853,10 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         if self._current().type == TokenType.ARROW:
             node = self._parse_pipeline(value)
             node.variable = name
-            return node
+            return self._stamp(node, line)
 
         self._expect_newline_or_eof()
-        return AssignStatement(name, value, type_hint=type_hint)
+        return self._stamp(AssignStatement(name, value, type_hint=type_hint), line)
 
     def _parse_identifier_statement(self):
         """
@@ -843,6 +864,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             name = "value"     → assignment
             greet("Emmanuel")  → function call
         """
+        line  = self._current().line
         name  = self._consume(TokenType.IDENTIFIER).value
         token = self._current()
 
@@ -869,7 +891,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             self._expect_newline_or_eof()
             # Desugar: x += rhs  →  x = x + rhs
             expanded = BinaryOp(Identifier(name), op, rhs)
-            return AssignStatement(name, expanded)
+            return self._stamp(AssignStatement(name, expanded), line)
 
         # Assignment
         if token.type == TokenType.ASSIGN:
@@ -879,19 +901,19 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             if self._current().type == TokenType.THINK:
                 node = self._parse_think()
                 node.variable = name
-                return node
-            
+                return self._stamp(node, line)
+
             # Captured parallel: results = autonomous parallel:
             if self._current().type == TokenType.AUTONOMOUS:
                 node = self._parse_autonomous()
                 node.variable = name
-                return node
-            
+                return self._stamp(node, line)
+
             # Captured pipeline run: result = run pipeline name
             if self._current().type == TokenType.RUN:
                 node = self._parse_run_pipeline()
                 node.variable = name
-                return node
+                return self._stamp(node, line)
 
             value = self._parse_expression()
 
@@ -899,10 +921,10 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             if self._current().type == TokenType.ARROW:
                 node = self._parse_pipeline(value)
                 node.variable = name
-                return node
+                return self._stamp(node, line)
 
             self._expect_newline_or_eof()
-            return AssignStatement(name, value, type_hint=type_hint)
+            return self._stamp(AssignStatement(name, value, type_hint=type_hint), line)
 
         # Function call
         if token.type == TokenType.LPAREN:

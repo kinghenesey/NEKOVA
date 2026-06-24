@@ -66,6 +66,8 @@ class TokenType(Enum):
     MATCH       = auto()
     WHEN        = auto()
     ELIF        = auto()
+    BREAK       = auto()
+    CONTINUE    = auto()
 
     # ── Web DSL (Phase 7) ─────────────────────────────────────
     ROUTE       = auto()
@@ -171,6 +173,8 @@ KEYWORDS = {
     "match":      TokenType.MATCH,
     "when":       TokenType.WHEN,
     "elif":       TokenType.ELIF,
+    "break":      TokenType.BREAK,
+    "continue":   TokenType.CONTINUE,
     "route":      TokenType.ROUTE,
     "serve":      TokenType.SERVE,
     # Phase 9
