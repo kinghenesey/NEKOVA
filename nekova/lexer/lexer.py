@@ -119,15 +119,15 @@ class Lexer:
         self._add_token(TokenType.NEWLINE, "\\n")
         self._advance()  # consume the \n
 
-        # Count leading spaces on the new line
+        # Count leading whitespace (spaces and tabs)
         indent = 0
-        while not self._at_end() and self._current() == " ":
-            indent  += 1
+        while not self._at_end() and self._current() in (" ", "\t"):
+            if self._current() == "\t":
+                indent += 4  # 1 tab = 4 spaces
+            else:
+                indent += 1
             self._advance()
 
-        # Also handle tab-based indentation (1 tab = 4 spaces)
-        # We already advanced past spaces; now check tabs
-        # (tabs at start of line are uncommon in NEKOVA but supported)
 
         current_indent = self.indent_stack[-1]
 
@@ -158,9 +158,6 @@ class Lexer:
 
         value = []
         while not self._at_end() and self._current() != quote:
-            if self._at_end():
-                raise SyntaxError(
-                    "f-string was never closed — did you forget a closing quote?")
             if self._current() == "\\" and self._peek() in ('"', "'", "n", "t", "\\"):
                 escape = self._peek()
                 self._advance()
@@ -176,8 +173,9 @@ class Lexer:
                 self._advance()
 
         if self._at_end():
-            raise SyntaxError(
-                "f-string was never closed — did you forget a closing quote?")
+            raise LexerError(
+                "f-string was never closed — did you forget a closing quote?",
+                self.line, self.column)
 
         self._advance()  # skip closing quote
         self._add_token(TokenType.F_STRING, "".join(value))
@@ -287,6 +285,14 @@ class Lexer:
             self._add_token(TokenType.POWER,       "**"); self._advance(); self._advance(); return
         if two == "->":
             self._add_token(TokenType.ARROW,       "->"); self._advance(); self._advance(); return
+        if two == "+=":
+            self._add_token(TokenType.PLUS_EQUAL,  "+="); self._advance(); self._advance(); return
+        if two == "-=":
+            self._add_token(TokenType.MINUS_EQUAL, "-="); self._advance(); self._advance(); return
+        if two == "*=":
+            self._add_token(TokenType.STAR_EQUAL,  "*="); self._advance(); self._advance(); return
+        if two == "/=":
+            self._add_token(TokenType.SLASH_EQUAL, "/="); self._advance(); self._advance(); return
 
         # ── Single-character operators ────────────────────────
         single = {
@@ -307,7 +313,6 @@ class Lexer:
             "{": TokenType.LBRACE,
             "}": TokenType.RBRACE,
             ".": TokenType.DOT,
-            "->": TokenType.ARROW
         }
 
         if char in single:

@@ -65,6 +65,7 @@ class TokenType(Enum):
     # ── Pattern Matching (Phase 7) ────────────────────────────
     MATCH       = auto()
     WHEN        = auto()
+    ELIF        = auto()
 
     # ── Web DSL (Phase 7) ─────────────────────────────────────
     ROUTE       = auto()
@@ -78,6 +79,12 @@ class TokenType(Enum):
 
     # ── Operators ─────────────────────────────────────────────
     PLUS        = auto()
+
+    # ── Augmented Assignment (Phase 13) ───────────────────────
+    PLUS_EQUAL  = auto()   # +=
+    MINUS_EQUAL = auto()   # -=
+    STAR_EQUAL  = auto()   # *=
+    SLASH_EQUAL = auto()   # /=
     MINUS       = auto()
     MULTIPLY    = auto()
     DIVIDE      = auto()
@@ -163,6 +170,7 @@ KEYWORDS = {
     # Phase 7
     "match":      TokenType.MATCH,
     "when":       TokenType.WHEN,
+    "elif":       TokenType.ELIF,
     "route":      TokenType.ROUTE,
     "serve":      TokenType.SERVE,
     # Phase 9

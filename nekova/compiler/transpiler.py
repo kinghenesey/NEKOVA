@@ -15,8 +15,8 @@ class NEKOVATranspiler:
         base    = os.path.splitext(output_path)[0]
         py_path = base + ".py"
 
-        from lexer import Lexer
-        from parser.parser import Parser
+        from nekova.lexer import Lexer
+        from nekova.parser.parser import Parser
         tokens  = Lexer(source).tokenize()
         program = Parser(tokens).parse()
 
@@ -97,7 +97,7 @@ class NEKOVATranspiler:
         self.output_lines.append(self._indent() + line)
 
     def _transpile_stmt(self, node):
-        from parser.nodes import (
+        from nekova.parser.nodes import (
             ShowStatement, ThinkStatement, AssignStatement,
             IfStatement, RepeatStatement, WhileStatement,
             ForStatement, TaskStatement, ReturnStatement,
@@ -229,7 +229,7 @@ class NEKOVATranspiler:
         self._write(node.name + " = {")
         self.indent_level += 1
         for stmt in node.body:
-            from parser.nodes import AssignStatement
+            from nekova.parser.nodes import AssignStatement
             if isinstance(stmt, AssignStatement):
                 val = self._transpile_expr(stmt.value)
                 self._write('"' + stmt.name + '": ' + val + ",")
@@ -242,7 +242,7 @@ class NEKOVATranspiler:
             self._transpile_stmt(stmt)
 
     def _transpile_expr(self, node) -> str:
-        from parser.nodes import (
+        from nekova.parser.nodes import (
             IntegerLiteral, FloatLiteral, StringLiteral,
             BooleanLiteral, NullLiteral, Identifier,
             BinaryOp, UnaryOp, CallExpression,

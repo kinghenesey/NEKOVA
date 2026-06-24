@@ -911,9 +911,13 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             from nekova.config import Color
             if node.names:
                 names_str = ", ".join(node.names)
-                print(f"{Color.DIM}→ imported {names_str} from '{node.filepath}'{Color.RESET}")
+                if self.debug:
+                    import sys
+                    print(f"{Color.DIM}→ imported {names_str} from '{node.filepath}'{Color.RESET}", file=sys.stderr)
             else:
-                print(f"{Color.DIM}→ imported '{node.filepath}'{Color.RESET}")
+                if self.debug:
+                    import sys
+                    print(f"{Color.DIM}→ imported '{node.filepath}'{Color.RESET}", file=sys.stderr)
 
         except NEKOVARuntimeError:
             raise
@@ -990,6 +994,8 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             if op == "<=": return left <= right
             if op == ">":  return left >  right
             if op == ">=": return left >= right
+            if op == "and": return bool(left) and bool(right)
+            if op == "or":  return bool(left) or  bool(right)
 
         except TypeError:
             raise NEKOVARuntimeError(
@@ -1593,11 +1599,15 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     def _exec_RecallStatement(self, node):
         """recall "key"  or  recall "key" or <default>"""
         from nekova.ai.memory_store import recall as _recall
-        key     = str(self._execute_node(node.key_expr))
-        default = None
-        if node.default is not None:
-            default = self._execute_node(node.default)
-        result = _recall(key, default)
+        key      = str(self._execute_node(node.key_expr))
+        _sentinel = object()
+        result   = _recall(key, _sentinel)
+        if result is _sentinel:
+            # Key not found — use default if provided, else None
+            if node.default is not None:
+                result = self._execute_node(node.default)
+            else:
+                result = None  # silently return None for missing keys
 
         if node.variable:
             self.env.set(node.variable, result)

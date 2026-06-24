@@ -560,13 +560,41 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
         self._skip_newlines()
 
+        # Parse any number of elif chains
+        while (not self._at_end() and
+               self._current().type == TokenType.ELIF):
+            self._consume(TokenType.ELIF)
+            elif_condition = self._parse_expression()
+            self._consume(TokenType.COLON)
+            self._expect_newline_or_eof()
+            self._skip_newlines()
+            elif_body = self._parse_block()
+            self._skip_newlines()
+            # Each elif becomes a nested IfStatement in the else_body
+            elif_node = IfStatement(elif_condition, elif_body, [])
+            if else_body:
+                # Attach to previous elif's else slot
+                else_body[-1].else_body = [elif_node]
+            else:
+                else_body = [elif_node]
+            # point current tail for further elif/else attachment
+            _tail = elif_node
+
         if (not self._at_end() and
                 self._current().type == TokenType.ELSE):
             self._consume(TokenType.ELSE)
             self._consume(TokenType.COLON)
             self._expect_newline_or_eof()
             self._skip_newlines()
-            else_body = self._parse_block()
+            final_else = self._parse_block()
+            # attach to the last elif node
+            if else_body:
+                _last = else_body[-1]
+                while _last.else_body:
+                    _last = _last.else_body[-1]
+                _last.else_body = final_else
+            else:
+                else_body = final_else
 
         return IfStatement(condition, then_body, else_body)
 
@@ -820,6 +848,22 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                 type_hint = self._consume(TokenType.IDENTIFIER).value
             token = self._current()
 
+        # Augmented assignment: x += 1, x -= 1, x *= 2, x /= 2
+        _AUG = {
+            TokenType.PLUS_EQUAL:  "+",
+            TokenType.MINUS_EQUAL: "-",
+            TokenType.STAR_EQUAL:  "*",
+            TokenType.SLASH_EQUAL: "/",
+        }
+        if token.type in _AUG:
+            op = _AUG[token.type]
+            self._advance()  # consume +=  -=  *=  /=
+            rhs = self._parse_expression()
+            self._expect_newline_or_eof()
+            # Desugar: x += rhs  →  x = x + rhs
+            expanded = BinaryOp(Identifier(name), op, rhs)
+            return AssignStatement(name, expanded)
+
         # Assignment
         if token.type == TokenType.ASSIGN:
             self._consume(TokenType.ASSIGN)
@@ -931,8 +975,26 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
     # ----------------------------------------------------------
 
     def _parse_expression(self):
-        """Parse an expression (handles comparisons)."""
-        return self._parse_comparison()
+        """Parse an expression (handles and/or logic + comparisons)."""
+        return self._parse_logical_or()
+
+    def _parse_logical_or(self):
+        """Parse 'or' operator."""
+        left = self._parse_logical_and()
+        while self._current().type == TokenType.OR:
+            self._advance()
+            right = self._parse_logical_and()
+            left  = BinaryOp(left, "or", right)
+        return left
+
+    def _parse_logical_and(self):
+        """Parse 'and' operator."""
+        left = self._parse_comparison()
+        while self._current().type == TokenType.AND:
+            self._advance()
+            right = self._parse_comparison()
+            left  = BinaryOp(left, "and", right)
+        return left
 
     def _parse_comparison(self):
         """Parse comparison operators: == != < <= > >="""

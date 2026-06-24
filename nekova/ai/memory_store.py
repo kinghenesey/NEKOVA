@@ -18,8 +18,15 @@ def remember(key: str, value) -> None:
 
 
 def recall(key: str, default=None):
-    """Retrieve a value by key, with optional default."""
+    """Retrieve a value by key, with optional default.
+    If default is a sentinel object (not None), returns it when key missing.
+    """
     return _memory.get(str(key), default)
+
+
+def has_key(key: str) -> bool:
+    """Check if key exists in memory."""
+    return str(key) in _memory
 
 
 def forget(key: str) -> bool:
