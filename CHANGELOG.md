@@ -5,43 +5,73 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.3.0] — 2024-06-23 · Phase 12 "Forge Tools"
+## [1.3.1] â€” 2025-06-25 Â· Phase 14 "Foundation"
+
+### Added
+- `break` and `continue` keywords for `for`, `while`, and `repeat` loops
+- `global` keyword â€” declare outer-scope variables inside tasks (`global x, y`)
+- Multi-line string literals (`"""..."""` and `'''...'''`)
+- `think` timeout â€” 30s default on all AI provider calls, configurable via `nekova.toml` `[ai] think_timeout`
+- W009 checker warning â€” non-exhaustive `match` blocks (missing `else` arm)
+
+### Fixed
+- `elif` chain bug â€” 4+ elif levels now wire correctly via explicit `_tail` pointer
+- Augmented assignment (`+=`, `-=`, `*=`, `/=`) desugared cleanly in the parser
+- `and` / `or` now parsed with correct precedence tower
+- Tab indentation now correctly counted (1 tab = 4 spaces)
+- F-string unterminated error now raises `LexerError` with line/col instead of bare `SyntaxError`
+- Transpiler bare imports fixed â€” works correctly on pip-installed versions
+- Import messages routed to stderr, no longer polluting stdout
+- `recall` missing key now returns `null` gracefully via sentinel pattern
+- `repeat` loop now shares scope with outer environment (consistent with `for`/`while`)
+
+### Improved
+- All AST nodes now carry a `line` attribute stamped by the parser
+- Interpreter tracks exact line as execution descends into nested statements
+- Tasks now use lexical closure scoping â€” close over variables from their definition scope
+- `_call_task` parents local environment to `closure_env` instead of always `self.globals`
+- `_global_names` properly saved and restored per task call â€” no bleed between nested calls
+- Version bumped: `1.3.0` â†’ `1.3.1`
+
+---
+
+## [1.3.0] â€” 2024-06-23 Â· Phase 12 "Forge Tools"
 
 ### Added
 
-#### 12A — Project Templates (`nekova new --template`)
-- `nekova new myapp --template web` — web server scaffold with `route`/`serve` structure
-- `nekova new myapp --template ai` — AI-native scaffold with `think`/`remember`/`recall`
-- `nekova new myapp --template fullstack` — web + AI + SQLite database scaffold
-- Default template (`nekova new myapp`) unchanged — blank NEKOVA project
+#### 12A â€” Project Templates (`nekova new --template`)
+- `nekova new myapp --template web` â€” web server scaffold with `route`/`serve` structure
+- `nekova new myapp --template ai` â€” AI-native scaffold with `think`/`remember`/`recall`
+- `nekova new myapp --template fullstack` â€” web + AI + SQLite database scaffold
+- Default template (`nekova new myapp`) unchanged â€” blank NEKOVA project
 - New module: `nekova/cli/templates.py` with full file scaffolding per template
 - Each template generates `src/`, `tests/`, `nekova.toml`, `.gitignore`, `README.md`, `.env.example`
 
-#### 12B — REPL Improvements
-- **Arrow-key history** — Up/Down arrows navigate previous commands (via `readline` on Unix, `pyreadline3` on Windows)
-- **Persistent history** — session history saved to `~/.nekova_history` (max 500 entries)
-- **`?help` shorthand** — `?help` now works as an alias for `help`
-- **`?<cmd>` aliases** — any command can be prefixed with `?` (e.g. `?vars`, `?history`)
-- **`templates` command** — list available project templates from inside the REPL
+#### 12B â€” REPL Improvements
+- **Arrow-key history** â€” Up/Down arrows navigate previous commands (via `readline` on Unix, `pyreadline3` on Windows)
+- **Persistent history** â€” session history saved to `~/.nekova_history` (max 500 entries)
+- **`?help` shorthand** â€” `?help` now works as an alias for `help`
+- **`?<cmd>` aliases** â€” any command can be prefixed with `?` (e.g. `?vars`, `?history`)
+- **`templates` command** â€” list available project templates from inside the REPL
 - Improved welcome message and help text
 
-#### 12C — `nekova run --watch` Auto-rerun
-- `nekova run app.nk --watch` — re-runs file on every save
-- `nekova run --watch` — resolves entry from `nekova.toml`, then watches
-- `nekova watch app.nk` — standalone subcommand alias
+#### 12C â€” `nekova run --watch` Auto-rerun
+- `nekova run app.nk --watch` â€” re-runs file on every save
+- `nekova run --watch` â€” resolves entry from `nekova.toml`, then watches
+- `nekova watch app.nk` â€” standalone subcommand alias
 - Event-based watching via `watchdog` when installed; falls back to polling (0.5s interval)
 - Timestamped run separators in output for clarity
 - New module: `watcher.py`
 
-#### 12D — Version & Release Prep
-- Version bumped: `1.2.0` → `1.3.0`
+#### 12D â€” Version & Release Prep
+- Version bumped: `1.2.0` â†’ `1.3.0`
 - Codename: `Genesis` (unchanged)
 - `CHANGELOG.md` added
 - `pyproject.toml` version updated
 
 ---
 
-## [1.2.0] — Phase 11 "Package Forge"
+## [1.2.0] â€” Phase 11 "Package Forge"
 
 ### Added
 - Full package system: `nekova install`, `nekova uninstall`, `nekova search`, `nekova info`, `nekova deps`, `nekova publish`
@@ -50,16 +80,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.1.0] — Phase 10 "Developer Experience"
+## [1.1.0] â€” Phase 10 "Developer Experience"
 
 ### Added
-- `nekova fmt` — NEKOVA code formatter
-- `nekova check` — static analyser (error codes E011, W003, W005, W006)
+- `nekova fmt` â€” NEKOVA code formatter
+- `nekova check` â€” static analyser (error codes E011, W003, W005, W006)
 - Smarter error messages with hints
 
 ---
 
-## [1.0.0] — Phases 1–9 "Foundation"
+## [1.0.0] â€” Phases 1â€“9 "Foundation"
 
 ### Added
 - Core language: lexer, parser, interpreter

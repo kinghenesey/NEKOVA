@@ -108,3 +108,16 @@ def reset_provider():
     """
     global _active_provider
     _active_provider = None
+
+
+def set_think_timeout(timeout: float):
+    """
+    Set the think timeout on the current active provider.
+    Called from _apply_toml_config when nekova.toml is loaded.
+    timeout=0 disables the timeout entirely.
+    """
+    try:
+        provider = get_provider()
+        provider.timeout = None if timeout <= 0 else float(timeout)
+    except Exception:
+        pass

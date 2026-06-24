@@ -1,7 +1,7 @@
 # =============================================================
 # NEKOVA Language — Configuration & Version Info
 # =============================================================
-NEKOVA_VERSION  = "1.3.0"
+NEKOVA_VERSION  = "1.3.1"
 NEKOVA_CODENAME = "Genesis"
 NEKOVA_EXTENSION = ".nk"
 # Legacy aliases — keeps old imports working during transition
@@ -24,4 +24,4 @@ from nekova.toml_loader import (
     NekovaConfig, ProjectConfig, AIConfig,
     DependenciesConfig, RunConfig,
     ConfigError, load_config, parse_config,
-)
+)   

@@ -4,7 +4,7 @@
 # 12A: nekova new --template  (templates.py)
 # 12B: REPL improvements      (repl.py)
 # 12C: --watch mode           (watcher.py)
-# 12D: version 1.3.0          (config.py / pyproject.toml)
+# 12D: version 1.3.1          (config.py / pyproject.toml)
 # =============================================================
 
 import os
@@ -26,7 +26,7 @@ sys.path.insert(0, ROOT)
 class TestVersion:
     def test_version_is_1_3_0(self):
         from nekova.config import NEKOVA_VERSION
-        assert NEKOVA_VERSION == "1.3.0"
+        assert NEKOVA_VERSION == "1.3.1"
 
     def test_codename_unchanged(self):
         from nekova.config import NEKOVA_CODENAME
@@ -40,13 +40,13 @@ class TestVersion:
         path = os.path.join(ROOT, "CHANGELOG.md")
         with open(path, encoding="utf-8") as f:
             text = f.read()
-        assert "1.3.0" in text
+        assert "1.3.1" in text
 
     def test_pyproject_version(self):
         path = os.path.join(ROOT, "pyproject.toml")
         with open(path, encoding="utf-8") as f:
             text = f.read()
-        assert 'version = "1.3.0"' in text
+        assert 'version = "1.3.1"' in text
 
 
 # =============================================================
@@ -202,7 +202,7 @@ class TestScaffoldFilesystem:
         self._scaffold("vtest", "ai")
         with open("vtest/src/main.nk", encoding="utf-8") as f:
             text = f.read()
-        assert "1.3.0" in text
+        assert "1.3.1" in text
 
     def test_files_are_utf8_without_bom(self):
         self._scaffold("bomtest", "fullstack")
@@ -347,7 +347,7 @@ class TestREPLQmarkCommands:
         result = self.repl._handle_command("?version")
         assert result is True
         out = capsys.readouterr().out
-        assert "1.3.0" in out
+        assert "1.3.1" in out
 
     def test_qmark_templates(self, capsys):
         result = self.repl._handle_command("?templates")
@@ -369,7 +369,7 @@ class TestREPLQmarkCommands:
     def test_version_command(self, capsys):
         self.repl._handle_command("version")
         out = capsys.readouterr().out
-        assert "1.3.0" in out
+        assert "1.3.1" in out
 
     def test_exit_commands(self):
         for cmd in ("exit", "quit", "q", ":q"):
