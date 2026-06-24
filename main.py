@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # =============================================================
 # NEKOVA Language â€” Main Entry Point
 # =============================================================
@@ -202,6 +202,12 @@ def _apply_toml_config(config):
         env_var = key_map.get(config.ai.model)
         if env_var and not os.environ.get(env_var):
             os.environ[env_var] = config.ai.api_key
+    # Apply think timeout from [ai] think_timeout in nekova.toml
+    try:
+        from nekova.ai.providers import set_think_timeout
+        set_think_timeout(config.ai.think_timeout)
+    except Exception:
+        pass
 
 def main():
     argv = sys.argv[1:]

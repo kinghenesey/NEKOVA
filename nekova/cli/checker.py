@@ -13,6 +13,7 @@
 #   W006 — unreachable code after return
 #   W007 — keyword used as task/variable name
 #   W008 — think called without use ai (reminder)
+#   W009 — non-exhaustive match (no else arm)
 #   E011 — reserved keyword used as identifier
 # =============================================================
 
@@ -26,7 +27,7 @@ from nekova.parser.nodes   import (
     WhileStatement, RepeatStatement, ForStatement,
     TaskStatement, ReturnStatement, UseStatement,
     CallExpression, Identifier, ThinkStatement,
-    ThinkAsStatement,
+    ThinkAsStatement, MatchStatement,
 )
 from nekova.lexer.token_types import KEYWORDS
 
@@ -370,6 +371,30 @@ class _Analyser:
         for stmt in (node.body or []):
             self._visit(stmt)
         self._after_return = old
+
+    def _visit_MatchStatement(self, node):
+        """
+        W009 — non-exhaustive match.
+        A match block should always have an else arm to handle
+        unexpected values, just like a switch needs a default.
+        """
+        has_else = any(
+            getattr(arm, "is_else", False)
+            for arm in node.arms
+        )
+        if not has_else:
+            self.issues.append(Issue(
+                "warning", "W009",
+                getattr(node, "line", 0),
+                "Non-exhaustive match — no 'else' arm.",
+                "Add 'else: ...' to handle unexpected values "
+                "and avoid silent fall-through."
+            ))
+        # Walk into each arm's body
+        for arm in node.arms:
+            if hasattr(arm, "body"):
+                for stmt in (arm.body or []):
+                    self._visit(stmt)
 
     def _visit_generic(self, node):
         """Visit children of any node we don't have a specific handler for."""
