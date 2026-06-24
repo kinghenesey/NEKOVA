@@ -34,9 +34,10 @@ class ProjectConfig:
 
 @dataclass
 class AIConfig:
-    model:         str = "claude"
-    api_key:       str = ""
-    model_version: str = ""
+    model:         str   = "claude"
+    api_key:       str   = ""
+    model_version: str   = ""
+    think_timeout: float = 30.0  # seconds; set to 0 to disable
 
 
 @dataclass
@@ -178,6 +179,7 @@ def _build_config(data: dict, root_dir: str, toml_path: str) -> NekovaConfig:
         model         = _str(a, "model",         "claude"),
         api_key       = ai_key,
         model_version = _str(a, "model_version", ""),
+        think_timeout = float(a.get("think_timeout", 30.0)),
     )
 
     _validate_model(ai.model, toml_path)

@@ -78,7 +78,7 @@ class GeminiProvider(BaseProvider):
         return labels[0]
 
     def _complete(self, prompt: str) -> str:
-        """Send a prompt to Gemini and return response."""
+        """Send a prompt to Gemini and return response. Protected by a timeout."""
         if not self.is_available:
             raise RuntimeError(
                 "No Gemini API key found.\n"
@@ -88,25 +88,11 @@ class GeminiProvider(BaseProvider):
             )
 
         try:
-            from google import genai
-
-            # Add memory context if available
             full_prompt = self.get_memory_context() + prompt
+            return self._with_timeout(self._raw_complete, full_prompt)
 
-            client   = self._get_client()
-            response = client.models.generate_content(
-                model=self.MODEL,
-                contents=full_prompt
-            )
-
-            # Save response to memory if enabled
-            if self.memory_enabled:
-                self.memory.append({
-                    "role":    "assistant",
-                    "content": response.text
-                })
-
-            return response.text
+        except RuntimeError:
+            raise
 
         except Exception as e:
             err = str(e)
@@ -120,6 +106,21 @@ class GeminiProvider(BaseProvider):
                 f"Gemini API error: {err}\n"
                 f"  Check your API key and try again."
             )
+
+    def _raw_complete(self, full_prompt: str) -> str:
+        """Perform the actual blocking HTTP call to the Gemini API."""
+        from google import genai
+        client   = self._get_client()
+        response = client.models.generate_content(
+            model=self.MODEL,
+            contents=full_prompt
+        )
+        if self.memory_enabled:
+            self.memory.append({
+                "role":    "assistant",
+                "content": response.text
+            })
+        return response.text
     
     def stream(self, prompt: str):
         """

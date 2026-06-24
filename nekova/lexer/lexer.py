@@ -90,7 +90,13 @@ class Lexer:
 
         # ── String literals ───────────────────────────────────
         if char == '"' or char == "'":
-            self._read_string(char)
+            # Check for triple-quote: """ or '''
+            if (self.pos + 2 < len(self.source)
+                    and self.source[self.pos + 1] == char
+                    and self.source[self.pos + 2] == char):
+                self._read_triple_string(char)
+            else:
+                self._read_string(char)
             return
 
         # ── Numbers ───────────────────────────────────────────
@@ -212,6 +218,76 @@ class Lexer:
 
         self._advance()  # skip closing quote
         self._add_token(TokenType.STRING, "".join(value))
+
+    def _read_triple_string(self, quote: str):
+        """
+        Read a triple-quoted string literal: \"\"\"...\"\"\" or '''...'''
+        Spans multiple lines. Escape sequences are honoured.
+        Leading newline immediately after the opening quotes is stripped.
+        """
+        start_line   = self.line
+        start_column = self.column
+
+        # Consume all three opening quotes
+        self._advance()
+        self._advance()
+        self._advance()
+
+        # Strip a single leading newline (matches Python behaviour)
+        if not self._at_end() and self._current() == "\n":
+            self._advance()
+            self.line  += 1
+            self.column = 1
+
+        value = []
+
+        while not self._at_end():
+            c = self._current()
+
+            # Check for closing triple-quote
+            if (c == quote
+                    and self.pos + 1 < len(self.source)
+                    and self.source[self.pos + 1] == quote
+                    and self.pos + 2 < len(self.source)
+                    and self.source[self.pos + 2] == quote):
+                self._advance()
+                self._advance()
+                self._advance()
+                self._add_token(TokenType.STRING, "".join(value))
+                return
+
+            # Handle escape sequences
+            if c == "\\" and not self._at_end():
+                nxt = self._peek()
+                if nxt in ('"', "'", "\\"):
+                    self._advance()
+                    value.append(self._peek() if False else self._current())
+                elif nxt == "n":
+                    self._advance(); self._advance()
+                    value.append("\n")
+                    continue
+                elif nxt == "t":
+                    self._advance(); self._advance()
+                    value.append("\t")
+                    continue
+                else:
+                    value.append(c)
+            elif c == "\n":
+                value.append("\n")
+                self._advance()
+                self.line  += 1
+                self.column = 1
+                continue
+            else:
+                value.append(c)
+
+            self._advance()
+
+        raise LexerError(
+            "Triple-quoted string was never closed — "
+            "did you forget the closing \"\"\"?",
+            start_line, start_column
+        )
 
     def _read_number(self):
         """Read an integer or float literal."""

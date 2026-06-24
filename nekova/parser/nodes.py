@@ -469,6 +469,23 @@ class ContinueStatement(Node):
         return "Continue"
 
 
+class GlobalStatement(Node):
+    """
+    Declares that a variable name refers to the global scope,
+    allowing a task to read AND write an outer variable.
+    Example:
+        count = 0
+        task increment():
+            global count
+            count = count + 1
+    """
+    def __init__(self, names: list):
+        self.names = names  # list of variable name strings
+
+    def __repr__(self):
+        return f"Global({self.names})"
+
+
 class UseStatement(Node):
     """
     Imports a standard library module.

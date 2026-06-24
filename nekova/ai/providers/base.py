@@ -3,6 +3,11 @@
 # =============================================================
 
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+
+# Default timeout in seconds for all AI provider calls.
+# Can be overridden per-call via the timeout parameter.
+DEFAULT_THINK_TIMEOUT = 30
 
 
 class BaseProvider(ABC):
@@ -12,6 +17,9 @@ class BaseProvider(ABC):
         # Memory system — stores conversation history
         self.memory = []
         self.memory_enabled = False
+        # Timeout in seconds for ask() / stream() calls.
+        # Set to None to disable the timeout entirely.
+        self.timeout = DEFAULT_THINK_TIMEOUT
 
     def remember(self, text: str):
         """Add a fact to AI memory."""
@@ -35,6 +43,30 @@ class BaseProvider(ABC):
             "\n\nNow answer this: "
         )
 
+    def _with_timeout(self, fn, *args, timeout=None):
+        """
+        Run fn(*args) in a thread with a timeout guard.
+        Raises RuntimeError with a friendly message if the call
+        takes longer than timeout seconds (default: self.timeout).
+        Passes through if timeout is None (disabled).
+        """
+        limit = timeout if timeout is not None else self.timeout
+        if limit is None:
+            return fn(*args)
+
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(fn, *args)
+            try:
+                return future.result(timeout=limit)
+            except FuturesTimeout:
+                future.cancel()
+                raise RuntimeError(
+                    f"The AI provider timed out after {limit}s.\n"
+                    f"  The provider may be slow or unreachable.\n"
+                    f"  Try again, or set a longer timeout in nekova.toml:\n"
+                    f"      think_timeout = 60"
+                )
+
     @abstractmethod
     def ask(self, prompt: str) -> str:
         pass
@@ -54,7 +86,7 @@ class BaseProvider(ABC):
 
     def stream(self, prompt: str) -> str:
         return self.ask(prompt)
-    
+
     def generate_image(self, prompt: str,
                        filename: str = "generated_image.png") -> str:
         """Generate an image from a text prompt."""

@@ -68,6 +68,7 @@ class TokenType(Enum):
     ELIF        = auto()
     BREAK       = auto()
     CONTINUE    = auto()
+    GLOBAL      = auto()
 
     # ── Web DSL (Phase 7) ─────────────────────────────────────
     ROUTE       = auto()
@@ -175,6 +176,7 @@ KEYWORDS = {
     "elif":       TokenType.ELIF,
     "break":      TokenType.BREAK,
     "continue":   TokenType.CONTINUE,
+    "global":     TokenType.GLOBAL,
     "route":      TokenType.ROUTE,
     "serve":      TokenType.SERVE,
     # Phase 9

@@ -93,7 +93,7 @@ class AnthropicProvider(BaseProvider):
     def _complete(self, prompt: str) -> str:
         """
         Core method — sends a prompt to Claude and
-        returns the text response.
+        returns the text response. Protected by a timeout.
         """
         if not self.is_available:
             raise RuntimeError(
@@ -103,33 +103,37 @@ class AnthropicProvider(BaseProvider):
             )
 
         try:
-            # Add memory context if available
             full_prompt = self.get_memory_context() + prompt
+            return self._with_timeout(self._raw_complete, full_prompt)
 
-            client  = self._get_client()
-            message = client.messages.create(
-                model=self.MODEL,
-                max_tokens=self.MAX_TOKENS,
-                messages=[
-                    {"role": "user", "content": full_prompt}
-                ]
-            )
-            response_text = message.content[0].text
-
-            # Save response to memory if enabled
-            if self.memory_enabled:
-                self.memory.append({
-                    "role":    "assistant",
-                    "content": response_text
-                })
-
-            return response_text
+        except RuntimeError:
+            raise  # re-raise timeout / availability errors as-is
 
         except Exception as e:
             raise RuntimeError(
                 f"Claude API error: {str(e)}\n"
                 f"  Check your API key and internet connection."
             )
+
+    def _raw_complete(self, full_prompt: str) -> str:
+        """Perform the actual blocking HTTP call to the Anthropic API."""
+        client  = self._get_client()
+        message = client.messages.create(
+            model=self.MODEL,
+            max_tokens=self.MAX_TOKENS,
+            messages=[
+                {"role": "user", "content": full_prompt}
+            ]
+        )
+        response_text = message.content[0].text
+
+        if self.memory_enabled:
+            self.memory.append({
+                "role":    "assistant",
+                "content": response_text
+            })
+
+        return response_text
 
     def stream(self, prompt: str) -> str:
         """

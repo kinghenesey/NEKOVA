@@ -90,7 +90,7 @@ class OpenAIProvider(BaseProvider):
     def _complete(self, prompt: str) -> str:
         """
         Core method — sends a prompt to GPT and
-        returns the text response.
+        returns the text response. Protected by a timeout.
         """
         if not self.is_available:
             raise RuntimeError(
@@ -100,33 +100,37 @@ class OpenAIProvider(BaseProvider):
             )
 
         try:
-            # Add memory context if available
             full_prompt = self.get_memory_context() + prompt
+            return self._with_timeout(self._raw_complete, full_prompt)
 
-            client   = self._get_client()
-            response = client.chat.completions.create(
-                model=self.MODEL,
-                max_tokens=self.MAX_TOKENS,
-                messages=[
-                    {"role": "user", "content": full_prompt}
-                ]
-            )
-            response_text = response.choices[0].message.content
-
-            # Save response to memory if enabled
-            if self.memory_enabled:
-                self.memory.append({
-                    "role":    "assistant",
-                    "content": response_text
-                })
-
-            return response_text
+        except RuntimeError:
+            raise
 
         except Exception as e:
             raise RuntimeError(
                 f"OpenAI API error: {str(e)}\n"
                 f"  Check your API key and internet connection."
             )
+
+    def _raw_complete(self, full_prompt: str) -> str:
+        """Perform the actual blocking HTTP call to the OpenAI API."""
+        client   = self._get_client()
+        response = client.chat.completions.create(
+            model=self.MODEL,
+            max_tokens=self.MAX_TOKENS,
+            messages=[
+                {"role": "user", "content": full_prompt}
+            ]
+        )
+        response_text = response.choices[0].message.content
+
+        if self.memory_enabled:
+            self.memory.append({
+                "role":    "assistant",
+                "content": response_text
+            })
+
+        return response_text
 
     def stream(self, prompt: str) -> str:
         """
@@ -226,4 +230,3 @@ class OpenAIProvider(BaseProvider):
                 f"OpenAI image generation failed: {str(e)}\n"
                 f"  Check your API key and try again."
             )
-

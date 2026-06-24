@@ -7,7 +7,7 @@ from nekova.parser.nodes import (
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement, MemoryStatement,
     SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
-    TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, UseStatement,
+    TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
     MethodCall,
     PropertyAccess,
@@ -147,6 +147,9 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             self._advance()
             self._expect_newline_or_eof()
             return ContinueStatement()
+
+        if token.type == TokenType.GLOBAL:
+            return self._parse_global()
 
         if token.type == TokenType.USE:
             return self._parse_use()
@@ -743,6 +746,24 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         value = self._parse_expression()
         self._expect_newline_or_eof()
         return self._stamp(ReturnStatement(value), line)
+
+    def _parse_global(self):
+        """
+        Parse:  global name
+                global name1, name2, name3
+
+        Declares that one or more names refer to the global scope
+        inside the current task body.
+        """
+        line = self._current().line
+        self._consume(TokenType.GLOBAL)
+        names = []
+        names.append(self._consume(TokenType.IDENTIFIER).value)
+        while self._current().type == TokenType.COMMA:
+            self._advance()
+            names.append(self._consume(TokenType.IDENTIFIER).value)
+        self._expect_newline_or_eof()
+        return self._stamp(GlobalStatement(names), line)
 
     def _parse_use(self):
         """Parse:  use <module>"""

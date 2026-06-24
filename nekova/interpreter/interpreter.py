@@ -5,7 +5,7 @@ from nekova.parser.nodes import (
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
     MemoryStatement, SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
-    TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, UseStatement,
+    TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
     MethodCall,
     PropertyAccess,
@@ -48,6 +48,10 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         # Line tracker — updated as statements execute, used by error display
         self._current_line: int = 0
+
+        # Set of variable names declared 'global' in the current task call.
+        # Assignments to these names write directly to self.globals.
+        self._global_names: set = set()
 
         # Built-in functions available everywhere in NEKOVA
         self._register_builtins()
@@ -197,7 +201,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             except (NameError, KeyError):
                 pass  # variable doesn't exist yet — first assignment is fine
 
-        self.env[node.name] = value
+        # ── Write to global scope if declared with 'global' ──────────────────
+        if node.name in self._global_names:
+            self.globals[node.name] = value
+        else:
+            self.env[node.name] = value
         return value
 
     def _exec_ShowStatement(self, node: ShowStatement):
@@ -703,6 +711,18 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     def _exec_ContinueStatement(self, node: ContinueStatement):
         """Execute: continue — skips to the next loop iteration."""
         raise ContinueSignal()
+
+    def _exec_GlobalStatement(self, node: GlobalStatement):
+        """
+        Execute:  global count
+                  global x, y, z
+
+        Marks the listed names as belonging to global scope for the
+        duration of the current task call. Assignments to these names
+        will write to self.globals instead of the local environment.
+        """
+        for name in node.names:
+            self._global_names.add(name)
 
     def _exec_RepeatStatement(self, node: RepeatStatement):
         """
@@ -1352,6 +1372,12 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         local_env    = Environment(parent=closure)
         previous_env = self.env
 
+        # Save and reset global_names so each task call
+        # starts with a clean slate — 'global x' in one task
+        # must not affect a different task's scope.
+        previous_globals = self._global_names
+        self._global_names = set()
+
         for param, value in zip(task.params, args):
             local_env.set(param, value)
 
@@ -1367,6 +1393,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         finally:
             self.env = previous_env
+            self._global_names = previous_globals
 
     def _is_truthy(self, value) -> bool:
         """
