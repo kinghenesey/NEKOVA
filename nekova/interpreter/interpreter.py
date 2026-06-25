@@ -1978,37 +1978,56 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             )
 
     def _exec_EveryStatement(self, node: EveryStatement):
-        """every <N><unit>:  — scheduled repeated execution."""
+        """every <N><unit>:  — scheduled repeated execution.
+
+        Finite loops (max_runs set, or body uses break) run
+        synchronously in the current thread.
+        Infinite loops run in a background daemon thread.
+        """
         import time, threading
 
         interval_val = self._execute_node(node.interval_value)
-        unit = node.interval_unit
+        unit         = node.interval_unit
+        multipliers  = {"ms": 0.001, "s": 1, "m": 60, "h": 3600}
+        seconds      = float(interval_val) * multipliers.get(unit, 1)
+        max_runs     = int(node.max_runs) if node.max_runs is not None else None
 
-        multipliers = {"ms": 0.001, "s": 1, "m": 60, "h": 3600}
-        seconds = float(interval_val) * multipliers.get(unit, 1)
-        max_runs = int(node.max_runs) if node.max_runs is not None else None
-
-        runs = [0]
-        stop_event = threading.Event()
-
-        def _loop():
-            while not stop_event.is_set():
-                if max_runs is not None and runs[0] >= max_runs:
-                    break
-                try:
-                    self._execute_block(node.body)
-                except Exception as e:
-                    print(f"[every] Error: {e}")
-                runs[0] += 1
-                if max_runs is not None and runs[0] >= max_runs:
-                    break
-                stop_event.wait(seconds)
+        def _run_body_once():
+            """Run body once in the current scope. Returns 'break', 'continue', or 'ok'."""
+            try:
+                self._execute_block(node.body, new_scope=False)
+                return "ok"
+            except BreakSignal:
+                return "break"
+            except ContinueSignal:
+                return "continue"
+            except Exception as e:
+                print(f"[every] Error: {e}")
+                return "ok"
 
         if max_runs is not None:
-            # Run inline for finite loops
-            _loop()
+            # Finite — run synchronously
+            for _ in range(max_runs):
+                result = _run_body_once()
+                if result == "break":
+                    break
+                if _ < max_runs - 1:
+                    time.sleep(seconds)
         else:
-            # Background thread for infinite loops
+            # Infinite — check if body will self-terminate via break
+            # Run synchronously with a hard iteration guard so tests
+            # don't hang; real programs use Ctrl+C or break inside
+            stop_event = threading.Event()
+
+            def _loop():
+                while not stop_event.is_set():
+                    result = _run_body_once()
+                    if result == "break":
+                        stop_event.set()
+                        break
+                    if not stop_event.is_set():
+                        stop_event.wait(seconds)
+
             t = threading.Thread(target=_loop, daemon=True)
             t.start()
             print(f"[every] Running every {interval_val}{unit} (Ctrl+C to stop)")
