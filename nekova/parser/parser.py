@@ -19,6 +19,10 @@ from nekova.parser.nodes import (
     ThinkAsStatement, RememberStatement, RecallStatement, ForgetStatement,
     # Phase 15
     SliceExpression, RaiseStatement, PassStatement, AssertStatement, TernaryExpression,
+    # Phase 16
+    SpeakStatement, ListenExpression, EveryStatement,
+    TestBlock, ExpectStatement, ImagineStatement,
+    ShapeDefinition, WatchStatement,
 )
 from nekova.parser.async_nodes import (
     AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
@@ -185,6 +189,30 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         if token.type == TokenType.LET:
             return self._parse_let()
 
+        if token.type == TokenType.SPEAK:
+            return self._parse_speak()
+
+        if token.type == TokenType.LISTEN:
+            return self._parse_listen_stmt()
+
+        if token.type == TokenType.EVERY:
+            return self._parse_every()
+
+        if token.type == TokenType.TEST:
+            return self._parse_test()
+
+        if token.type == TokenType.EXPECT:
+            return self._parse_expect()
+
+        if token.type == TokenType.IMAGINE:
+            return self._parse_imagine()
+
+        if token.type == TokenType.SHAPE:
+            return self._parse_shape()
+
+        if token.type == TokenType.WATCH:
+            return self._parse_watch()
+
         if token.type == TokenType.IDENTIFIER:
             if token.value == "pass":
                 self._advance()
@@ -230,6 +258,180 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             f"NEKOVA doesn't know what to do with this here.",
             token.line
         )
+
+
+    # ── Phase 16: Standout Feature Parsers ───────────────────
+
+    def _parse_speak(self):
+        """Parse:  speak <expression>"""
+        line = self._current().line
+        self._consume(TokenType.SPEAK)
+        expr = self._parse_expression()
+        self._expect_newline_or_eof()
+        return self._stamp(SpeakStatement(expr, line=line), line)
+
+    def _parse_listen_stmt(self):
+        """Parse:  listen  or  listen "prompt"  as a statement."""
+        line = self._current().line
+        self._consume(TokenType.LISTEN)
+        prompt = None
+        if self._current().type == TokenType.STRING:
+            prompt = StringLiteral(self._advance().value)
+        self._expect_newline_or_eof()
+        return self._stamp(ListenExpression(prompt, line=line), line)
+
+    def _parse_every(self):
+        """
+        Parse:
+            every 5s:
+                <body>
+            every 1m:
+                <body>
+            every 10s 3 times:
+                <body>
+        """
+        line = self._current().line
+        self._consume(TokenType.EVERY)
+
+        # interval value
+        interval_val = self._parse_expression()
+
+        # interval unit — must be an identifier ending in s/m/h
+        # e.g. "5s" is tokenised as INTEGER(5) IDENTIFIER(s)
+        # OR the user writes "every 5 s:" with a space
+        unit = "s"
+        cur = self._current()
+        if cur.type == TokenType.IDENTIFIER and cur.value in ("s", "m", "h", "ms"):
+            unit = cur.value
+            self._advance()
+
+        # optional "X times" or "forever"
+        max_runs = None
+        if (self._current().type == TokenType.INTEGER or
+                (self._current().type == TokenType.IDENTIFIER
+                 and self._current().value == "times")):
+            if self._current().type == TokenType.INTEGER:
+                max_runs = self._advance().value
+                # consume optional "times"
+                if (self._current().type == TokenType.IDENTIFIER
+                        and self._current().value == "times"):
+                    self._advance()
+
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+        body = self._parse_block()
+        return self._stamp(
+            EveryStatement(interval_val, unit, body, max_runs, line=line), line
+        )
+
+    def _parse_test(self):
+        """
+        Parse:
+            test "label":
+                expect expr == val
+                expect other == val
+        """
+        line = self._current().line
+        self._consume(TokenType.TEST)
+        # label — must be a string literal
+        label_tok = self._consume(TokenType.STRING)
+        label = label_tok.value
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+        body = self._parse_block()
+        return self._stamp(TestBlock(label, body, line=line), line)
+
+    def _parse_expect(self):
+        """Parse:  expect <expression>"""
+        line = self._current().line
+        self._consume(TokenType.EXPECT)
+        expr = self._parse_expression()
+        self._expect_newline_or_eof()
+        return self._stamp(ExpectStatement(expr, line=line), line)
+
+    def _parse_imagine(self):
+        """
+        Parse (as statement):
+            imagine "prompt"
+            let img = imagine "prompt" as url
+            imagine "prompt" as path
+        """
+        line = self._current().line
+        self._consume(TokenType.IMAGINE)
+        prompt = self._parse_expression()
+        fmt = "url"
+        if self._current().type == TokenType.AS:
+            self._advance()
+            fmt = self._consume(TokenType.IDENTIFIER).value
+        self._expect_newline_or_eof()
+        return self._stamp(ImagineStatement(prompt, result_format=fmt, line=line), line)
+
+    def _parse_imagine_expr(self):
+        """Parse imagine as an expression (right-hand side of let)."""
+        line = self._current().line
+        self._consume(TokenType.IMAGINE)
+        prompt = self._parse_expression()
+        fmt = "url"
+        if self._current().type == TokenType.AS:
+            self._advance()
+            fmt = self._consume(TokenType.IDENTIFIER).value
+        return self._stamp(ImagineStatement(prompt, result_format=fmt, line=line), line)
+
+    def _parse_shape(self):
+        """
+        Parse:
+            shape User:
+                name str
+                age  int
+                email str = "unknown"
+        """
+        line = self._current().line
+        self._consume(TokenType.SHAPE)
+        name = self._consume(TokenType.IDENTIFIER).value
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+
+        # Parse field definitions inside an INDENT block
+        fields = []
+        self._consume(TokenType.INDENT)
+        while self._current().type not in (TokenType.DEDENT, TokenType.EOF):
+            if self._current().type == TokenType.NEWLINE:
+                self._advance()
+                continue
+            fname = self._consume(TokenType.IDENTIFIER).value
+            ftype = self._consume(TokenType.IDENTIFIER).value
+            default = None
+            if self._current().type == TokenType.ASSIGN:
+                self._advance()
+                default = self._parse_expression()
+            fields.append((fname, ftype, default))
+            if self._current().type == TokenType.NEWLINE:
+                self._advance()
+        if self._current().type == TokenType.DEDENT:
+            self._advance()
+
+        return self._stamp(ShapeDefinition(name, fields, line=line), line)
+
+    def _parse_watch(self):
+        """
+        Parse:
+            watch "filename.txt":
+                <body>
+            watch my_var:
+                <body>
+        """
+        line = self._current().line
+        self._consume(TokenType.WATCH)
+        target = self._parse_expression()
+        is_file = isinstance(target, StringLiteral)
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+        body = self._parse_block()
+        return self._stamp(WatchStatement(target, body, is_file, line=line), line)
 
     def _parse_assert(self):
         """Parse:  assert <condition> [, "message"]"""
@@ -1059,7 +1261,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             expr = Identifier(name)
             while self._current().type == TokenType.DOT:
                 self._advance()  # consume dot
-                prop = self._consume(TokenType.IDENTIFIER).value
+                prop = self._advance().value  # allow keyword method names
                 if self._current().type == TokenType.LPAREN:
                     self._consume(TokenType.LPAREN)
                     call_args = []
@@ -1285,7 +1487,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                 # Method call or property access: name.upper() or args.name
                 elif (self._current().type == TokenType.DOT):
                     self._advance()  # consume dot
-                    prop = self._consume(TokenType.IDENTIFIER).value
+                    prop = self._advance().value  # allow keyword method names
                     if self._current().type == TokenType.LPAREN:
                         # Method call: obj.method(args)
                         self._consume(TokenType.LPAREN)
@@ -1330,6 +1532,16 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
         if token.type == TokenType.SELF:
             return self.parse_self_expr()
+
+        if token.type == TokenType.LISTEN:
+            self._advance()
+            prompt = None
+            if self._current().type == TokenType.STRING:
+                prompt = StringLiteral(self._advance().value)
+            return ListenExpression(prompt, line=token.line)
+
+        if token.type == TokenType.IMAGINE:
+            return self._parse_imagine_expr()
 
         raise ParseError(
             f"Unexpected '{token.value}' — "

@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.5.0] — 2025-06-25 · Phase 16 "Standout Features"
+
+### Added
+- `speak <expr>` — text-to-speech; uses `say` (macOS), `espeak` (Linux), PowerShell (Windows), falls back to `[speak] text`
+- `listen` / `let x = listen "prompt"` — speech-to-text via SpeechRecognition; falls back to `input()` without the library
+- `every <N> <s|m|h> [X times]:` — scheduled repeated execution; finite loops run inline, infinite loops run in a daemon thread
+- `test "label": / expect <expr>` — built-in test runner with ✓/✗ output, per-test pass/fail counts, and totals on the interpreter
+- `imagine "prompt" [as url|path|base64]` — AI image generation via OpenAI DALL-E 3 or Stability AI; returns mock URL without an API key
+- `shape Name: / field type [= default]` — validated data schema constructor with type coercion and `__shape__` marker
+- `watch "file.txt":` / `watch variable:` — file mtime watcher and expression change watcher (Ctrl+C to stop)
+
+### Fixed
+- Keywords used as method names (e.g. `func speak()`) now parse correctly — dot-access property names accept any token
+- Class parser `func` method names accept any token (not just IDENTIFIER)
+
+### Tests
+- 34 new tests in `tests/test_phase16.py`
+- Total test suite: **887 passing**, zero regressions
+
+---
+
 ## [1.4.0] — 2026-06-25 · Phase 15 "Stability"
 
 ### Added (RED — Critical Gaps)

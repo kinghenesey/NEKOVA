@@ -80,6 +80,16 @@ class TokenType(Enum):
     FORGET      = auto()
     AS          = auto()
 
+    # ── Phase 16: Standout Features ──────────────────────────
+    SPEAK       = auto()   # speak "Hello"
+    LISTEN      = auto()   # let x = listen
+    EVERY       = auto()   # every 5s: ...
+    TEST        = auto()   # test "label": ...
+    EXPECT      = auto()   # expect expr == val
+    IMAGINE     = auto()   # imagine "prompt"
+    SHAPE       = auto()   # shape User: name str
+    WATCH       = auto()   # watch "file.txt": ...
+
     # ── Operators ─────────────────────────────────────────────
     PLUS        = auto()
 
@@ -185,4 +195,13 @@ KEYWORDS = {
     "recall":     TokenType.RECALL,
     "forget":     TokenType.FORGET,
     "as":         TokenType.AS,
+    # Phase 16
+    "speak":      TokenType.SPEAK,
+    "listen":     TokenType.LISTEN,
+    "every":      TokenType.EVERY,
+    "test":       TokenType.TEST,
+    "expect":     TokenType.EXPECT,
+    "imagine":    TokenType.IMAGINE,
+    "shape":      TokenType.SHAPE,
+    "watch":      TokenType.WATCH,
 }

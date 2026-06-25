@@ -926,3 +926,141 @@ class TernaryExpression(Node):
 
     def __repr__(self):
         return f"Ternary({self.condition})"
+
+# ── Phase 16: Standout Feature Nodes ─────────────────────────
+
+class SpeakStatement(Node):
+    """
+    Text-to-speech output.
+        speak "Hello, world!"
+        speak greeting
+    """
+    def __init__(self, expression, line: int = 0):
+        self.expression = expression
+        self.line = line
+
+    def __repr__(self):
+        return f"Speak({self.expression})"
+
+
+class ListenExpression(Node):
+    """
+    Speech-to-text input.
+        let response = listen
+        let cmd = listen "Say a command"
+    """
+    def __init__(self, prompt=None, line: int = 0):
+        self.prompt = prompt
+        self.line = line
+
+    def __repr__(self):
+        return "Listen()"
+
+
+class EveryStatement(Node):
+    """
+    Scheduled/repeated execution.
+        every 5s:
+            show "tick"
+        every 1m:
+            check_email()
+    interval_value: numeric expression
+    interval_unit:  "s", "m", "h"
+    body: list of statements
+    max_runs: optional limit (None = forever)
+    """
+    def __init__(self, interval_value, interval_unit: str,
+                 body: list, max_runs=None, line: int = 0):
+        self.interval_value = interval_value
+        self.interval_unit  = interval_unit
+        self.body           = body
+        self.max_runs       = max_runs
+        self.line           = line
+
+    def __repr__(self):
+        return f"Every({self.interval_value}{self.interval_unit})"
+
+
+class TestBlock(Node):
+    """
+    Built-in test block.
+        test "adds numbers":
+            expect add(1, 2) == 3
+            expect add(0, 0) == 0
+    """
+    def __init__(self, label: str, body: list, line: int = 0):
+        self.label = label
+        self.body  = body
+        self.line  = line
+
+    def __repr__(self):
+        return f"Test({self.label!r})"
+
+
+class ExpectStatement(Node):
+    """
+    Assertion inside a test block.
+        expect result == 42
+        expect name == "Emmanuel"
+    """
+    def __init__(self, expression, line: int = 0):
+        self.expression = expression
+        self.line       = line
+
+    def __repr__(self):
+        return f"Expect({self.expression})"
+
+
+class ImagineStatement(Node):
+    """
+    AI image generation.
+        imagine "a futuristic city at sunset"
+        let img = imagine "red fox" as url
+    """
+    def __init__(self, prompt, result_var: str = None,
+                 result_format: str = "url", line: int = 0):
+        self.prompt        = prompt
+        self.result_var    = result_var
+        self.result_format = result_format   # "url" | "path" | "base64"
+        self.line          = line
+
+    def __repr__(self):
+        return f"Imagine({self.prompt})"
+
+
+class ShapeDefinition(Node):
+    """
+    Data schema / validated struct.
+        shape User:
+            name str
+            age  int
+            email str = "unknown"
+
+    fields: list of (name, type_str, default_expr_or_None)
+    """
+    def __init__(self, name: str, fields: list, line: int = 0):
+        self.name   = name
+        self.fields = fields   # [(field_name, type_str, default)]
+        self.line   = line
+
+    def __repr__(self):
+        return f"Shape({self.name})"
+
+
+class WatchStatement(Node):
+    """
+    File or expression watcher — runs body when target changes.
+        watch "config.toml":
+            show "config reloaded"
+        watch counter:
+            show "counter changed to " + counter
+    """
+    def __init__(self, target, body: list,
+                 is_file: bool = True, line: int = 0):
+        self.target  = target
+        self.body    = body
+        self.is_file = is_file
+        self.line    = line
+
+    def __repr__(self):
+        return f"Watch({self.target})"

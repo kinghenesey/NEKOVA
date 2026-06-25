@@ -39,3 +39,7 @@ class NEKOVAAssertionError(Exception):
     def __init__(self, message: str = "Assertion failed", line: int = 0):
         self.line = line
         super().__init__(f"\n  {message}")
+
+class _ExpectFailed(Exception):
+    """Internal signal raised by a failing expect statement."""
+    pass

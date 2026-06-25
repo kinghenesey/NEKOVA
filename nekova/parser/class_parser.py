@@ -97,7 +97,7 @@ class ClassParserMixin:
                 # ── func method(): body ───────────────────
                 elif tok.type == TokenType.FUNC:
                     self._consume(TokenType.FUNC)
-                    method_name = self._consume(TokenType.IDENTIFIER).value
+                    method_name = self._advance().value  # allow keyword names
                     self._consume(TokenType.LPAREN)
                     params = self._parse_param_list()
                     self._consume(TokenType.RPAREN)
@@ -110,7 +110,7 @@ class ClassParserMixin:
                 elif tok.type == TokenType.ASYNC:
                     self._consume(TokenType.ASYNC)
                     self._consume(TokenType.FUNC)
-                    method_name = self._consume(TokenType.IDENTIFIER).value
+                    method_name = self._advance().value  # allow keyword names
                     self._consume(TokenType.LPAREN)
                     params = self._parse_param_list()
                     self._consume(TokenType.RPAREN)

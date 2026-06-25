@@ -16,6 +16,10 @@ from nekova.parser.nodes import (
     ThinkAsStatement, RememberStatement, RecallStatement, ForgetStatement,
     # Phase 15
     SliceExpression, RaiseStatement, PassStatement, AssertStatement, TernaryExpression,
+    # Phase 16
+    SpeakStatement, ListenExpression, EveryStatement,
+    TestBlock, ExpectStatement, ImagineStatement,
+    ShapeDefinition, WatchStatement,
 )
 from nekova.interpreter.environment import Environment
 from nekova.runtime import ReturnSignal, BreakSignal, ContinueSignal
@@ -24,7 +28,7 @@ from nekova.parser.async_nodes import (
 )
 from nekova.interpreter.exceptions import (
     NEKOVARuntimeError, NEKOVAImportError, NEKOVANameError,
-    NEKOVARaiseError, NEKOVAAssertionError
+    NEKOVARaiseError, NEKOVAAssertionError, _ExpectFailed
 )
 from nekova.interpreter.async_interpreter import AsyncInterpreterMixin
 from nekova.interpreter.class_interpreter import ClassInterpreterMixin
@@ -1907,6 +1911,385 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 f"Cannot slice '{type(obj).__name__}'.\n"
                 "  Slicing works on lists and strings."
             )
+
+
+    # ══════════════════════════════════════════════════════════
+    # Phase 16 — Standout Feature Executors
+    # ══════════════════════════════════════════════════════════
+
+    def _exec_SpeakStatement(self, node: SpeakStatement):
+        """speak <expr>  — text-to-speech output."""
+        text = self._to_string(self._execute_node(node.expression))
+        try:
+            import subprocess, shutil
+            # Try platform TTS in order of preference
+            if shutil.which("say"):          # macOS
+                subprocess.Popen(["say", text])
+            elif shutil.which("espeak"):     # Linux
+                subprocess.Popen(["espeak", text])
+            elif shutil.which("espeak-ng"):  # Linux alt
+                subprocess.Popen(["espeak-ng", text])
+            elif shutil.which("powershell"): # Windows
+                subprocess.Popen([
+                    "powershell", "-Command",
+                    f"Add-Type -AssemblyName System.Speech; "
+                    f"(New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak({text!r})"
+                ])
+            else:
+                # Graceful fallback — print with indicator
+                print(f"[speak] {text}")
+        except Exception:
+            print(f"[speak] {text}")
+        return text
+
+    def _exec_ListenExpression(self, node: ListenExpression):
+        """listen  — speech-to-text, returns transcribed string."""
+        prompt = None
+        if node.prompt is not None:
+            prompt = self._to_string(self._execute_node(node.prompt))
+
+        try:
+            import speech_recognition as sr
+            r = sr.Recognizer()
+            with sr.Microphone() as source:
+                if prompt:
+                    print(f"[listen] {prompt}")
+                else:
+                    print("[listen] Listening...")
+                r.adjust_for_ambient_noise(source, duration=0.3)
+                audio = r.listen(source, timeout=10)
+            result = r.recognize_google(audio)
+            return result
+        except ImportError:
+            # SpeechRecognition not installed — fall back to input()
+            msg = prompt if prompt else "Listening (type instead): "
+            return input(msg)
+        except Exception as e:
+            raise NEKOVARuntimeError(
+                f"listen failed: {e}\n"
+                "  Install SpeechRecognition: pip install SpeechRecognition"
+            )
+
+    def _exec_EveryStatement(self, node: EveryStatement):
+        """every <N><unit>:  — scheduled repeated execution."""
+        import time, threading
+
+        interval_val = self._execute_node(node.interval_value)
+        unit = node.interval_unit
+
+        multipliers = {"ms": 0.001, "s": 1, "m": 60, "h": 3600}
+        seconds = float(interval_val) * multipliers.get(unit, 1)
+        max_runs = int(node.max_runs) if node.max_runs is not None else None
+
+        runs = [0]
+        stop_event = threading.Event()
+
+        def _loop():
+            while not stop_event.is_set():
+                if max_runs is not None and runs[0] >= max_runs:
+                    break
+                try:
+                    self._execute_block(node.body)
+                except Exception as e:
+                    print(f"[every] Error: {e}")
+                runs[0] += 1
+                if max_runs is not None and runs[0] >= max_runs:
+                    break
+                stop_event.wait(seconds)
+
+        if max_runs is not None:
+            # Run inline for finite loops
+            _loop()
+        else:
+            # Background thread for infinite loops
+            t = threading.Thread(target=_loop, daemon=True)
+            t.start()
+            print(f"[every] Running every {interval_val}{unit} (Ctrl+C to stop)")
+            try:
+                t.join()
+            except KeyboardInterrupt:
+                stop_event.set()
+
+        return None
+
+    # ── test / expect ─────────────────────────────────────────
+
+    def _exec_TestBlock(self, node: TestBlock):
+        """
+        test "label":
+            expect expr == val
+        Runs all expect statements, collects results, prints summary.
+        """
+        passed = 0
+        failed = 0
+        errors = []
+
+        # Push test context so expect knows its label
+        prev_test = getattr(self, "_current_test", None)
+        self._current_test = node.label
+
+        for stmt in node.body:
+            try:
+                self._execute_node(stmt)
+                # If we get here without ExpectFailed, it passed
+                if isinstance(stmt, ExpectStatement):
+                    passed += 1
+            except _ExpectFailed as e:
+                failed += 1
+                errors.append(str(e))
+            except Exception as e:
+                failed += 1
+                errors.append(f"Error: {e}")
+
+        self._current_test = prev_test
+
+        # Print result
+        status = "✓ PASS" if failed == 0 else "✗ FAIL"
+        print(f"  {status}  {node.label}  ({passed}/{passed+failed})")
+        for err in errors:
+            print(f"       └─ {err}")
+
+        # Track totals on the interpreter for final summary
+        if not hasattr(self, "_test_totals"):
+            self._test_totals = {"passed": 0, "failed": 0}
+        self._test_totals["passed"] += passed
+        self._test_totals["failed"] += failed
+
+        return {"passed": passed, "failed": failed}
+
+    def _exec_ExpectStatement(self, node: ExpectStatement):
+        """expect <expr>  — must evaluate to truthy, else raises _ExpectFailed."""
+        result = self._execute_node(node.expression)
+        if not self._is_truthy(result):
+            # Try to format a helpful message
+            expr_repr = repr(node.expression)
+            raise _ExpectFailed(
+                f"expect failed: got {self._to_string(result)!r}"
+            )
+        return result
+
+    # ── imagine ───────────────────────────────────────────────
+
+    def _exec_ImagineStatement(self, node: ImagineStatement):
+        """imagine <prompt> [as url|path|base64]"""
+        prompt = self._to_string(self._execute_node(node.prompt))
+        fmt = node.result_format
+
+        try:
+            result = self._imagine(prompt, fmt)
+        except Exception as e:
+            raise NEKOVARuntimeError(
+                f"imagine failed: {e}\n"
+                "  Check your AI provider config in nekova.toml."
+            )
+
+        if node.result_var:
+            self.env.set(node.result_var, result)
+        return result
+
+    def _imagine(self, prompt: str, fmt: str = "url"):
+        """Call the configured image generation provider."""
+        try:
+            from nekova.toml_loader import load_config
+            cfg = load_config()
+            provider = getattr(cfg, "imagine_provider", "openai") if cfg else "openai"
+        except Exception:
+            provider = "openai"
+
+        if provider == "openai":
+            return self._imagine_openai(prompt, fmt)
+        elif provider == "stability":
+            return self._imagine_stability(prompt, fmt)
+        else:
+            # Mock for testing
+            return f"https://imagine.nekova.dev/mock?prompt={prompt.replace(' ', '+')}"
+
+    def _imagine_openai(self, prompt: str, fmt: str):
+        import os, urllib.request, json
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+        if not api_key:
+            # Return mock URL in dev mode
+            return f"https://imagine.nekova.dev/mock?prompt={prompt.replace(' ', '+')}"
+
+        payload = json.dumps({
+            "model": "dall-e-3",
+            "prompt": prompt,
+            "n": 1,
+            "size": "1024x1024",
+            "response_format": "url" if fmt in ("url", "path") else "b64_json"
+        }).encode()
+
+        req = urllib.request.Request(
+            "https://api.openai.com/v1/images/generations",
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read())
+
+        if fmt == "url":
+            return data["data"][0]["url"]
+        elif fmt == "base64":
+            return data["data"][0]["b64_json"]
+        elif fmt == "path":
+            import tempfile, urllib.request as urlr
+            url = data["data"][0]["url"]
+            tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+            urlr.urlretrieve(url, tmp.name)
+            return tmp.name
+
+    def _imagine_stability(self, prompt: str, fmt: str):
+        import os, urllib.request, json, base64, tempfile
+        api_key = os.environ.get("STABILITY_API_KEY", "")
+        if not api_key:
+            return f"https://imagine.nekova.dev/mock?prompt={prompt.replace(' ', '+')}"
+
+        payload = json.dumps({
+            "text_prompts": [{"text": prompt}],
+            "cfg_scale": 7, "height": 1024, "width": 1024, "samples": 1
+        }).encode()
+        req = urllib.request.Request(
+            "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image",
+            data=payload,
+            headers={"Content-Type": "application/json",
+                     "Authorization": f"Bearer {api_key}",
+                     "Accept": "application/json"}
+        )
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read())
+        b64 = data["artifacts"][0]["base64"]
+        if fmt == "base64":
+            return b64
+        img_bytes = base64.b64decode(b64)
+        tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+        tmp.write(img_bytes)
+        tmp.close()
+        if fmt == "path":
+            return tmp.name
+        return f"file://{tmp.name}"
+
+    # ── shape ─────────────────────────────────────────────────
+
+    def _exec_ShapeDefinition(self, node: ShapeDefinition):
+        """
+        shape User:
+            name str
+            age  int
+        Registers a validated constructor in the environment.
+        """
+        shape_name = node.name
+        fields = node.fields  # [(name, type_str, default)]
+
+        TYPE_VALIDATORS = {
+            "str":   (str,   lambda v: str(v)),
+            "int":   (int,   lambda v: int(v)),
+            "float": (float, lambda v: float(v)),
+            "bool":  (bool,  lambda v: bool(v)),
+            "list":  (list,  lambda v: list(v) if not isinstance(v, list) else v),
+            "dict":  (dict,  lambda v: v if isinstance(v, dict) else {}),
+            "any":   (object, lambda v: v),
+        }
+
+        interp = self   # capture for closure
+
+        def _constructor(**kwargs):
+            instance = {}
+            for fname, ftype, fdefault in fields:
+                if fname in kwargs:
+                    raw = kwargs[fname]
+                elif fdefault is not None:
+                    raw = interp._execute_node(fdefault)
+                else:
+                    raise NEKOVARuntimeError(
+                        f"Shape '{shape_name}' requires field '{fname}'."
+                    )
+                # Type coercion/validation
+                if ftype in TYPE_VALIDATORS:
+                    py_type, coerce = TYPE_VALIDATORS[ftype]
+                    try:
+                        instance[fname] = coerce(raw)
+                    except (ValueError, TypeError):
+                        raise NEKOVARuntimeError(
+                            f"Shape '{shape_name}': field '{fname}' "
+                            f"must be {ftype}, got {type(raw).__name__}."
+                        )
+                else:
+                    instance[fname] = raw
+            instance["__shape__"] = shape_name
+            return instance
+
+        # Also support positional call: User("Alice", 30)
+        def _positional_constructor(*args):
+            if len(args) > len(fields):
+                raise NEKOVARuntimeError(
+                    f"Shape '{shape_name}' takes {len(fields)} fields, "
+                    f"got {len(args)}."
+                )
+            kw = {}
+            for i, val in enumerate(args):
+                kw[fields[i][0]] = val
+            return _constructor(**kw)
+
+        self.env.set(shape_name, _positional_constructor)
+        # Store schema for introspection
+        if not hasattr(self, "_shapes"):
+            self._shapes = {}
+        self._shapes[shape_name] = fields
+        return None
+
+    # ── watch ─────────────────────────────────────────────────
+
+    def _exec_WatchStatement(self, node: WatchStatement):
+        """watch <file|expr>:  — re-runs body when target changes."""
+        import time, threading, os
+
+        if node.is_file:
+            # File watcher
+            filepath = self._to_string(self._execute_node(node.target))
+            filepath = os.path.expanduser(filepath)
+
+            def _get_mtime():
+                try:
+                    return os.path.getmtime(filepath)
+                except FileNotFoundError:
+                    return None
+
+            last_mtime = _get_mtime()
+            print(f"[watch] Watching {filepath!r} (Ctrl+C to stop)")
+
+            try:
+                while True:
+                    time.sleep(0.5)
+                    cur_mtime = _get_mtime()
+                    if cur_mtime != last_mtime:
+                        last_mtime = cur_mtime
+                        try:
+                            self._execute_block(node.body)
+                        except Exception as e:
+                            print(f"[watch] Error: {e}")
+            except KeyboardInterrupt:
+                print(f"[watch] Stopped watching {filepath!r}")
+        else:
+            # Expression watcher — run body when value changes
+            last_val = self._execute_node(node.target)
+            print(f"[watch] Watching expression (Ctrl+C to stop)")
+            try:
+                while True:
+                    time.sleep(0.1)
+                    cur_val = self._execute_node(node.target)
+                    if cur_val != last_val:
+                        last_val = cur_val
+                        try:
+                            self._execute_block(node.body)
+                        except Exception as e:
+                            print(f"[watch] Error: {e}")
+            except KeyboardInterrupt:
+                print("[watch] Stopped")
+
+        return None
 
 
 class _RequestObject:
