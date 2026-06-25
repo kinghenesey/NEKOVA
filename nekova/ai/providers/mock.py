@@ -32,8 +32,16 @@ class MockProvider(BaseProvider):
     def is_available(self) -> bool:
         return True  # Always available — no key needed
 
+    def _raw_complete(self, prompt: str) -> str:
+        """Core mock response generation."""
+        return self._mock_response(prompt)
+
     def ask(self, prompt: str) -> str:
-        """Return a mock answer to any question."""
+        """Return a mock answer to any question (timeout-protected)."""
+        return self._with_timeout(self._raw_complete, prompt)
+
+    def _mock_response(self, prompt: str) -> str:
+        """Generate the actual mock response."""
         import json as _json
         import re as _re
 

@@ -162,7 +162,8 @@ def _build_format_prompt(prompt: str, fmt: str) -> str:
 
 def ask_structured(provider, prompt: str, fmt: str,
                    schema: dict = None, use_memory: bool = True,
-                   use_history: bool = True):
+                   use_history: bool = True,
+                   timeout: float = None):
     """
     Call the AI provider and return a structured result.
 
@@ -172,7 +173,12 @@ def ask_structured(provider, prompt: str, fmt: str,
     schema:      dict when fmt == "schema"
     use_memory:  inject remembered facts into prompt
     use_history: inject conversation history into prompt
+    timeout:     seconds before raising RuntimeError (None = use provider default)
     """
+    # Apply per-call timeout override
+    if timeout is not None:
+        provider.timeout = timeout
+
     from nekova.ai.memory_store import (
         memory_context, conversation_context, add_to_conversation
     )

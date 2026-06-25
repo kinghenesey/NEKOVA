@@ -214,6 +214,22 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         print(self._to_string(value))
         return value
     
+    def _get_think_timeout(self):
+        """
+        Return the configured think timeout in seconds.
+        Reads from nekova.toml [run] think_timeout.
+        Returns None if timeout is disabled (set to 0).
+        """
+        try:
+            from nekova.toml_loader import load_config
+            cfg = load_config()
+            if cfg is not None:
+                t = cfg.think_timeout
+                return None if t <= 0 else float(t)
+        except Exception:
+            pass
+        return 30.0  # default
+
     def _exec_ThinkStatement(self, node):
         """Execute a think statement — calls the active AI provider."""
         from colorama import Fore, Style, init
@@ -223,10 +239,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         prompt = self._execute_node(node.prompt)
         prompt = str(prompt)
 
-        # Step 2: Call the AI provider
+        # Step 2: Call the AI provider (with timeout)
         try:
             from nekova.ai.providers import get_provider
             provider = get_provider()
+            provider.timeout = self._get_think_timeout()
             response = provider.ask(prompt)
         except Exception as e:
             response = f"[think error: {e}]"
@@ -1635,7 +1652,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         try:
             provider = get_provider()
-            result   = ask_structured(provider, prompt, fmt, schema=schema)
+            result   = ask_structured(
+                provider, prompt, fmt,
+                schema=schema,
+                timeout=self._get_think_timeout(),
+            )
         except Exception as e:
             result = f"[think error: {e}]"
 
