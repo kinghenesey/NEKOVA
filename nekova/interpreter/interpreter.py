@@ -5,7 +5,7 @@ from nekova.parser.nodes import (
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
     MemoryStatement, SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
-    TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UseStatement,
+    TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UnpackStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
     MethodCall,
     PropertyAccess,
@@ -742,13 +742,43 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         """
         Execute:  global count
                   global x, y, z
-
-        Marks the listed names as belonging to global scope for the
-        duration of the current task call. Assignments to these names
-        will write to self.globals instead of the local environment.
+        Marks the listed names as belonging to global scope.
         """
         for name in node.names:
             self._global_names.add(name)
+
+    def _exec_UnpackStatement(self, node: UnpackStatement):
+        """
+        Execute:  a, b, c = [1, 2, 3]
+        Evaluates the right side, then assigns each element
+        to the corresponding variable name on the left.
+        """
+        value = self._execute_node(node.value)
+
+        # Flatten range objects and other iterables
+        if isinstance(value, range):
+            value = list(value)
+
+        if not isinstance(value, (list, tuple)):
+            raise NEKOVARuntimeError(
+                f"Cannot unpack '{self._to_string(value)}' — "
+                f"expected a list with {len(node.names)} items.\n"
+                f"  Example:  a, b, c = [1, 2, 3]"
+            )
+
+        if len(value) < len(node.names):
+            raise NEKOVARuntimeError(
+                f"Not enough values to unpack — "
+                f"expected {len(node.names)} but got {len(value)}.\n"
+                f"  Right side: {self._to_string(list(value))}\n"
+                f"  Variables:  {', '.join(node.names)}"
+            )
+
+        for name, val in zip(node.names, value):
+            if name in self._global_names:
+                self.globals.set(name, val)
+            else:
+                self.env.set(name, val)
 
     def _exec_RepeatStatement(self, node: RepeatStatement):
         """
@@ -802,25 +832,62 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             try: ...
             catch error: ...
             finally: ...
+
+        The catch variable is bound to a NEKOVA exception object
+        with .message and .type properties, not just a plain string.
         """
         try:
             self._execute_block(node.try_body)
+
         except NEKOVARaiseError as e:
-            # Store the raised value in the error var
+            # 'raise "something"' — bind the raised value directly
             if node.error_var:
-                self.env.set(node.error_var, e.value)
+                raised = e.value
+                # Wrap strings in an exception object too
+                if isinstance(raised, str):
+                    obj = {
+                        "message": raised,
+                        "type":    "RaiseError",
+                        "value":   raised,
+                    }
+                else:
+                    obj = raised
+                self.env.set(node.error_var, obj)
             if node.catch_body:
                 self._execute_block(node.catch_body)
             else:
                 raise
+
         except Exception as e:
             if node.error_var:
-                error_msg = str(e).strip()
-                if "\n" in error_msg:
-                    error_msg = error_msg.split("\n")[-1].strip()
-                self.env.set(node.error_var, error_msg)
+                # Build a clean message — strip leading whitespace/newlines
+                raw = str(e).strip()
+                msg = raw.split("\n")[-1].strip() if "\n" in raw else raw
+
+                # Determine a friendly type name
+                type_name = type(e).__name__
+                friendly  = {
+                    "ZeroDivisionError":  "ZeroDivisionError",
+                    "IndexError":         "IndexError",
+                    "KeyError":           "KeyError",
+                    "TypeError":          "TypeError",
+                    "ValueError":         "ValueError",
+                    "NEKOVARuntimeError": "RuntimeError",
+                    "NEKOVANameError":    "NameError",
+                    "NEKOVAAssertionError": "AssertionError",
+                }.get(type_name, type_name)
+
+                # Bind as a dict-object so e.message and e.type work
+                error_obj = {
+                    "message": msg,
+                    "type":    friendly,
+                    "value":   msg,
+                }
+                self.env.set(node.error_var, error_obj)
+
             if node.catch_body:
                 self._execute_block(node.catch_body)
+
         finally:
             if node.finally_body:
                 self._execute_block(node.finally_body)
@@ -828,7 +895,9 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     def _exec_ForStatement(self, node: ForStatement):
         """
         Execute:
-            for item in items:
+            for item in items:              ← single variable
+                <body>
+            for i, v in enumerate(items):   ← multi-variable unpack
                 <body>
         """
         iterable = self._execute_node(node.iterable)
@@ -849,12 +918,26 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 f"  Use a list, string, or range."
             )
 
+        multi = isinstance(node.variable, list)
+
         for item in items:
-            # Set loop variable in current scope
-            self.env.set(node.variable, item)
+            if multi:
+                # Unpack each item into the named variables
+                variables = node.variable
+                if not isinstance(item, (list, tuple)):
+                    item = [item]
+                if len(item) < len(variables):
+                    raise NEKOVARuntimeError(
+                        f"Not enough values to unpack in for loop — "
+                        f"expected {len(variables)} but got {len(item)}."
+                    )
+                for name, val in zip(variables, item):
+                    self.env.set(name, val)
+            else:
+                self.env.set(node.variable, item)
+
             try:
-                self._execute_block(
-                    node.body, new_scope=False)
+                self._execute_block(node.body, new_scope=False)
             except BreakSignal:
                 break
             except ContinueSignal:
@@ -1473,6 +1556,9 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         if value is False:
             return "false"
         if isinstance(value, dict):
+            # Error objects (from catch) display as their message, not raw dict
+            if "message" in value and "type" in value and "value" in value:
+                return str(value["message"])
             pairs = []
             for k, v in value.items():
                 pairs.append(f"{k}: {self._to_string(v)}")
@@ -1519,6 +1605,27 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         self.globals.set("list",     lambda x: list(x))
         self.globals.set("dict",     lambda: {})
         self.globals.set("print",    print)
+        # Math
+        self.globals.set("pow",      lambda x, y: x ** y)
+        self.globals.set("divmod",   lambda x, y: list(divmod(x, y)))
+        # Character conversion
+        self.globals.set("chr",      lambda x: chr(int(x)))
+        self.globals.set("ord",      lambda x: ord(str(x)[0]))
+        self.globals.set("hex",      lambda x: hex(int(x)))
+        self.globals.set("bin",      lambda x: bin(int(x)))
+        self.globals.set("oct",      lambda x: oct(int(x)))
+        # Input
+        self.globals.set("input",    lambda prompt="": input(str(prompt)))
+        # Functional
+        self.globals.set("enumerate", lambda x, start=0: list(enumerate(x, start)))
+        self.globals.set("zip",       lambda *a: [list(t) for t in zip(*a)])
+        self.globals.set("map",       lambda f, x: list(map(f, x)))
+        self.globals.set("filter",    lambda f, x: list(filter(f, x)))
+        self.globals.set("any",       lambda x: any(x))
+        self.globals.set("all",       lambda x: all(x))
+        # Type checks
+        self.globals.set("isinstance", lambda x, t: isinstance(x, t))
+        self.globals.set("callable",   lambda x: callable(x))
 
     def _load_stdlib(self, name: str) -> dict:
         """

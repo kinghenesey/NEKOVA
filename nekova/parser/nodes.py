@@ -491,6 +491,21 @@ class GlobalStatement(Node):
         return f"Global({self.names})"
 
 
+class UnpackStatement(Node):
+    """
+    Unpacks an iterable into multiple variables.
+    Example:
+        a, b, c = [1, 2, 3]
+        x, y = get_coords()
+    """
+    def __init__(self, names: list, value: "Node"):
+        self.names = names   # list of variable name strings
+        self.value = value   # the right-hand side expression
+
+    def __repr__(self):
+        return f"Unpack({self.names} = {self.value})"
+
+
 class UseStatement(Node):
     """
     Imports a standard library module.

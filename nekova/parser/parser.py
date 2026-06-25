@@ -7,7 +7,7 @@ from nekova.parser.nodes import (
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement, MemoryStatement,
     SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
-    TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UseStatement,
+    TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UnpackStatement, UseStatement,
     ImportStatement, CallExpression, IndexExpression,
     MethodCall,
     PropertyAccess,
@@ -194,6 +194,14 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                 return self._parse_assert()
             if token.value == "raise":
                 return self._parse_raise()
+
+            # Tuple unpacking: a, b, c = expr
+            # Peek ahead — if after the first IDENTIFIER there's a COMMA,
+            # this is a multi-variable unpack assignment.
+            if (self.pos + 1 < len(self.tokens)
+                    and self.tokens[self.pos + 1].type == TokenType.COMMA):
+                return self._parse_unpack()
+
             return self._parse_identifier_statement()
 
         if token.type == TokenType.REMEMBER:
@@ -740,13 +748,21 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         Parse:
             for <variable> in <iterable>:
                 <body>
+
+            for <a>, <b> in <iterable>:   ← multi-variable (enumerate/zip)
+                <body>
         """
         line = self._current().line
         self._consume(TokenType.FOR)
 
-        # Variable name
-        variable = self._consume(
-            TokenType.IDENTIFIER).value
+        # Collect one or more loop variables (comma-separated)
+        variables = [self._consume(TokenType.IDENTIFIER).value]
+        while self._current().type == TokenType.COMMA:
+            self._advance()  # consume comma
+            variables.append(self._consume(TokenType.IDENTIFIER).value)
+
+        # Single variable — store as string (backwards compatible)
+        variable = variables[0] if len(variables) == 1 else variables
 
         self._consume(TokenType.IN)
 
@@ -823,6 +839,25 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             names.append(self._consume(TokenType.IDENTIFIER).value)
         self._expect_newline_or_eof()
         return self._stamp(GlobalStatement(names), line)
+
+    def _parse_unpack(self):
+        """
+        Parse:  a, b, c = [1, 2, 3]
+                x, y = get_coords()
+
+        Collects all left-hand identifiers separated by commas,
+        then parses the right-hand expression after '='.
+        """
+        line = self._current().line
+        names = []
+        names.append(self._consume(TokenType.IDENTIFIER).value)
+        while self._current().type == TokenType.COMMA:
+            self._advance()  # consume comma
+            names.append(self._consume(TokenType.IDENTIFIER).value)
+        self._consume(TokenType.ASSIGN)
+        value = self._parse_expression()
+        self._expect_newline_or_eof()
+        return self._stamp(UnpackStatement(names, value), line)
 
     def _parse_use(self):
         """Parse:  use <module>"""

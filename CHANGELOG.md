@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.4.0] — 2025-06-25 · Phase 15 "Stability"
+## [1.4.0] — 2026-06-25 · Phase 15 "Stability"
 
 ### Added (RED — Critical Gaps)
 - `in` / `not in` operators — membership test for lists, strings, and dicts
