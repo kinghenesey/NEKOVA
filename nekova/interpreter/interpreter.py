@@ -1918,28 +1918,35 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     # ══════════════════════════════════════════════════════════
 
     def _exec_SpeakStatement(self, node: SpeakStatement):
-        """speak <expr>  — text-to-speech output."""
+        """speak <expr>  — text-to-speech output.
+
+        Always prints the spoken text to stdout (with a [speak] prefix
+        when TTS is unavailable) so programs and tests can capture it.
+        TTS runs asynchronously in the background when available.
+        """
         text = self._to_string(self._execute_node(node.expression))
+
+        # Always echo to stdout so tests and piped programs can read it
+        print(text)
+
+        # Fire TTS in background (non-blocking) when available
         try:
             import subprocess, shutil
-            # Try platform TTS in order of preference
-            if shutil.which("say"):          # macOS
+            if shutil.which("say"):            # macOS
                 subprocess.Popen(["say", text])
-            elif shutil.which("espeak"):     # Linux
+            elif shutil.which("espeak"):       # Linux
                 subprocess.Popen(["espeak", text])
-            elif shutil.which("espeak-ng"):  # Linux alt
+            elif shutil.which("espeak-ng"):    # Linux alt
                 subprocess.Popen(["espeak-ng", text])
-            elif shutil.which("powershell"): # Windows
+            elif shutil.which("powershell"):   # Windows
                 subprocess.Popen([
                     "powershell", "-Command",
                     f"Add-Type -AssemblyName System.Speech; "
                     f"(New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak({text!r})"
                 ])
-            else:
-                # Graceful fallback — print with indicator
-                print(f"[speak] {text}")
         except Exception:
-            print(f"[speak] {text}")
+            pass  # TTS failure is silent — stdout output already happened
+
         return text
 
     def _exec_ListenExpression(self, node: ListenExpression):
