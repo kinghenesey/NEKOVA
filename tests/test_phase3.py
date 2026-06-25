@@ -161,7 +161,7 @@ class TestTaskStatement(unittest.TestCase):
         node = program.statements[0]
         self.assertIsInstance(node, TaskStatement)
         self.assertEqual(node.name, "greet")
-        self.assertEqual(node.params, ["name"])
+        self.assertEqual(node.params, [("name", None, False)])
         self.assertEqual(len(node.body), 1)
 
     def test_task_no_params(self):

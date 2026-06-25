@@ -367,6 +367,8 @@ class Lexer:
             self._add_token(TokenType.MINUS_EQUAL, "-="); self._advance(); self._advance(); return
         if two == "*=":
             self._add_token(TokenType.STAR_EQUAL,  "*="); self._advance(); self._advance(); return
+        if two == "//":
+            self._add_token(TokenType.FLOOR_DIVIDE, "//"); self._advance(); self._advance(); return
         if two == "/=":
             self._add_token(TokenType.SLASH_EQUAL, "/="); self._advance(); self._advance(); return
 

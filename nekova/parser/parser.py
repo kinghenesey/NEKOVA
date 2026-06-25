@@ -17,6 +17,8 @@ from nekova.parser.nodes import (
     MatchStatement, MatchArm, RouteStatement, ServeStatement,
     # Phase 9
     ThinkAsStatement, RememberStatement, RecallStatement, ForgetStatement,
+    # Phase 15
+    SliceExpression, RaiseStatement, PassStatement, AssertStatement, TernaryExpression,
 )
 from nekova.parser.async_nodes import (
     AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
@@ -184,6 +186,14 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             return self._parse_let()
 
         if token.type == TokenType.IDENTIFIER:
+            if token.value == "pass":
+                self._advance()
+                self._expect_newline_or_eof()
+                return self._stamp(PassStatement(line=token.line), token.line)
+            if token.value == "assert":
+                return self._parse_assert()
+            if token.value == "raise":
+                return self._parse_raise()
             return self._parse_identifier_statement()
 
         if token.type == TokenType.REMEMBER:
@@ -213,13 +223,38 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             token.line
         )
 
+    def _parse_assert(self):
+        """Parse:  assert <condition> [, "message"]"""
+        line = self._current().line
+        self._advance()  # consume "assert"
+        condition = self._parse_expression()
+        message = None
+        if self._current().type == TokenType.COMMA:
+            self._advance()
+            message = self._parse_expression()
+        self._expect_newline_or_eof()
+        return self._stamp(AssertStatement(condition, message, line=line), line)
+
+    def _parse_raise(self):
+        """Parse:  raise <expression>"""
+        line = self._current().line
+        self._advance()  # consume "raise"
+        expr = self._parse_expression()
+        self._expect_newline_or_eof()
+        return self._stamp(RaiseStatement(expr, line=line), line)
+
     def _parse_show(self):
-        """Parse:  show <expression>"""
+        """Parse:  show <expr> [<expr2> ...]  (space-separated)"""
         line = self._current().line
         self._consume(TokenType.SHOW)
         expr = self._parse_expression()
+        extras = []
+        # Keep consuming comma-separated OR consecutive expressions
+        while self._current().type == TokenType.COMMA:
+            self._advance()
+            extras.append(self._parse_expression())
         self._expect_newline_or_eof()
-        return self._stamp(ShowStatement(expr), line)
+        return self._stamp(ShowStatement(expr, extras), line)
 
     def _parse_think(self):
         """
@@ -674,19 +709,31 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         try_body = self._parse_block()
 
         self._skip_newlines()
-        self._consume(TokenType.CATCH)
 
-        # Optional error variable: catch error:
+        # Optional catch block
+        catch_body = []
         error_var = None
-        if self._current().type == TokenType.IDENTIFIER:
-            error_var = self._advance().value
+        if self._current().type == TokenType.CATCH:
+            self._consume(TokenType.CATCH)
+            if self._current().type == TokenType.IDENTIFIER:
+                error_var = self._advance().value
+            self._consume(TokenType.COLON)
+            self._expect_newline_or_eof()
+            self._skip_newlines()
+            catch_body = self._parse_block()
+            self._skip_newlines()
 
-        self._consume(TokenType.COLON)
-        self._expect_newline_or_eof()
-        self._skip_newlines()
-        catch_body = self._parse_block()
+        # Optional finally block
+        finally_body = []
+        if (self._current().type == TokenType.IDENTIFIER
+                and self._current().value == "finally"):
+            self._advance()  # consume "finally"
+            self._consume(TokenType.COLON)
+            self._expect_newline_or_eof()
+            self._skip_newlines()
+            finally_body = self._parse_block()
 
-        return self._stamp(TryStatement(try_body, catch_body, error_var), line)
+        return self._stamp(TryStatement(try_body, catch_body, error_var, finally_body), line)
 
     def _parse_for(self):
         """
@@ -719,6 +766,9 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         Parse:
             task <name>(<params>):
                 <body>
+        params may have defaults: task greet(name, greeting="Hi")
+        params may have *args:    task sum(*args)
+        Stored as list of (name, default_expr_or_None, is_vararg_bool)
         """
         line = self._current().line
         self._consume(TokenType.TASK)
@@ -727,7 +777,16 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         self._consume(TokenType.LPAREN)
         params = []
         while self._current().type != TokenType.RPAREN:
-            params.append(self._consume(TokenType.IDENTIFIER).value)
+            is_vararg = False
+            if self._current().type == TokenType.MULTIPLY:
+                self._advance()
+                is_vararg = True
+            pname = self._consume(TokenType.IDENTIFIER).value
+            default = None
+            if self._current().type == TokenType.ASSIGN:
+                self._advance()
+                default = self._parse_expression()
+            params.append((pname, default, is_vararg))
             if self._current().type == TokenType.COMMA:
                 self._advance()
         self._consume(TokenType.RPAREN)
@@ -1025,8 +1084,18 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
     # ----------------------------------------------------------
 
     def _parse_expression(self):
-        """Parse an expression (handles and/or logic + comparisons)."""
-        return self._parse_logical_or()
+        """Parse an expression — handles ternary (val if cond else other)."""
+        expr = self._parse_logical_or()
+        # Ternary: <true_val> if <condition> else <false_val>
+        if self._current().type == TokenType.IF:
+            line = self._current().line
+            self._advance()  # consume "if"
+            condition = self._parse_logical_or()
+            if self._current().type == TokenType.ELSE:
+                self._advance()  # consume "else"
+                false_expr = self._parse_expression()
+                return TernaryExpression(condition, expr, false_expr, line=line)
+        return expr
 
     def _parse_logical_or(self):
         """Parse 'or' operator."""
@@ -1047,7 +1116,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         return left
 
     def _parse_comparison(self):
-        """Parse comparison operators: == != < <= > >="""
+        """Parse comparison operators: == != < <= > >= in not in is is not"""
         left = self._parse_addition()
 
         comparison_ops = {
@@ -1059,11 +1128,39 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             TokenType.GREATER_EQ: ">=",
         }
 
-        while self._current().type in comparison_ops:
-            op  = comparison_ops[self._current().type]
-            self._advance()
-            right = self._parse_addition()
-            left  = BinaryOp(left, op, right)
+        while True:
+            cur = self._current()
+            if cur.type in comparison_ops:
+                op = comparison_ops[cur.type]
+                self._advance()
+                right = self._parse_addition()
+                left  = BinaryOp(left, op, right)
+            elif cur.type == TokenType.IN:
+                self._advance()
+                right = self._parse_addition()
+                left  = BinaryOp(left, "in", right)
+            elif cur.type == TokenType.NOT:
+                # not in
+                saved = self.pos
+                self._advance()
+                if self._current().type == TokenType.IN:
+                    self._advance()
+                    right = self._parse_addition()
+                    left  = BinaryOp(left, "not in", right)
+                else:
+                    self.pos = saved
+                    break
+            elif cur.type == TokenType.IDENTIFIER and cur.value == "is":
+                self._advance()
+                if self._current().type == TokenType.NOT:
+                    self._advance()
+                    right = self._parse_addition()
+                    left  = BinaryOp(left, "is not", right)
+                else:
+                    right = self._parse_addition()
+                    left  = BinaryOp(left, "is", right)
+            else:
+                break
 
         return left
 
@@ -1085,7 +1182,8 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
         while self._current().type in (
             TokenType.MULTIPLY, TokenType.DIVIDE,
-            TokenType.MODULO,   TokenType.POWER
+            TokenType.MODULO,   TokenType.POWER,
+            TokenType.FLOOR_DIVIDE
         ):
             op    = self._current().value
             self._advance()
@@ -1144,12 +1242,10 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
             # Check for chained operations
             while True:
-                # Index access: items[0]
+                # Index access or slice: items[0], items[1:3], items[:2]
                 if self._current().type == TokenType.LBRACKET:
                     self._advance()
-                    index = self._parse_expression()
-                    self._consume(TokenType.RBRACKET)
-                    expr = IndexExpression(expr, index)
+                    expr = self._finish_index_or_slice(expr)
 
                 # Method call or property access: name.upper() or args.name
                 elif (self._current().type == TokenType.DOT):
@@ -1206,6 +1302,32 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             token.line
         )
     
+    def _finish_index_or_slice(self, obj):
+        """After consuming '[', parse index OR slice, then ']'."""
+        line = self._current().line
+        # Check for slice: if we see ':' right away or after optional start
+        start = None
+        if self._current().type != TokenType.COLON and self._current().type != TokenType.RBRACKET:
+            start = self._parse_expression()
+
+        if self._current().type == TokenType.COLON:
+            # It's a slice
+            self._advance()  # consume ':'
+            stop = None
+            if self._current().type not in (TokenType.RBRACKET, TokenType.COLON):
+                stop = self._parse_expression()
+            step = None
+            if self._current().type == TokenType.COLON:
+                self._advance()
+                if self._current().type != TokenType.RBRACKET:
+                    step = self._parse_expression()
+            self._consume(TokenType.RBRACKET)
+            return SliceExpression(obj, start, stop, step, line=line)
+        else:
+            # Regular index
+            self._consume(TokenType.RBRACKET)
+            return IndexExpression(obj, start)
+
     def _parse_list(self):
         """Parse: [1, 2, 3]"""
         self._consume(TokenType.LBRACKET)

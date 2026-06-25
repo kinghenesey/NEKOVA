@@ -1,4 +1,4 @@
-﻿# NEKOVA VS Code Extension — v1.3.0
+﻿# NEKOVA VS Code Extension — v1.3.1
 
 Syntax highlighting, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 

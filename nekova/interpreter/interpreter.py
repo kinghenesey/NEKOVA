@@ -14,6 +14,8 @@ from nekova.parser.nodes import (
     MatchStatement, MatchArm, RouteStatement, ServeStatement,
     # Phase 9
     ThinkAsStatement, RememberStatement, RecallStatement, ForgetStatement,
+    # Phase 15
+    SliceExpression, RaiseStatement, PassStatement, AssertStatement, TernaryExpression,
 )
 from nekova.interpreter.environment import Environment
 from nekova.runtime import ReturnSignal, BreakSignal, ContinueSignal
@@ -21,7 +23,8 @@ from nekova.parser.async_nodes import (
     AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
 )
 from nekova.interpreter.exceptions import (
-    NEKOVARuntimeError, NEKOVAImportError, NEKOVANameError
+    NEKOVARuntimeError, NEKOVAImportError, NEKOVANameError,
+    NEKOVARaiseError, NEKOVAAssertionError
 )
 from nekova.interpreter.async_interpreter import AsyncInterpreterMixin
 from nekova.interpreter.class_interpreter import ClassInterpreterMixin
@@ -59,6 +62,10 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     # ----------------------------------------------------------
     # Public interface
     # ----------------------------------------------------------
+
+    def run(self, program: Program, filepath: str = None):
+        """Alias for execute() for test compatibility."""
+        return self.execute(program, filepath)
 
     def execute(self, program: Program, filepath: str = None):
         """Execute a full NEKOVA program."""
@@ -209,10 +216,12 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         return value
 
     def _exec_ShowStatement(self, node: ShowStatement):
-        """Execute:  show <expression>"""
-        value = self._execute_node(node.expression)
-        print(self._to_string(value))
-        return value
+        """Execute:  show <expr> [, <expr2> ...]"""
+        parts = [self._to_string(self._execute_node(node.expression))]
+        for extra in node.extra_expressions:
+            parts.append(self._to_string(self._execute_node(extra)))
+        print(" ".join(parts))
+        return parts[0] if len(parts) == 1 else " ".join(parts)
     
     def _get_think_timeout(self):
         """
@@ -790,25 +799,31 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     def _exec_TryStatement(self, node: TryStatement):
         """
         Execute:
-            try:
-                <body>
-            catch error:
-                <handler>
+            try: ...
+            catch error: ...
+            finally: ...
         """
         try:
             self._execute_block(node.try_body)
-
+        except NEKOVARaiseError as e:
+            # Store the raised value in the error var
+            if node.error_var:
+                self.env.set(node.error_var, e.value)
+            if node.catch_body:
+                self._execute_block(node.catch_body)
+            else:
+                raise
         except Exception as e:
-            # Store error message in variable if specified
             if node.error_var:
                 error_msg = str(e).strip()
-                # Clean up internal Python paths
                 if "\n" in error_msg:
                     error_msg = error_msg.split("\n")[-1].strip()
                 self.env.set(node.error_var, error_msg)
-
-            # Execute catch body
-            self._execute_block(node.catch_body)
+            if node.catch_body:
+                self._execute_block(node.catch_body)
+        finally:
+            if node.finally_body:
+                self._execute_block(node.finally_body)
     
     def _exec_ForStatement(self, node: ForStatement):
         """
@@ -1061,6 +1076,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             if op == ">=": return left >= right
             if op == "and": return bool(left) and bool(right)
             if op == "or":  return bool(left) or  bool(right)
+            if op == "//":  return int(left // right)
+            if op == "in":     return left in right
+            if op == "not in": return left not in right
+            if op == "is":     return left is right
+            if op == "is not": return left is not right
 
         except TypeError:
             raise NEKOVARuntimeError(
@@ -1371,43 +1391,59 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     def _call_task(self, task: TaskStatement, args: list):
         """
         Execute a task with the given arguments.
-        Creates a fresh local scope whose parent is the environment
-        where the task was DEFINED (its closure), not always globals.
-        This gives NEKOVA real lexical closures.
+        Supports default params and *args (varargs).
+        params is list of (name, default_or_None, is_vararg).
+        Old-style params (plain strings) are supported for back-compat.
         """
-        if len(args) != len(task.params):
-            raise NEKOVARuntimeError(
-                f"Task '{task.name}' expects "
-                f"{len(task.params)} argument(s) "
-                f"but got {len(args)}."
-            )
-
-        # Parent is the closure scope captured at definition time.
-        # Falls back to globals for tasks defined at the top level
-        # (where closure_env IS globals anyway).
         closure      = getattr(task, "closure_env", self.globals)
         local_env    = Environment(parent=closure)
         previous_env = self.env
-
-        # Save and reset global_names so each task call
-        # starts with a clean slate — 'global x' in one task
-        # must not affect a different task's scope.
         previous_globals = self._global_names
         self._global_names = set()
 
-        for param, value in zip(task.params, args):
-            local_env.set(param, value)
+        # Normalise params: support old-style plain strings
+        params = task.params
+        if params and isinstance(params[0], str):
+            params = [(p, None, False) for p in params]
+
+        # Check for vararg param
+        vararg_idx = next((i for i, (n, d, v) in enumerate(params) if v), None)
+
+        if vararg_idx is not None:
+            # All params before vararg are positional
+            positional = params[:vararg_idx]
+            vararg_name = params[vararg_idx][0]
+            if len(args) < len(positional):
+                raise NEKOVARuntimeError(
+                    f"Task '{task.name}' expects at least "
+                    f"{len(positional)} argument(s) but got {len(args)}."
+                )
+            for (pname, default, _), val in zip(positional, args[:len(positional)]):
+                local_env.set(pname, val)
+            local_env.set(vararg_name, list(args[len(positional):]))
+        else:
+            # Count required (no default) params
+            required = sum(1 for (_, d, _) in params if d is None)
+            if len(args) < required or len(args) > len(params):
+                raise NEKOVARuntimeError(
+                    f"Task '{task.name}' expects "
+                    f"{required}–{len(params)} argument(s) "
+                    f"but got {len(args)}."
+                )
+            for i, (pname, default, _) in enumerate(params):
+                if i < len(args):
+                    local_env.set(pname, args[i])
+                else:
+                    # Evaluate default expression
+                    local_env.set(pname, self._execute_node(default))
 
         self.env = local_env
-
         try:
             for stmt in task.body:
                 self._execute_node(stmt)
             return None
-
         except ReturnSignal as r:
             return r.value
-
         finally:
             self.env = previous_env
             self._global_names = previous_globals
@@ -1466,6 +1502,23 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         self.globals.set("clear",     lambda: print("\033[H\033[J", end=""))
         self.globals.set("sleep",     lambda s=1: __import__("time").sleep(float(s)))
         self.globals.set("random_num",lambda a, b: __import__("random").randint(int(a), int(b)))
+        # Phase 15: Python-compatible builtins
+        self.globals.set("range",    lambda *a: list(range(*[int(x) for x in a])))
+        self.globals.set("len",      lambda x: len(x))
+        self.globals.set("str",      lambda x: str(x))
+        self.globals.set("int",      lambda x: int(x))
+        self.globals.set("float",    lambda x: float(x))
+        self.globals.set("bool",     lambda x: bool(x))
+        self.globals.set("abs",      lambda x: abs(x))
+        self.globals.set("round",    lambda x, n=0: round(x, n))
+        self.globals.set("min",      lambda *a: min(*a) if len(a) > 1 else min(a[0]))
+        self.globals.set("max",      lambda *a: max(*a) if len(a) > 1 else max(a[0]))
+        self.globals.set("sum",      lambda x: sum(x))
+        self.globals.set("sorted",   lambda x, **kw: sorted(x, **kw))
+        self.globals.set("reversed", lambda x: list(reversed(x)))
+        self.globals.set("list",     lambda x: list(x))
+        self.globals.set("dict",     lambda: {})
+        self.globals.set("print",    print)
 
     def _load_stdlib(self, name: str) -> dict:
         """
@@ -1704,6 +1757,49 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             key = str(self._execute_node(node.key_expr))
             _forget(key)
         return None
+
+
+    # ── Phase 15: New execution methods ──────────────────────
+
+    def _exec_PassStatement(self, node):
+        """pass — no-op."""
+        return None
+
+    def _exec_RaiseStatement(self, node):
+        """raise <expr>"""
+        value = self._execute_node(node.expression)
+        raise NEKOVARaiseError(value, line=getattr(node, "line", 0))
+
+    def _exec_AssertStatement(self, node):
+        """assert <condition> [, message]"""
+        result = self._execute_node(node.condition)
+        if not self._is_truthy(result):
+            msg = "Assertion failed"
+            if node.message is not None:
+                msg = str(self._execute_node(node.message))
+            raise NEKOVAAssertionError(msg, line=getattr(node, "line", 0))
+        return None
+
+    def _exec_TernaryExpression(self, node):
+        """<true_val> if <condition> else <false_val>"""
+        condition = self._execute_node(node.condition)
+        if self._is_truthy(condition):
+            return self._execute_node(node.true_expr)
+        return self._execute_node(node.false_expr)
+
+    def _exec_SliceExpression(self, node):
+        """items[start:stop:step]"""
+        obj = self._execute_node(node.obj)
+        start = self._execute_node(node.start) if node.start is not None else None
+        stop  = self._execute_node(node.stop)  if node.stop  is not None else None
+        step  = self._execute_node(node.step)  if node.step  is not None else None
+        try:
+            return obj[start:stop:step]
+        except TypeError:
+            raise NEKOVARuntimeError(
+                f"Cannot slice '{type(obj).__name__}'.\n"
+                "  Slicing works on lists and strings."
+            )
 
 
 class _RequestObject:

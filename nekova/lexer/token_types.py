@@ -93,6 +93,7 @@ class TokenType(Enum):
     DIVIDE      = auto()
     MODULO      = auto()
     POWER       = auto()
+    FLOOR_DIVIDE = auto()  # //
     ARROW       = auto()
 
     # ── Comparison ────────────────────────────────────────────

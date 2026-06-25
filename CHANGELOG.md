@@ -5,6 +5,38 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.0] — 2025-06-25 · Phase 15 "Stability"
+
+### Added (RED — Critical Gaps)
+- `in` / `not in` operators — membership test for lists, strings, and dicts
+- `//` floor division operator — integer division with correct negative rounding
+- `range(stop)` / `range(start, stop)` / `range(start, stop, step)` builtin — returns a list
+- List and string slicing — `items[1:3]`, `items[:2]`, `items[2:]`, `s[1:4:2]`
+- Exception objects — `raise "msg"` and `catch e:` now bind the raised value to `e`
+- Core builtins — `len`, `str`, `int`, `float`, `bool`, `abs`, `round`, `min`, `max`, `sum`, `sorted`, `reversed`, `list`, `dict`, `print`
+
+### Added (YELLOW — Language Completeness)
+- Default parameters — `task greet(name, greeting="Hello"):`
+- `*args` / varargs — `task sum(*nums):` collects extra args into a list
+- `raise <expr>` statement — raises a `NEKOVARaiseError` catchable via `try/catch`
+- `finally` block — `try: ... catch e: ... finally: ...` always runs cleanup
+- `pass` statement — no-op placeholder for empty blocks
+- `assert <condition> [, message]` — raises `NEKOVAAssertionError` on failure
+- Multi-argument `show` — `show "x =", 42` prints space-separated values
+- `is` / `is not` operators — identity comparison (primary use: `x is null`)
+- Ternary expression — `value if condition else other` in any expression context
+- `run()` alias on `Interpreter` for test and REPL compatibility
+
+### Fixed
+- Parser `not in` backtracking — uses `self.pos` (not `self._pos`)
+- OSI license classifier removed from `pyproject.toml` (setuptools 72+ compatibility)
+
+### Tests
+- 50 new tests in `tests/test_phase15.py` covering all RED and YELLOW items
+- Total test suite: **853 passing**, zero regressions
+
+---
+
 ## [1.3.1] â€” 2025-06-25 Â· Phase 14 "Foundation"
 
 ### Added

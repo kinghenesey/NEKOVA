@@ -223,12 +223,14 @@ class AssignStatement(Node):
 
 class ShowStatement(Node):
     """
-    Prints a value to the terminal.
+    Prints one or more values to the terminal (space-separated).
     Example:
         show "Hello"
+        show "x =" x
     """
-    def __init__(self, expression: Node):
-        self.expression = expression
+    def __init__(self, expression: Node, extra_expressions: list = None):
+        self.expression        = expression
+        self.extra_expressions = extra_expressions or []
 
     def __repr__(self):
         return f"Show({self.expression})"
@@ -422,13 +424,16 @@ class RepeatStatement(Node):
 class TaskStatement(Node):
     """
     Defines a reusable task (function).
+    params: list of (name, default_expr_or_None, is_vararg_bool)
     Example:
-        task greet(name):
-            show "Hello " + name
+        task greet(name, greeting="Hello"):
+            show greeting + " " + name
+        task sum(*args):
+            ...
     """
     def __init__(self, name: str, params: list, body: list):
         self.name   = name
-        self.params = params
+        self.params = params  # list of (name, default, is_vararg)
         self.body   = body
 
     def __repr__(self):
@@ -554,10 +559,12 @@ class TryStatement(Node):
     """
     def __init__(self, try_body: list,
                  catch_body: list,
-                 error_var: str = None):
-        self.try_body  = try_body
-        self.catch_body = catch_body
-        self.error_var  = error_var
+                 error_var: str = None,
+                 finally_body: list = None):
+        self.try_body     = try_body
+        self.catch_body   = catch_body
+        self.error_var    = error_var
+        self.finally_body = finally_body or []
 
     def __repr__(self):
         return f"Try(catch_var={self.error_var})"
@@ -838,3 +845,69 @@ class ForgetStatement(Node):
 
     def __repr__(self):
         return "ForgetAll()" if self.forget_all else f"Forget({self.key_expr})"
+
+# ── Phase 15 Stability Nodes ──────────────────────────────────
+
+class SliceExpression(Node):
+    """
+    List/string slicing: items[1:3], items[:2], items[1:]
+    """
+    def __init__(self, obj, start=None, stop=None, step=None, line: int = 0):
+        self.obj   = obj
+        self.start = start
+        self.stop  = stop
+        self.step  = step
+        self.line  = line
+
+    def __repr__(self):
+        return f"Slice({self.obj}[{self.start}:{self.stop}])"
+
+
+class RaiseStatement(Node):
+    """
+    Raise an exception: raise "message" or raise ErrorType("msg")
+    """
+    def __init__(self, expression, line: int = 0):
+        self.expression = expression
+        self.line       = line
+
+    def __repr__(self):
+        return f"Raise({self.expression})"
+
+
+class PassStatement(Node):
+    """
+    No-op placeholder: pass
+    """
+    def __init__(self, line: int = 0):
+        self.line = line
+
+    def __repr__(self):
+        return "Pass()"
+
+
+class AssertStatement(Node):
+    """
+    Assertion: assert condition, "message"
+    """
+    def __init__(self, condition, message=None, line: int = 0):
+        self.condition = condition
+        self.message   = message
+        self.line      = line
+
+    def __repr__(self):
+        return f"Assert({self.condition})"
+
+
+class TernaryExpression(Node):
+    """
+    Ternary/conditional expression: value if condition else other
+    """
+    def __init__(self, condition, true_expr, false_expr, line: int = 0):
+        self.condition  = condition
+        self.true_expr  = true_expr
+        self.false_expr = false_expr
+        self.line       = line
+
+    def __repr__(self):
+        return f"Ternary({self.condition})"

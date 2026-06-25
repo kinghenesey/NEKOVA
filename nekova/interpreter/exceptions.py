@@ -25,3 +25,17 @@ class NEKOVANameError(Exception):
     def __init__(self, message: str, line: int = 0):
         self.line = line
         super().__init__(f"\n  {message}")
+
+class NEKOVARaiseError(Exception):
+    """Raised by the 'raise' statement in NEKOVA code."""
+    def __init__(self, value, line: int = 0):
+        self.value = value
+        self.line  = line
+        super().__init__(str(value))
+
+
+class NEKOVAAssertionError(Exception):
+    """Raised by a failing 'assert' statement."""
+    def __init__(self, message: str = "Assertion failed", line: int = 0):
+        self.line = line
+        super().__init__(f"\n  {message}")
