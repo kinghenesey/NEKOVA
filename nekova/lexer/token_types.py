@@ -80,6 +80,12 @@ class TokenType(Enum):
     FORGET      = auto()
     AS          = auto()
 
+    # ── Phase 17: Power User Layer ───────────────────────────
+    YIELD       = auto()   # yield expr
+    AT          = auto()   # @decorator
+    ERROR_TYPE  = auto()   # error NetworkError: ...
+    CLASS       = auto()   # class (alias for object)
+
     # ── Phase 16: Standout Features ──────────────────────────
     SPEAK       = auto()   # speak "Hello"
     LISTEN      = auto()   # let x = listen
@@ -196,6 +202,9 @@ KEYWORDS = {
     "forget":     TokenType.FORGET,
     "as":         TokenType.AS,
     # Phase 16
+    "yield":      TokenType.YIELD,
+    "error":      TokenType.ERROR_TYPE,
+    "class":      TokenType.CLASS,
     "speak":      TokenType.SPEAK,
     "listen":     TokenType.LISTEN,
     "every":      TokenType.EVERY,

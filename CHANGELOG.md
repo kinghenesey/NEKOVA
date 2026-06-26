@@ -5,6 +5,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.6.0] — 2025-06-26 · Phase 17 "Power User Layer"
+
+### Added
+- **Generators / `yield`** — any task containing `yield` becomes a generator factory; fully works inside `while`, `if`, and `for` loops; consumed by `for x in gen():` syntax
+- **Decorators / `@`** — `@decorator` and `@decorator(args)` syntax; stackable; accepts keyword names as decorator identifiers
+- **Error types** — `error NetworkError: message str, code int` defines typed, raiseable error constructors with `__error__` marker; catchable via `try/catch`
+- **Typed tasks** — `task add(a: int, b: int) -> int:` enforces param types at call time with coercion; return type annotation parsed and checked
+- **`class` keyword** — alias for `object`; `class Foo extends Bar:` works identically to `object Foo extends Bar:`
+- Keywords now accepted as task names, decorator names, and method names (prevents parser collisions)
+- `@` lexed as `AT` token; `->` already existed as `ARROW`
+
+### Fixed
+- `_exec_CallExpression`: callee resolution now handles both string names and AST node callees (fixes decorator-with-args and higher-order call patterns)
+- `for` loop: accepts any `__iter__`-able value including generators
+- `test_phase2.py`: unknown character test updated from `@` to `~` (since `@` is now valid syntax)
+
+### Tests
+- 29 new tests in `tests/test_phase17.py`
+- Total: **916 passing**, zero regressions
+
+---
+
 ## [1.5.0] — 2025-06-25 · Phase 16 "Standout Features"
 
 ### Added

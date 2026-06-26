@@ -20,7 +20,7 @@
 #   object Employee extends Person:
 #       ...
 
-from nekova.lexer.token_types import TokenType
+from nekova.lexer.token_types import TokenType  # CLASS added in Phase 17
 from nekova.parser.nodes import (
     ClassDefinition, MethodDefinition,
     NewInstance, SelfAccess, SelfAssign,
@@ -40,7 +40,11 @@ class ClassParserMixin:
             func method(params):
                 body
         """
-        self._consume(TokenType.OBJECT)
+        # Accept both 'object' and 'class' keywords
+        if self._current().type in (TokenType.OBJECT, TokenType.CLASS):
+            self._advance()
+        else:
+            self._consume(TokenType.OBJECT)
         name = self._consume(TokenType.IDENTIFIER).value
 
         # Optional inheritance

@@ -1064,3 +1064,69 @@ class WatchStatement(Node):
 
     def __repr__(self):
         return f"Watch({self.target})"
+
+# ── Phase 17: Power User Layer Nodes ─────────────────────────
+
+class YieldStatement(Node):
+    """
+    Yield a value from a generator task.
+        yield value
+        yield          (yield None)
+    """
+    def __init__(self, expression=None, line: int = 0):
+        self.expression = expression
+        self.line = line
+    def __repr__(self): return f"Yield({self.expression})"
+
+
+class DecoratorStatement(Node):
+    """
+    Decorator applied to the next task definition.
+        @memoize
+        task fib(n):
+            ...
+        @retry(3)
+        task fetch_data():
+            ...
+    decorator_expr: the expression after @
+    target: the TaskStatement being decorated
+    """
+    def __init__(self, decorator_expr, target, line: int = 0):
+        self.decorator_expr = decorator_expr
+        self.target = target
+        self.line = line
+    def __repr__(self): return f"Decorator({self.decorator_expr})"
+
+
+class ErrorDefinition(Node):
+    """
+    Define a custom error type.
+        error NetworkError:
+            message str
+            code    int = 0
+    fields: list of (name, type_str, default_or_None)
+    """
+    def __init__(self, name: str, fields: list, line: int = 0):
+        self.name   = name
+        self.fields = fields
+        self.line   = line
+    def __repr__(self): return f"ErrorDef({self.name})"
+
+
+class TypedTaskStatement(Node):
+    """
+    Task with typed parameters and optional return type.
+        task add(a: int, b: int) -> int:
+            return a + b
+    Extends TaskStatement with type annotations.
+    params: list of (name, type_str_or_None, default_or_None, is_vararg)
+    return_type: str or None
+    """
+    def __init__(self, name: str, params: list, body: list,
+                 return_type: str = None, line: int = 0):
+        self.name        = name
+        self.params      = params
+        self.body        = body
+        self.return_type = return_type
+        self.line        = line
+    def __repr__(self): return f"TypedTask({self.name})"

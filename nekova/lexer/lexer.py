@@ -378,6 +378,7 @@ class Lexer:
             "-": TokenType.MINUS,
             "*": TokenType.MULTIPLY,
             "/": TokenType.DIVIDE,
+            "@": TokenType.AT,
             "%": TokenType.MODULO,
             "<": TokenType.LESS,
             ">": TokenType.GREATER,

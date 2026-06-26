@@ -43,3 +43,9 @@ class NEKOVAAssertionError(Exception):
 class _ExpectFailed(Exception):
     """Internal signal raised by a failing expect statement."""
     pass
+
+class _YieldSignal(Exception):
+    """Internal signal raised by yield statement in generator tasks."""
+    def __init__(self, value):
+        self.value = value
+        super().__init__()

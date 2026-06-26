@@ -20,6 +20,8 @@ from nekova.parser.nodes import (
     SpeakStatement, ListenExpression, EveryStatement,
     TestBlock, ExpectStatement, ImagineStatement,
     ShapeDefinition, WatchStatement,
+    # Phase 17
+    YieldStatement, DecoratorStatement, ErrorDefinition, TypedTaskStatement,
 )
 from nekova.interpreter.environment import Environment
 from nekova.runtime import ReturnSignal, BreakSignal, ContinueSignal
@@ -28,7 +30,7 @@ from nekova.parser.async_nodes import (
 )
 from nekova.interpreter.exceptions import (
     NEKOVARuntimeError, NEKOVAImportError, NEKOVANameError,
-    NEKOVARaiseError, NEKOVAAssertionError, _ExpectFailed
+    NEKOVARaiseError, NEKOVAAssertionError, _ExpectFailed, _YieldSignal
 )
 from nekova.interpreter.async_interpreter import AsyncInterpreterMixin
 from nekova.interpreter.class_interpreter import ClassInterpreterMixin
@@ -915,11 +917,14 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             items = iterable
         elif isinstance(iterable, range):
             items = list(iterable)
+        elif hasattr(iterable, "__iter__"):
+            # Covers _NEKOVAGenerator and any other iterable
+            items = list(iterable)
         else:
             raise NEKOVARuntimeError(
                 f"Cannot iterate over "
                 f"'{type(iterable).__name__}'.\n"
-                f"  Use a list, string, or range."
+                f"  Use a list, string, range, or generator."
             )
 
         multi = isinstance(node.variable, list)
@@ -950,13 +955,21 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     def _exec_TaskStatement(self, node: TaskStatement):
         """
         Execute:  task greet(name): ...
-        Stores the task definition in the environment.
-        The task body is NOT executed yet — only when called.
-        We also capture the current environment here so the task
-        can close over variables from its definition scope (closure).
+        If body contains yield, registers a generator factory instead.
         """
-        node.closure_env = self.env  # snapshot the defining scope
-        self.env.set(node.name, node)
+        node.closure_env = self.env
+        if self._body_has_yield(node.body):
+            # Register as a generator factory
+            interp = self
+            def _make_gen_factory(n):
+                def _factory(*args):
+                    return _NEKOVAGenerator(n, args, interp)
+                _factory.__name__ = n.name
+                _factory._is_generator = True
+                return _factory
+            self.env.set(node.name, _make_gen_factory(node))
+        else:
+            self.env.set(node.name, node)
 
     def _exec_ReturnStatement(self, node: ReturnStatement):
         """
@@ -1099,15 +1112,22 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         Execute:  greet("Emmanuel")
         Looks up the task and runs it with the given arguments.
         """
-        # Check built-ins first
-        callee = self.env.get(node.name)
+        # Resolve callee — node.name may be a string or an AST node (Identifier, etc.)
+        if isinstance(node.name, str):
+            callee = self.env.get(node.name)
+        else:
+            callee = self._execute_node(node.name)
 
         # Evaluate all arguments
         args = [self._execute_node(arg) for arg in node.args]
 
         # Built-in Python function
-        if callable(callee) and not isinstance(callee, TaskStatement):
+        if callable(callee) and not isinstance(callee, (TaskStatement, TypedTaskStatement)):
             return callee(*args)
+
+        # NEKOVA typed task (Phase 17)
+        if isinstance(callee, TypedTaskStatement):
+            return self._call_typed_task(callee, args)
 
         # NEKOVA task
         if isinstance(callee, TaskStatement):
@@ -1914,6 +1934,239 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
 
     # ══════════════════════════════════════════════════════════
+    # Phase 17 — Power User Layer Executors
+    # ══════════════════════════════════════════════════════════
+
+    # ── generators / yield ────────────────────────────────────
+
+    def _exec_YieldStatement(self, node: YieldStatement):
+        """yield value — raises YieldSignal caught by generator machinery."""
+        value = self._execute_node(node.expression) if node.expression else None
+        raise _YieldSignal(value)
+
+    def _exec_TypedTaskStatement(self, node: TypedTaskStatement):
+        """
+        Typed task with param type hints and optional return type.
+        Checks if any param uses `yield` — if so, registers a generator factory.
+        """
+        # Check if body contains yield (makes it a generator)
+        is_gen = self._body_has_yield(node.body)
+
+        if is_gen:
+            self._register_generator_task(node)
+        else:
+            # Treat like a regular task but enforce types at call time
+            node.closure_env = self.env
+            self.env.set(node.name, node)
+        return None
+
+    def _body_has_yield(self, body: list) -> bool:
+        """Recursively check if a body contains a YieldStatement."""
+        from nekova.parser.nodes import YieldStatement as YS
+        for stmt in body:
+            if isinstance(stmt, YS):
+                return True
+            for attr in ("body", "then_body", "else_body", "try_body",
+                         "catch_body", "finally_body"):
+                sub = getattr(stmt, attr, None)
+                if isinstance(sub, list) and self._body_has_yield(sub):
+                    return True
+        return False
+
+    def _register_generator_task(self, node: TypedTaskStatement):
+        """Register a generator factory function."""
+        interp = self
+
+        def _generator_factory(*args):
+            return _NEKOVAGenerator(node, args, interp)
+
+        _generator_factory.__name__ = node.name
+        _generator_factory._is_generator = True
+        self.env.set(node.name, _generator_factory)
+
+    # ── decorators ────────────────────────────────────────────
+
+    def _exec_DecoratorStatement(self, node: DecoratorStatement):
+        """
+        Apply decorator to the target task.
+        @memoize
+        task fib(n): ...
+        Equivalent to:  fib = memoize(fib)
+        """
+        # Execute the inner task first (registers it)
+        self._execute_node(node.target)
+
+        # Get the task name from the target
+        target = node.target
+        # Unwrap nested decorators to find the innermost task name
+        while isinstance(target, DecoratorStatement):
+            target = target.target
+        task_name = target.name
+
+        # Get the registered task/function
+        task_fn = self.env.get(task_name)
+
+        # Evaluate the decorator expression
+        decorator = self._execute_node(node.decorator_expr)
+
+        # Apply: task = decorator(task)
+        # decorator may be a TaskStatement, TypedTaskStatement, or Python callable
+        if isinstance(decorator, TypedTaskStatement):
+            result = self._call_typed_task(decorator, [task_fn])
+        elif isinstance(decorator, TaskStatement):
+            result = self._call_task(decorator, [task_fn])
+        elif callable(decorator):
+            result = decorator(task_fn)
+        else:
+            raise NEKOVARuntimeError(
+                f"Decorator '@{node.decorator_expr}' is not callable."
+            )
+        self.env.set(task_name, result)
+        return None
+
+    # ── error types ───────────────────────────────────────────
+
+    def _exec_ErrorDefinition(self, node: ErrorDefinition):
+        """
+        error NetworkError:
+            message str
+            code    int = 0
+        Registers a raiseable error constructor.
+        """
+        error_name = node.name
+        fields = node.fields
+        interp = self
+
+        TYPE_COERCE = {
+            "str":   str,
+            "int":   int,
+            "float": float,
+            "bool":  bool,
+            "any":   lambda v: v,
+        }
+
+        def _error_constructor(*args, **kwargs):
+            instance = {"__error__": error_name}
+            for i, (fname, ftype, fdefault) in enumerate(fields):
+                if i < len(args):
+                    raw = args[i]
+                elif fname in kwargs:
+                    raw = kwargs[fname]
+                elif fdefault is not None:
+                    raw = interp._execute_node(fdefault)
+                else:
+                    raise NEKOVARuntimeError(
+                        f"Error '{error_name}' requires field '{fname}'."
+                    )
+                coerce = TYPE_COERCE.get(ftype, lambda v: v)
+                try:
+                    instance[fname] = coerce(raw)
+                except (ValueError, TypeError):
+                    instance[fname] = raw
+            return instance
+
+        # Register the constructor
+        self.env.set(error_name, _error_constructor)
+
+        # Store schema
+        if not hasattr(self, "_error_types"):
+            self._error_types = {}
+        self._error_types[error_name] = fields
+
+        return None
+
+    # ── type-enforced task calls ──────────────────────────────
+
+    def _call_typed_task(self, task: TypedTaskStatement, args: list):
+        """
+        Call a typed task — enforces type hints on arguments.
+        params: (name, type_hint, default, is_vararg)
+        """
+        from nekova.interpreter.environment import Environment
+        from nekova.runtime import ReturnSignal
+
+        TYPE_VALIDATORS = {
+            "int":   (int,   "an integer"),
+            "float": (float, "a float"),
+            "str":   (str,   "a string"),
+            "bool":  (bool,  "a boolean"),
+            "list":  (list,  "a list"),
+            "dict":  (dict,  "a dict"),
+        }
+
+        closure   = getattr(task, "closure_env", self.globals)
+        local_env = Environment(parent=closure)
+        prev_env  = self.env
+        prev_globals = self._global_names
+        self._global_names = set()
+
+        params = task.params  # (name, type_hint, default, is_vararg)
+
+        # Check for vararg
+        vararg_idx = next((i for i, p in enumerate(params) if p[3]), None)
+
+        if vararg_idx is not None:
+            positional = params[:vararg_idx]
+            vararg_name = params[vararg_idx][0]
+            for (pname, phint, _, _), val in zip(positional, args):
+                self._check_type(pname, val, phint, TYPE_VALIDATORS, task.name)
+                local_env.set(pname, val)
+            local_env.set(vararg_name, list(args[len(positional):]))
+        else:
+            required = sum(1 for (_, _, d, _) in params if d is None)
+            if len(args) < required or len(args) > len(params):
+                raise NEKOVARuntimeError(
+                    f"Task '{task.name}' expects "
+                    f"{required}–{len(params)} args, got {len(args)}."
+                )
+            for i, (pname, phint, default, _) in enumerate(params):
+                val = args[i] if i < len(args) else self._execute_node(default)
+                self._check_type(pname, val, phint, TYPE_VALIDATORS, task.name)
+                local_env.set(pname, val)
+
+        self.env = local_env
+        result = None
+        try:
+            for stmt in task.body:
+                self._execute_node(stmt)
+        except ReturnSignal as r:
+            result = r.value
+        finally:
+            self.env = prev_env
+            self._global_names = prev_globals
+
+        # Check return type
+        if task.return_type and task.return_type in TYPE_VALIDATORS:
+            py_type, label = TYPE_VALIDATORS[task.return_type]
+            if result is not None and not isinstance(result, py_type):
+                try:
+                    result = py_type(result)
+                except (ValueError, TypeError):
+                    raise NEKOVARuntimeError(
+                        f"Task '{task.name}' declared return type "
+                        f"'{task.return_type}' but returned "
+                        f"{type(result).__name__}."
+                    )
+        return result
+
+    def _check_type(self, pname, val, phint, validators, task_name):
+        """Enforce a type hint on a parameter value."""
+        if not phint or phint == "any":
+            return
+        if phint in validators:
+            py_type, label = validators[phint]
+            if val is not None and not isinstance(val, py_type):
+                # Try coercion first
+                try:
+                    return py_type(val)
+                except (ValueError, TypeError):
+                    raise NEKOVARuntimeError(
+                        f"Task '{task_name}': parameter '{pname}' "
+                        f"expects {label}, got {type(val).__name__}."
+                    )
+
+
+    # ══════════════════════════════════════════════════════════
     # Phase 16 — Standout Feature Executors
     # ══════════════════════════════════════════════════════════
 
@@ -2536,3 +2789,85 @@ class _DBRow:
 
     # ----------------------------------------------------------
     # Phase 9: Structured Think (think ... as json/list/bool/schema)
+
+# ── NEKOVA Generator Runtime ──────────────────────────────────
+
+class _NEKOVAGenerator:
+    """
+    Lazy sequence produced by a generator task (one with yield).
+    Uses a separate interpreter instance with a patched _exec_YieldStatement
+    that appends to a shared list, allowing while/for/if to all work
+    transparently — the key insight is we collect ALL values upfront
+    by temporarily redirecting yield to a collector.
+    """
+
+    def __init__(self, task_node, args, interp):
+        self._task   = task_node
+        self._args   = args
+        self._interp = interp
+        self._values = None
+
+    def _materialize(self):
+        if self._values is not None:
+            return
+
+        from nekova.interpreter.environment import Environment
+        from nekova.runtime import ReturnSignal
+        from nekova.interpreter.exceptions import _YieldSignal
+
+        task   = self._task
+        args   = self._args
+        interp = self._interp
+
+        closure   = getattr(task, "closure_env", interp.globals)
+        local_env = Environment(parent=closure)
+        prev_env  = interp.env
+        interp.env = local_env
+
+        # Bind params
+        params = task.params
+        for i, param in enumerate(params):
+            if len(param) == 4:
+                pname, _, default, is_vararg = param
+            else:
+                pname, default, is_vararg = param
+            if is_vararg:
+                local_env.set(pname, list(args[i:]))
+            elif i < len(args):
+                local_env.set(pname, args[i])
+            elif default is not None:
+                local_env.set(pname, interp._execute_node(default))
+
+        collected = []
+
+        # Temporarily replace yield handler so it collects rather than raises
+        original_yield = interp._exec_YieldStatement
+
+        def _collecting_yield(node):
+            value = interp._execute_node(node.expression) if node.expression else None
+            collected.append(value)
+            # Do NOT raise — just return so execution continues
+
+        interp._exec_YieldStatement = _collecting_yield
+
+        try:
+            for stmt in task.body:
+                try:
+                    interp._execute_node(stmt)
+                except ReturnSignal:
+                    break
+                except _YieldSignal as y:
+                    # Fallback if something raises directly
+                    collected.append(y.value)
+        finally:
+            interp._exec_YieldStatement = original_yield
+            interp.env = prev_env
+
+        self._values = collected
+
+    def __iter__(self):
+        self._materialize()
+        return iter(self._values)
+
+    def __repr__(self):
+        return f"<generator {self._task.name}>"

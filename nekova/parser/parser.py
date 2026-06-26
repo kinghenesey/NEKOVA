@@ -23,6 +23,8 @@ from nekova.parser.nodes import (
     SpeakStatement, ListenExpression, EveryStatement,
     TestBlock, ExpectStatement, ImagineStatement,
     ShapeDefinition, WatchStatement,
+    # Phase 17
+    YieldStatement, DecoratorStatement, ErrorDefinition, TypedTaskStatement,
 )
 from nekova.parser.async_nodes import (
     AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
@@ -188,6 +190,18 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
         if token.type == TokenType.LET:
             return self._parse_let()
+
+        if token.type == TokenType.YIELD:
+            return self._parse_yield()
+
+        if token.type == TokenType.AT:
+            return self._parse_decorator()
+
+        if token.type == TokenType.ERROR_TYPE:
+            return self._parse_error_def()
+
+        if token.type == TokenType.CLASS:
+            return self.parse_class_definition()
 
         if token.type == TokenType.SPEAK:
             return self._parse_speak()
@@ -432,6 +446,109 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         self._skip_newlines()
         body = self._parse_block()
         return self._stamp(WatchStatement(target, body, is_file, line=line), line)
+
+
+    # ── Phase 17 Parsers ─────────────────────────────────────
+
+    def _parse_yield(self):
+        """yield [expression]"""
+        line = self._current().line
+        self._consume(TokenType.YIELD)
+        expr = None
+        if self._current().type not in (TokenType.NEWLINE, TokenType.EOF,
+                                         TokenType.DEDENT):
+            expr = self._parse_expression()
+        self._expect_newline_or_eof()
+        return self._stamp(YieldStatement(expr, line=line), line)
+
+    def _parse_decorator(self):
+        """
+        @decorator_name
+        @decorator_name(args)
+        task name(...):
+            body
+        """
+        line = self._current().line
+        self._consume(TokenType.AT)
+        # Parse decorator expression (name or call) — accept any token as name
+        dec_name = self._advance().value
+        dec_expr_node = Identifier(dec_name)
+        if self._current().type == TokenType.LPAREN:
+            self._consume(TokenType.LPAREN)
+            args = []
+            while self._current().type != TokenType.RPAREN:
+                args.append(self._parse_expression())
+                if self._current().type == TokenType.COMMA:
+                    self._advance()
+            self._consume(TokenType.RPAREN)
+            dec_expr_node = CallExpression(dec_expr_node, args)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+
+        # Collect stacked decorators
+        decorators = [dec_expr_node]
+        while self._current().type == TokenType.AT:
+            self._consume(TokenType.AT)
+            dname = self._advance().value  # allow keyword names
+            dnode = Identifier(dname)
+            if self._current().type == TokenType.LPAREN:
+                self._consume(TokenType.LPAREN)
+                dargs = []
+                while self._current().type != TokenType.RPAREN:
+                    dargs.append(self._parse_expression())
+                    if self._current().type == TokenType.COMMA:
+                        self._advance()
+                self._consume(TokenType.RPAREN)
+                dnode = CallExpression(dnode, dargs)
+            decorators.append(dnode)
+            self._expect_newline_or_eof()
+            self._skip_newlines()
+
+        # Must be followed by task
+        if self._current().type != TokenType.TASK:
+            raise ParseError(
+                f"Expected 'task' after decorator, "
+                f"got '{self._current().value}'.",
+                self._current().line
+            )
+        target = self._parse_task()
+
+        # Apply decorators right-to-left
+        node = target
+        for dec in reversed(decorators):
+            node = DecoratorStatement(dec, node, line=line)
+        return node
+
+    def _parse_error_def(self):
+        """
+        error NetworkError:
+            message str
+            code    int = 0
+        """
+        line = self._current().line
+        self._consume(TokenType.ERROR_TYPE)
+        name = self._consume(TokenType.IDENTIFIER).value
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+
+        fields = []
+        self._consume(TokenType.INDENT)
+        while self._current().type not in (TokenType.DEDENT, TokenType.EOF):
+            if self._current().type == TokenType.NEWLINE:
+                self._advance(); continue
+            fname = self._consume(TokenType.IDENTIFIER).value
+            ftype = self._consume(TokenType.IDENTIFIER).value
+            default = None
+            if self._current().type == TokenType.ASSIGN:
+                self._advance()
+                default = self._parse_expression()
+            fields.append((fname, ftype, default))
+            if self._current().type == TokenType.NEWLINE:
+                self._advance()
+        if self._current().type == TokenType.DEDENT:
+            self._advance()
+        return self._stamp(ErrorDefinition(name, fields, line=line), line)
 
     def _parse_assert(self):
         """Parse:  assert <condition> [, "message"]"""
@@ -983,14 +1100,12 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         """
         Parse:
             task <name>(<params>):
-                <body>
-        params may have defaults: task greet(name, greeting="Hi")
-        params may have *args:    task sum(*args)
-        Stored as list of (name, default_expr_or_None, is_vararg_bool)
+            task <name>(a: int, b: int) -> int:
+        params: (name, type_hint_or_None, default_or_None, is_vararg)
         """
         line = self._current().line
         self._consume(TokenType.TASK)
-        name = self._consume(TokenType.IDENTIFIER).value
+        name = self._advance().value  # allow keyword names
 
         self._consume(TokenType.LPAREN)
         params = []
@@ -1000,19 +1115,37 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                 self._advance()
                 is_vararg = True
             pname = self._consume(TokenType.IDENTIFIER).value
+            # Optional type hint:  name: type
+            type_hint = None
+            if self._current().type == TokenType.COLON:
+                self._advance()
+                type_hint = self._consume(TokenType.IDENTIFIER).value
+            # Optional default:  name = expr  or  name: type = expr
             default = None
             if self._current().type == TokenType.ASSIGN:
                 self._advance()
                 default = self._parse_expression()
-            params.append((pname, default, is_vararg))
+            params.append((pname, type_hint, default, is_vararg))
             if self._current().type == TokenType.COMMA:
                 self._advance()
         self._consume(TokenType.RPAREN)
+
+        # Optional return type hint:  -> type
+        return_type = None
+        if self._current().type == TokenType.ARROW:
+            self._advance()
+            return_type = self._consume(TokenType.IDENTIFIER).value
+
         self._consume(TokenType.COLON)
         self._expect_newline_or_eof()
         self._skip_newlines()
         body = self._parse_block()
-        return self._stamp(TaskStatement(name, params, body), line)
+
+        if return_type or any(p[1] for p in params):
+            return self._stamp(TypedTaskStatement(name, params, body, return_type, line=line), line)
+        # Back-compat: strip type hints to old (name, default, is_vararg) tuple
+        simple = [(p[0], p[2], p[3]) for p in params]
+        return self._stamp(TaskStatement(name, simple, body), line)
 
     def _parse_return(self):
         """Parse:  return <expression>"""

@@ -147,8 +147,9 @@ class TestErrors(unittest.TestCase):
             tokenize('"Hello')
 
     def test_unknown_character(self):
+        # @ is now a valid token (decorator syntax) — use a truly unknown char
         with self.assertRaises(LexerError):
-            tokenize("@")
+            tokenize("~")
 
 
 if __name__ == "__main__":
