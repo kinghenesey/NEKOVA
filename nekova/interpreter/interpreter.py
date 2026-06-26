@@ -846,18 +846,46 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             self._execute_block(node.try_body)
 
         except NEKOVARaiseError as e:
-            # 'raise "something"' — bind the raised value directly
+            # 'raise "something"' or 'raise CustomError(...)' 
             if node.error_var:
                 raised = e.value
-                # Wrap strings in an exception object too
+
                 if isinstance(raised, str):
+                    # raise "plain string"
                     obj = {
                         "message": raised,
                         "type":    "RaiseError",
                         "value":   raised,
                     }
+                elif isinstance(raised, dict):
+                    # raise CustomError(...) — has __error__ and field values
+                    # Normalize into standard {message, type, value} shape
+                    error_type = raised.get("__error__", "RaiseError")
+                    # message field: prefer explicit 'message' key,
+                    # else first non-dunder value, else str repr
+                    msg = raised.get(
+                        "message",
+                        next(
+                            (v for k, v in raised.items()
+                             if not k.startswith("__")),
+                            str(raised)
+                        )
+                    )
+                    obj = {
+                        "message": str(msg),
+                        "type":    error_type,
+                        "value":   raised,
+                        # preserve all original fields so e.code etc work
+                        **{k: v for k, v in raised.items()
+                           if not k.startswith("__")},
+                    }
                 else:
-                    obj = raised
+                    obj = {
+                        "message": str(raised),
+                        "type":    "RaiseError",
+                        "value":   raised,
+                    }
+
                 self.env.set(node.error_var, obj)
             if node.catch_body:
                 self._execute_block(node.catch_body)
