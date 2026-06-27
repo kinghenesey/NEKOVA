@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.8.0] — 2025-06-27 · Phase 19 "NEKOVA Sandbox"
+
+### Added
+- **`nekova/sandbox/`** — full sandbox package: `SandboxEnvironment`, `SandboxResult`, `run_sandboxed()`
+- **`SandboxResult`** — structured result with `.output`, `.error`, `.safe`, `.ok`, `.duration`, `.mode`, `.violations`
+- **`SandboxEnvironment`** — restricted `Environment` subclass with `STRICT_ALLOWLIST` / `RELAXED_ALLOWLIST` and `ALWAYS_BLOCKED` set; records all violation attempts
+- **`run_sandboxed(source, mode, limits, allow)`** — public API: parses + runs NEKOVA code in isolation with timeout, output capture, `builtins.open` / `__import__` patching
+- **`sandbox_run(source, mode)`** — NEKOVA-level builtin; callable from `.nk` files
+- **`sandbox strict:` / `sandbox relaxed:`** — upgraded from stub to real isolated execution; stores result in `sandbox_result` variable; body output passes through transparently
+- **`nekova run --sandbox [--sandbox-mode strict|relaxed]`** — CLI flag to run any `.nk` file in sandbox mode
+- stdlib `.nk` modules pre-warmed before strict sandbox activates `__import__` block (allows `use math` / `use string` inside sandboxes)
+- Resource limits: `max_time` (default 10s), `max_output` (50k chars), `max_iterations` (100k)
+
+### Tests
+- 44 new tests in `tests/test_phase19.py`
+- Total: **1033 passing**, zero regressions
+
+---
+
 ## [1.7.0] — 2025-06-27 · Phase 18 "Standard Library in NEKOVA"
 
 ### Added
