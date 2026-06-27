@@ -75,6 +75,10 @@ def run_sandboxed(
     )
     interp.env = sandbox_env
 
+    # Tell the interpreter which sandbox mode is active
+    # so keyword executors (think, speak, etc.) can self-guard
+    interp._sandbox_mode = mode
+
     # ── Patch builtins to block file/system access ────────────
     original_open   = builtins.open
     original_import = builtins.__import__
@@ -123,9 +127,12 @@ def run_sandboxed(
             interp.run(ast)
         except NEKOVARuntimeError as e:
             msg = str(e)
-            if "sandbox" in msg.lower():
-                result.safe = False
             exec_error[0] = msg
+            # Sandbox violations and resource limit hits mark unsafe
+            unsafe_signals = ("sandbox", "too many times", "timed out",
+                              "blocked", "not permitted")
+            if any(sig in msg.lower() for sig in unsafe_signals):
+                result.safe = False
         except Exception as e:
             exec_error[0] = str(e)
             result.safe = False
@@ -146,6 +153,10 @@ def run_sandboxed(
             f"[sandbox:{mode}] Execution timed out after "
             f"{limits['max_time']}s."
         )
+        result.violations.append({
+            "operation": "timeout",
+            "mode": mode
+        })
         result.output   = output_buf.getvalue()
         result.duration = time.monotonic() - start
         return result
@@ -165,8 +176,9 @@ def run_sandboxed(
     result.output   = raw_output
     result.duration = time.monotonic() - start
 
-    # Merge violations from sandbox env
+    # Merge violations from sandbox env and interpreter
     result.violations.extend(sandbox_env.violations)
+    result.violations.extend(interp._sandbox_violations)
 
     if exec_error[0]:
         result.error = exec_error[0]

@@ -1,0 +1,161 @@
+# ═══════════════════════════════════════════════════════════════
+# NEKOVA Mood Tracker
+# Built entirely in NEKOVA — no Python, no imports, no boilerplate.
+#
+# Features:
+#   - Log your mood and a note each day
+#   - AI analyses your mood patterns using think
+#   - Stores everything in a local SQLite database
+#   - Remembers your name across sessions
+#   - Tracks your logging streak
+#
+# Run:  nekova run examples/mood_tracker.nk
+# ═══════════════════════════════════════════════════════════════
+
+use date
+use string
+use math
+
+# ── Welcome ───────────────────────────────────────────────────
+
+show "╔══════════════════════════════════════╗"
+show "║        NEKOVA Mood Tracker           ║"
+show "║   How are you feeling today?         ║"
+show "╚══════════════════════════════════════╝"
+show ""
+
+name = recall "user_name"
+if name == null:
+    show "What is your name?"
+    name = ask("Your name: ")
+    remember "user_name" = name
+    show f"Nice to meet you, {name}!"
+else:
+    show f"Welcome back, {name}!"
+
+show ""
+
+# ── Database setup ────────────────────────────────────────────
+
+db = connect("mood_tracker.db")
+db.create("moods", {date: "text", mood: "text", score: "number", note: "text"})
+
+# ── Helper tasks ──────────────────────────────────────────────
+
+task mood_to_score(mood):
+    if mood == "amazing":
+        return 5
+    if mood == "good":
+        return 4
+    if mood == "okay":
+        return 3
+    if mood == "bad":
+        return 2
+    if mood == "terrible":
+        return 1
+    return 3
+
+task score_to_emoji(score):
+    if score >= 5:
+        return "🌟"
+    if score >= 4:
+        return "😊"
+    if score >= 3:
+        return "😐"
+    if score >= 2:
+        return "😔"
+    return "😢"
+
+task draw_bar(score):
+    bar = ""
+    i = 0
+    while i < 5:
+        if i < score:
+            bar = bar + "█"
+        else:
+            bar = bar + "░"
+        i = i + 1
+    return bar
+
+# ── Log today's mood ─────────────────────────────────────────
+
+today_date = today()
+show f"Today is {today_date}"
+show ""
+show "How are you feeling? (amazing / good / okay / bad / terrible)"
+mood = ask("Mood: ")
+mood = mood.lower().strip()
+
+show "Write a note about your day (or press Enter to skip):"
+note = ask("Note: ")
+if is_empty(note):
+    note = "No note today."
+
+score = mood_to_score(mood)
+emoji = score_to_emoji(score)
+bar   = draw_bar(score)
+
+db.insert("moods", {date: today_date, mood: mood, score: score, note: note})
+
+show ""
+show f"Logged:  {emoji}  [{bar}]  {mood}"
+show f"Note:    {note}"
+show ""
+
+# ── Recent history ────────────────────────────────────────────
+
+all_entries = db.query("moods").all()
+total = len(all_entries)
+
+show "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+show "Your recent mood history:"
+show ""
+
+recent = all_entries
+if total > 7:
+    recent = all_entries[total - 7:]
+
+for entry in recent:
+    e_bar   = draw_bar(entry.score)
+    e_emoji = score_to_emoji(entry.score)
+    show f"  {entry.date}  {e_emoji} [{e_bar}]  {entry.mood}"
+
+show ""
+
+# ── AI Insight (after 3+ entries) ────────────────────────────
+
+if total >= 3:
+    show "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    show "Thinking about your mood patterns..."
+    show ""
+    scores = []
+    moods_list = []
+    for entry in all_entries:
+        scores.append(entry.score)
+        moods_list.append(entry.mood)
+    avg_score   = average(scores)
+    total_text  = to_text(total)
+    avg_text    = to_text(avg_score)
+    scores_text = to_text(scores)
+    moods_text  = to_text(moods_list)
+    prompt = "Person named " + name + " tracked mood for " + total_text + " days. Scores (1-5): " + scores_text + ". Moods: " + moods_text + ". Average: " + avg_text + "/5. Today: " + mood + ". Note: " + note + ". Give 2-3 warm encouraging sentences: spot a pattern if any, give one practical tip. Be personal and kind."
+    insight = think prompt as text
+    show f"💡 AI Insight for {name}:"
+    show insight
+    show ""
+
+# ── Summary ───────────────────────────────────────────────────
+
+show "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+show f"🔥 Days tracked: {total}"
+
+if total >= 3:
+    all_scores = []
+    for e in all_entries:
+        all_scores.append(e.score)
+    avg     = average(all_scores)
+    avg_str = to_text(avg)
+    show f"📊 Average mood: {avg_str} / 5"
+
+show ""
+show f"See you tomorrow, {name}! Keep going. 💪"
