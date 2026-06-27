@@ -728,13 +728,17 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 <then_body>
             else:
                 <else_body>
+
+        Runs in current scope (new_scope=False) so that variable
+        assignments inside if/else blocks are visible to the outer
+        scope — consistent with Python and NEKOVA's design intent.
         """
         condition = self._execute_node(node.condition)
 
         if self._is_truthy(condition):
-            self._execute_block(node.then_body)
+            self._execute_block(node.then_body, new_scope=False)
         else:
-            self._execute_block(node.else_body)
+            self._execute_block(node.else_body, new_scope=False)
 
     def _exec_BreakStatement(self, node: BreakStatement):
         """Execute: break — exits the nearest enclosing loop."""
@@ -1380,25 +1384,47 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # ── String methods ────────────────────────────────
         if isinstance(obj, str):
             methods = {
-                "upper":      lambda: obj.upper(),
-                "lower":      lambda: obj.lower(),
-                "title":      lambda: obj.title(),
-                "strip":      lambda: obj.strip(),
-                "trim":       lambda: obj.strip(),
-                "reverse":    lambda: obj[::-1],
-                "length":     lambda: len(obj),
-                "split":      lambda: obj.split(
-                                  args[0] if args else " "),
-                "replace":    lambda: obj.replace(
-                                  args[0], args[1]),
-                "contains":   lambda: args[0] in obj,
-                "starts_with": lambda: obj.startswith(
-                                  args[0]),
-                "ends_with":  lambda: obj.endswith(
-                                  args[0]),
-                "find":       lambda: obj.find(args[0]),
-                "count":      lambda: obj.count(args[0]),
-                "repeat":     lambda: obj * int(args[0]),
+                "upper":       lambda: obj.upper(),
+                "lower":       lambda: obj.lower(),
+                "title":       lambda: obj.title(),
+                "strip":       lambda: obj.strip(),
+                "trim":        lambda: obj.strip(),
+                "lstrip":      lambda: obj.lstrip(args[0] if args else None),
+                "rstrip":      lambda: obj.rstrip(args[0] if args else None),
+                "reverse":     lambda: obj[::-1],
+                "length":      lambda: len(obj),
+                "split":       lambda: obj.split(
+                                   args[0] if args else " "),
+                "replace":     lambda: obj.replace(
+                                   args[0], args[1]),
+                "contains":    lambda: args[0] in obj,
+                "starts_with": lambda: obj.startswith(args[0]),
+                "ends_with":   lambda: obj.endswith(args[0]),
+                "find":        lambda: obj.find(args[0]),
+                "index":       lambda: obj.index(args[0]),
+                "count":       lambda: obj.count(args[0]),
+                "repeat":      lambda: obj * int(args[0]),
+                # join: "sep".join(list) — joins list items with separator
+                "join":        lambda: obj.join(
+                                   str(x) for x in args[0]
+                               ) if args and isinstance(args[0], list)
+                               else obj.join(args[0] if args else []),
+                "format":      lambda: obj.format(*args),
+                "zfill":       lambda: obj.zfill(int(args[0])),
+                "center":      lambda: obj.center(
+                                   int(args[0]),
+                                   args[1] if len(args) > 1 else " "),
+                "ljust":       lambda: obj.ljust(
+                                   int(args[0]),
+                                   args[1] if len(args) > 1 else " "),
+                "rjust":       lambda: obj.rjust(
+                                   int(args[0]),
+                                   args[1] if len(args) > 1 else " "),
+                "is_digit":    lambda: obj.isdigit(),
+                "is_alpha":    lambda: obj.isalpha(),
+                "is_lower":    lambda: obj.islower(),
+                "is_upper":    lambda: obj.isupper(),
+                "to_list":     lambda: list(obj),
             }
 
             if method in methods:

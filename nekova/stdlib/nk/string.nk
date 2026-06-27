@@ -4,23 +4,23 @@
 # ═══════════════════════════════════════════════════════════════
 
 task str_repeat(s, n):
-    let result = ""
-    let i = 0
+    result = ""
+    i = 0
     while i < n:
-        let result = result + s
-        let i = i + 1
+        result = result + s
+        i = i + 1
     return result
 
 task pad_left(s, width, char=" "):
-    let s = str(s)
+    s = str(s)
     while len(s) < width:
-        let s = char + s
+        s = char + s
     return s
 
 task pad_right(s, width, char=" "):
-    let s = str(s)
+    s = str(s)
     while len(s) < width:
-        let s = s + char
+        s = s + char
     return s
 
 task truncate(s, max_len, suffix="..."):
@@ -32,12 +32,12 @@ task is_empty(s):
     return len(s) == 0
 
 task count_occurrences(s, sub):
-    let count = 0
-    let i = 0
+    count = 0
+    i = 0
     while i <= len(s) - len(sub):
         if s[i:i + len(sub)] == sub:
-            let count = count + 1
-        let i = i + 1
+            count = count + 1
+        i = i + 1
     return count
 
 task capitalize(s):
@@ -49,7 +49,7 @@ task reverse(s):
     return s[::-1]
 
 task is_palindrome(s):
-    let rev = reverse(s.lower())
+    rev = reverse(s.lower())
     return s.lower() == rev
 
 task starts_with(s, prefix):
@@ -62,21 +62,30 @@ task contains(s, sub):
     return sub in s
 
 task wrap(s, width):
-    let words = s.split(" ")
-    let lines = []
-    let current = ""
+    words = s.split(" ")
+    lines = []
+    current = ""
     for word in words:
         if len(current) + len(word) + 1 > width and len(current) > 0:
             lines.append(current)
-            let current = word
+            current = word
         else:
             if len(current) == 0:
-                let current = word
+                current = word
             else:
-                let current = current + " " + word
+                current = current + " " + word
     if len(current) > 0:
         lines.append(current)
-    return "\n".join(lines)
+    # Build result without .join() — concatenate with newlines manually
+    result = ""
+    i = 0
+    while i < len(lines):
+        if i == 0:
+            result = lines[i]
+        else:
+            result = result + "\n" + lines[i]
+        i = i + 1
+    return result
 
 task repeat(s, n):
     return str_repeat(s, n)

@@ -4,14 +4,14 @@
 # ═══════════════════════════════════════════════════════════════
 # Usage:
 #   use math
-#   show sqrt(16)        → 4.0
-#   show clamp(15, 0, 10) → 10
+#   show sqrt(16)          → 4.0
+#   show clamp(15, 0, 10)  → 10
 #   show lerp(0, 100, 0.5) → 50.0
-#   show factorial(5)    → 120
+#   show factorial(5)      → 120
 
-let pi  = 3.141592653589793
-let e   = 2.718281828459045
-let inf = 999999999999999
+pi  = 3.141592653589793
+e   = 2.718281828459045
+inf = 999999999999999
 
 task abs(x):
     if x < 0:
@@ -49,9 +49,9 @@ task is_odd(n):
 
 task gcd(a, b):
     while b != 0:
-        let temp = b
-        let b = a % b
-        let a = temp
+        temp = b
+        b = a % b
+        a = temp
     return a
 
 task lcm(a, b):
@@ -68,15 +68,12 @@ task average(nums):
     return sum(nums) / len(nums)
 
 task product(nums):
-    let result = 1
+    result = 1
     for n in nums:
-        let result = result * n
+        result = result * n
     return result
 
 # ── Native math primitives (delegate to interpreter builtins) ─
-# These are always available as globals, but re-exported here
-# so `use math` provides a complete math namespace.
-
 task nk_sqrt(x):
     return sqrt(x)
 
