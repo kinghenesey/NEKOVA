@@ -502,87 +502,81 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     def _exec_SandboxStatement(self, node: SandboxStatement):
         """
         Execute a sandboxed block with restricted permissions.
+        Phase 19: Uses the full SandboxEnvironment infrastructure.
 
-        strict  — blocks file system, system commands, network
+        strict  — blocks file system, network, system imports
         relaxed — allows read-only files, blocks writes/system
+        Returns a SandboxResult dict accessible as sandbox_result.
         """
-        from colorama import Fore, Style, init
-        init(autoreset=True)
+        from nekova.sandbox.runner import run_sandboxed
+        from nekova.lexer.lexer import Lexer as _Lexer
 
         mode = node.mode
-        print(f"{Fore.YELLOW}🔒 Sandbox [{mode}] activated{Style.RESET_ALL}")
 
-        # ── Define what's blocked in each mode ────────────────
-        strict_blocked = {
-            "write_file":   "file writes",
-            "read_file":    "file reads",
-            "file_exists":  "file system access",
-        }
+        # Re-serialise the body back to source for run_sandboxed
+        # Since we have the AST, we execute it directly instead
+        from nekova.sandbox.environment import SandboxEnvironment
+        import builtins, io, sys, time
 
-        relaxed_blocked = {
-            "write_file":   "file writes",
-        }
+        start = time.monotonic()
+        output_buf = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = output_buf
 
-        blocked = strict_blocked if mode == "strict" else relaxed_blocked
-
-        # ── Save original functions ────────────────────────────
-        saved = {}
-        for func_name in blocked:
-            try:
-                saved[func_name] = self.env.get(func_name)
-            except Exception:
-                saved[func_name] = None
-
-        # ── Install sandbox blockers ───────────────────────────
-        def make_blocker(name, reason):
-            def blocked_fn(*args, **kwargs):
-                raise NEKOVARuntimeError(
-                    f"🔒 Sandbox [{mode}] blocked: "
-                    f"'{name}' — {reason} not allowed.\n"
-                    f"  Use 'sandbox relaxed' for read-only access."
-                )
-            return blocked_fn
-
-        for func_name, reason in blocked.items():
-            self.env.set(func_name, make_blocker(func_name, reason))
-
-        # ── Also block dangerous Python builtins ──────────────
-        import builtins
         original_open = builtins.open
-        original_import = builtins.__import__
+        violations = []
 
         if mode == "strict":
-            def safe_open(*args, **kwargs):
+            def _blocked_open(*args, **kwargs):
+                violations.append("file.open")
                 raise NEKOVARuntimeError(
-                    "🔒 Sandbox [strict] blocked: "
-                    "file access not allowed."
+                    f"[sandbox:{mode}] File system access is blocked."
                 )
-            builtins.open = safe_open
+            builtins.open = _blocked_open
 
-        # ── Execute the sandboxed body ─────────────────────────
+        # Swap env to sandboxed version
+        sandbox_env = SandboxEnvironment(
+            parent=self.env, mode=mode
+        )
+        prev_env = self.env
+        self.env = sandbox_env
+
+        result = {
+            "output": "", "error": None, "safe": True,
+            "duration": 0.0, "mode": mode, "violations": violations
+        }
+
         try:
             self._execute_block(node.body)
-            print(
-                f"{Fore.GREEN}🔒 Sandbox [{mode}] "
-                f"completed safely{Style.RESET_ALL}"
-            )
-
         except NEKOVARuntimeError as e:
-            error_msg = str(e)
-            if "Sandbox" in error_msg:
-                print(f"{Fore.RED}{error_msg}{Style.RESET_ALL}")
+            msg = str(e)
+            result["error"] = msg
+            if "sandbox" in msg.lower():
+                result["safe"] = False
+                print(f"[sandbox:{mode}] Blocked: {msg}")
             else:
                 raise
-
         finally:
-            # ── Always restore everything ──────────────────────
+            self.env = prev_env
             builtins.open = original_open
+            sys.stdout = old_stdout
 
-            for func_name, original in saved.items():
-                if original is not None:
-                    self.env.set(func_name, original)
-                    
-        return None
+        result["output"]     = output_buf.getvalue()
+        result["duration"]   = time.monotonic() - start
+        result["violations"].extend(sandbox_env.violations)
+        result["safe"]       = result["safe"] and not result["violations"]
+
+        # Store result so user can inspect: let r = sandbox strict: ...
+        self.env.set("sandbox_result", result)
+
+        # Print body output to outer stdout so show() works transparently
+        if result["output"]:
+            print(result["output"], end="")
+
+        status = "✓ safe" if result["safe"] else "✗ violations detected"
+        print(f"[sandbox:{mode}] {status} ({result['duration']:.3f}s)")
+
+        return result
     
     def _exec_PipelineDefStatement(self, node: PipelineDefStatement):
         """
@@ -1683,6 +1677,23 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         self.globals.set("list",     lambda x: list(x))
         self.globals.set("dict",     lambda: {})
         self.globals.set("print",    print)
+
+        # ── Phase 19: Sandbox API ─────────────────────────────
+        from nekova.sandbox.runner import run_sandboxed as _run_sandboxed
+
+        def _sandbox_run(source, mode="strict", **limits):
+            """Run NEKOVA source string in a sandbox, return result dict."""
+            result = _run_sandboxed(str(source), mode=str(mode))
+            return {
+                "output":     result.output,
+                "error":      result.error,
+                "safe":       result.safe,
+                "duration":   result.duration,
+                "mode":       result.mode,
+                "violations": result.violations,
+            }
+
+        self.globals.set("sandbox_run", _sandbox_run)
         # ── Math primitives (delegated to Python's math module) ──
         import math as _math
         self.globals.set("sqrt",   _math.sqrt)
