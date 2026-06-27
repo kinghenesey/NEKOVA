@@ -106,6 +106,8 @@ def parse_args(argv: list) -> dict:
         "command":     None,
         "arg":         None,
         "debug":       False,
+        "sandbox":     False,
+        "sandbox_mode": "strict",
         "compile":     False,
         "version":     False,
         "help":        False,
@@ -128,6 +130,12 @@ def parse_args(argv: list) -> dict:
 
     args["debug"]    = "--debug"    in argv_list
     args["watch"]    = "--watch"    in argv_list
+    args["sandbox"]  = "--sandbox"  in argv_list
+    args["sandbox_mode"] = "strict"
+    if "--sandbox-mode" in argv_list:
+        idx = argv_list.index("--sandbox-mode")
+        if idx + 1 < len(argv_list):
+            args["sandbox_mode"] = argv_list[idx + 1]
     # --template <name>
     for i, a in enumerate(argv_list):
         if a == "--template" and i + 1 < len(argv_list):
@@ -346,6 +354,26 @@ def main():
             else:
                 runner = NEKOVARunner(filepath=arg, debug=args["debug"],
                                       script_args=args["script_args"])
+            if args["sandbox"]:
+                # Run file in sandbox mode
+                mode = args.get("sandbox_mode", "strict")
+                filepath = arg
+                if not filepath:
+                    print_error("No file specified for sandbox run.")
+                    sys.exit(1)
+                with open(filepath, "r", encoding="utf-8") as f:
+                    source = f.read()
+                from nekova.sandbox.runner import run_sandboxed
+                result = run_sandboxed(source, mode=mode)
+                if result.output:
+                    print(result.output, end="")
+                if result.error:
+                    print_error(f"Sandbox error: {result.error}")
+                if result.violations:
+                    print_warning(f"Violations: {result.violations}")
+                status = "safe" if result.ok else "unsafe"
+                print_info(f"[sandbox:{mode}] {status} ({result.duration:.3f}s)")
+                sys.exit(0 if result.ok else 1)
             exit_code = runner.run()
             sys.exit(exit_code)
         
