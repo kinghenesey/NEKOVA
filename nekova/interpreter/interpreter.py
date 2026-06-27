@@ -62,6 +62,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # Assignments to these names write directly to self.globals.
         self._global_names: set = set()
 
+        # Sandbox mode — set by run_sandboxed() before execution
+        # When True, AI/IO keywords raise a blocked error instead of executing
+        self._sandbox_mode:       str  = ""    # "" | "strict" | "relaxed"
+        self._sandbox_violations: list = []
+
         # Built-in functions available everywhere in NEKOVA
         self._register_builtins()
 
@@ -245,8 +250,31 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             pass
         return 30.0  # default
 
+    def _sandbox_guard(self, operation: str):
+        """
+        Raise a NEKOVARuntimeError if this operation is blocked
+        by the current sandbox mode. Called from keyword executors.
+        """
+        if not self._sandbox_mode:
+            return  # not sandboxed — allow everything
+        blocked_in_strict = {
+            "think", "speak", "listen", "imagine", "every",
+            "connect", "watch",
+        }
+        if self._sandbox_mode == "strict" and operation in blocked_in_strict:
+            self._sandbox_violations.append({
+                "operation": operation,
+                "mode": self._sandbox_mode
+            })
+            raise NEKOVARuntimeError(
+                f"[sandbox:{self._sandbox_mode}] "
+                f"'{operation}' is blocked in strict mode.\n"
+                f"  Use relaxed mode to enable AI and I/O operations."
+            )
+
     def _exec_ThinkStatement(self, node):
         """Execute a think statement — calls the active AI provider."""
+        self._sandbox_guard("think")
         from colorama import Fore, Style, init
         init(autoreset=True)
 
@@ -1964,6 +1992,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             think "prompt" as bool
             think "prompt" as schema {"name": "text"}
         """
+        self._sandbox_guard("think")
         from nekova.ai.providers import get_provider
         from nekova.ai.think_engine import ask_structured
 
@@ -2320,6 +2349,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         when TTS is unavailable) so programs and tests can capture it.
         TTS runs asynchronously in the background when available.
         """
+        self._sandbox_guard("speak")
         text = self._to_string(self._execute_node(node.expression))
 
         # Always echo to stdout so tests and piped programs can read it
@@ -2347,6 +2377,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
     def _exec_ListenExpression(self, node: ListenExpression):
         """listen  — speech-to-text, returns transcribed string."""
+        self._sandbox_guard("listen")
         prompt = None
         if node.prompt is not None:
             prompt = self._to_string(self._execute_node(node.prompt))
@@ -2494,6 +2525,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
     def _exec_ImagineStatement(self, node: ImagineStatement):
         """imagine <prompt> [as url|path|base64]"""
+        self._sandbox_guard("imagine")
         prompt = self._to_string(self._execute_node(node.prompt))
         fmt = node.result_format
 
