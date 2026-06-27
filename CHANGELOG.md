@@ -5,6 +5,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.0] — 2025-06-27 · Phase 18 "Standard Library in NEKOVA"
+
+### Added
+- **`nekova/stdlib/nk/math.nk`** — first stdlib module written in NEKOVA: `clamp`, `lerp`, `map_range`, `factorial`, `fibonacci`, `gcd`, `lcm`, `sign`, `average`, `product`, `is_even`, `is_odd`, `pi`, `e`, `inf`
+- **`nekova/stdlib/nk/string.nk`** — string utilities in NEKOVA: `repeat`, `pad_left`, `pad_right`, `truncate`, `capitalize`, `reverse`, `is_palindrome`, `starts_with`, `ends_with`, `contains`, `is_empty`, `wrap`
+- **`nekova/stdlib/nk/file.nk`** — file utilities in NEKOVA: `read`, `write`, `append`, `exists`, `delete`, `lines`, `line_count`, `head`, `tail`, `copy`
+- **`nekova/stdlib/nk/date.nk`** — date utilities in NEKOVA: `now`, `today`, `timestamp`, `year`, `month`, `day`, `format`, `add_days`, `diff_days`, `day_of_week`, `is_weekend`, `is_weekday`, `is_before`, `is_after`, `days_until`, `days_since`, `is_today`
+- **`nekova/stdlib/nk_loader.py`** — `.nk` module loader: finds, parses, runs `.nk` files, caches results, exports only user-defined names
+- `load_module()` now merges `.nk` exports on top of Python module base — `.nk` wins on conflicts, Python fills in primitives (`sqrt`, `floor`, `ceil`, etc.)
+- File builtins registered in interpreter: `file_read`, `file_write`, `file_append`, `file_exists`, `file_delete`
+- Date builtins registered in interpreter: `date_now`, `date_today`, `date_timestamp`, `date_format`, `date_add_days`, `date_diff_days`, `date_day_of_week`
+- Math primitives registered in interpreter: `sqrt`, `floor`, `ceil`, `log`, `log10`, `sin`, `cos`, `tan`, `pow`
+
+### Fixed
+- `_parse_primary`: method calls on string literals (`"sep".join(items)`) now work via `_apply_postfix()`
+- `_parse_primary`: keyword tokens used as expressions fall through to identifier fallback (enables `repeat(...)`, `clamp(...)` etc. when they're user tasks)
+- `REPEAT` token followed by `(` is now treated as a function call, not a loop
+- `_peek_type()` helper added to parser for lookahead disambiguation
+
+### Tests
+- 73 new tests in `tests/test_phase18.py`
+- Total: **989 passing**, zero regressions
+
+---
+
 ## [1.6.0] — 2025-06-26 · Phase 17 "Power User Layer"
 
 ### Added
