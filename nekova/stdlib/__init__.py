@@ -9,6 +9,7 @@
 #   1. Create stdlib/yourmodule_module.py with a load() fn
 #   2. Add it to the MODULES registry below
 
+from nekova.stdlib.nk_loader import has_nk_module, load_nk_module
 from nekova.stdlib import (
     math_module,
     text_module,
@@ -57,10 +58,19 @@ MODULES = {
 def load_module(name: str) -> dict:
     """
     Load a stdlib module by name.
-    Checks built-in modules first, then installed packages.
-    Raises ImportError if module doesn't exist anywhere.
+    Priority: .nk module → Python module → installed package
     """
-    # Check built-in modules first
+    # Phase 18: Merge .nk module ON TOP of Python module
+    # .nk definitions take priority; Python fills in primitives
+    if has_nk_module(name):
+        nk_exports = load_nk_module(name)
+        if name in MODULES:
+            base = MODULES[name].load()
+            base.update(nk_exports)   # .nk wins on conflicts
+            return base
+        return nk_exports
+
+    # Check built-in Python modules
     if name in MODULES:
         return MODULES[name].load()
 
@@ -74,7 +84,8 @@ def load_module(name: str) -> dict:
     raise ImportError(
         f"Module '{name}' was not found.\n"
         f"  Built-in modules: {available}\n"
-        f"  Install packages with: python main.py --install <name>"
+        f"  .nk modules: math, string, file, date\n"
+        f"  Install packages with: nekova install <name>"
     )
 
 

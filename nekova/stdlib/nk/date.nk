@@ -1,0 +1,61 @@
+# ═══════════════════════════════════════════════════════════════
+# NEKOVA Standard Library — date.nk
+# Phase 18: Date utilities written in NEKOVA
+# ═══════════════════════════════════════════════════════════════
+# Usage:
+#   use date
+#   show now()              → "2025-06-26 14:30:00"
+#   show today()            → "2025-06-26"
+#   show day_of_week(today()) → "Thursday"
+
+task now():
+    return date_now()
+
+task today():
+    return date_today()
+
+task timestamp():
+    return date_timestamp()
+
+task year(date_str):
+    return int(date_str[:4])
+
+task month(date_str):
+    return int(date_str[5:7])
+
+task day(date_str):
+    return int(date_str[8:10])
+
+task format(date_str, fmt):
+    return date_format(date_str, fmt)
+
+task add_days(date_str, n):
+    return date_add_days(date_str, n)
+
+task diff_days(date_a, date_b):
+    return date_diff_days(date_a, date_b)
+
+task is_weekend(date_str):
+    let dow = date_day_of_week(date_str)
+    return dow == "Saturday" or dow == "Sunday"
+
+task is_weekday(date_str):
+    return is_weekend(date_str) == false
+
+task day_of_week(date_str):
+    return date_day_of_week(date_str)
+
+task days_until(target_date):
+    return diff_days(today(), target_date)
+
+task days_since(past_date):
+    return diff_days(past_date, today())
+
+task is_before(date_a, date_b):
+    return date_a < date_b
+
+task is_after(date_a, date_b):
+    return date_a > date_b
+
+task is_today(date_str):
+    return date_str[:10] == today()

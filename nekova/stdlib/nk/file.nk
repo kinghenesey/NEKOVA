@@ -1,0 +1,57 @@
+# ═══════════════════════════════════════════════════════════════
+# NEKOVA Standard Library — file.nk
+# Phase 18: File utilities written in NEKOVA
+# ═══════════════════════════════════════════════════════════════
+# Usage:
+#   use file
+#   let content = file.read("data.txt")
+#   file.write("out.txt", "hello")
+#   show file.exists("config.toml")
+
+# Note: These tasks delegate to the built-in file builtins
+# which are registered by the interpreter at startup.
+# This module exists to give them a clean namespace + extras.
+
+task read(path):
+    return file_read(path)
+
+task write(path, content):
+    file_write(path, content)
+
+task append(path, content):
+    file_append(path, content)
+
+task exists(path):
+    return file_exists(path)
+
+task delete(path):
+    file_delete(path)
+
+task lines(path):
+    let content = file_read(path)
+    return content.split("\n")
+
+task read_json(path):
+    use json
+    let content = file_read(path)
+    return parse(content)
+
+task write_json(path, data):
+    use json
+    let content = stringify(data)
+    file_write(path, content)
+
+task copy(src, dest):
+    let content = file_read(src)
+    file_write(dest, content)
+
+task line_count(path):
+    return len(lines(path))
+
+task head(path, n=10):
+    let all_lines = lines(path)
+    return all_lines[:n]
+
+task tail(path, n=10):
+    let all_lines = lines(path)
+    return all_lines[len(all_lines) - n:]

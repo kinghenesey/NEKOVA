@@ -1,0 +1,99 @@
+# ═══════════════════════════════════════════════════════════════
+# NEKOVA Standard Library — math.nk
+# Phase 18: First stdlib module written in NEKOVA itself
+# ═══════════════════════════════════════════════════════════════
+# Usage:
+#   use math
+#   show sqrt(16)        → 4.0
+#   show clamp(15, 0, 10) → 10
+#   show lerp(0, 100, 0.5) → 50.0
+#   show factorial(5)    → 120
+
+let pi  = 3.141592653589793
+let e   = 2.718281828459045
+let inf = 999999999999999
+
+task abs(x):
+    if x < 0:
+        return x * -1
+    return x
+
+task clamp(value, minimum, maximum):
+    if value < minimum:
+        return minimum
+    if value > maximum:
+        return maximum
+    return value
+
+task lerp(start, stop, t):
+    return start + (stop - start) * t
+
+task map_range(value, in_min, in_max, out_min, out_max):
+    return out_min + (value - in_min) * (out_max - out_min) / (in_max - in_min)
+
+task factorial(n):
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)
+
+task fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+task is_even(n):
+    return n % 2 == 0
+
+task is_odd(n):
+    return n % 2 != 0
+
+task gcd(a, b):
+    while b != 0:
+        let temp = b
+        let b = a % b
+        let a = temp
+    return a
+
+task lcm(a, b):
+    return a * b // gcd(a, b)
+
+task sign(x):
+    if x > 0:
+        return 1
+    if x < 0:
+        return -1
+    return 0
+
+task average(nums):
+    return sum(nums) / len(nums)
+
+task product(nums):
+    let result = 1
+    for n in nums:
+        let result = result * n
+    return result
+
+# ── Native math primitives (delegate to interpreter builtins) ─
+# These are always available as globals, but re-exported here
+# so `use math` provides a complete math namespace.
+
+task nk_sqrt(x):
+    return sqrt(x)
+
+task nk_floor(x):
+    return floor(x)
+
+task nk_ceil(x):
+    return ceil(x)
+
+task nk_log(x):
+    return log(x)
+
+task nk_sin(x):
+    return sin(x)
+
+task nk_cos(x):
+    return cos(x)
+
+task nk_tan(x):
+    return tan(x)

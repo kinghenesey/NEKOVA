@@ -129,6 +129,20 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             return self._parse_if()
 
         if token.type == TokenType.REPEAT:
+            # If followed by '(' it's a function call, not a loop
+            if self._peek_type() == TokenType.LPAREN:
+                self._advance()  # consume REPEAT token
+                expr = Identifier('repeat')
+                self._consume(TokenType.LPAREN)
+                args = []
+                while self._current().type != TokenType.RPAREN:
+                    args.append(self._parse_expression())
+                    if self._current().type == TokenType.COMMA:
+                        self._advance()
+                self._consume(TokenType.RPAREN)
+                call = CallExpression(expr, args)
+                self._expect_newline_or_eof()
+                return call
             return self._parse_repeat()
 
         if token.type == TokenType.WHILE:
@@ -1588,7 +1602,10 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
         if token.type == TokenType.STRING:
             self._advance()
-            return StringLiteral(token.value)
+            expr = StringLiteral(token.value)
+            # Allow chained .method() or [index] on string literals
+            expr = self._apply_postfix(expr)
+            return expr
 
         if token.type == TokenType.F_STRING:
             self._advance()
@@ -1676,12 +1693,73 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         if token.type == TokenType.IMAGINE:
             return self._parse_imagine_expr()
 
+        # Last-resort: treat any keyword as an identifier when used as an expression.
+        # This allows calling tasks whose names happen to be keywords
+        # (e.g. repeat("ha", 3) when repeat is a user-defined task via string.nk)
+        if token.type not in (TokenType.NEWLINE, TokenType.EOF,
+                               TokenType.DEDENT, TokenType.INDENT):
+            self._advance()  # consume the keyword token
+            name = token.value
+            expr = Identifier(name)
+            # Check for immediate call: repeat(...)
+            while self._current().type == TokenType.LPAREN:
+                self._consume(TokenType.LPAREN)
+                args = []
+                while self._current().type != TokenType.RPAREN:
+                    args.append(self._parse_expression())
+                    if self._current().type == TokenType.COMMA:
+                        self._advance()
+                self._consume(TokenType.RPAREN)
+                expr = CallExpression(expr, args)
+            # Check for dot access or index after
+            while self._current().type in (TokenType.DOT, TokenType.LBRACKET):
+                if self._current().type == TokenType.DOT:
+                    self._advance()
+                    prop = self._advance().value
+                    if self._current().type == TokenType.LPAREN:
+                        self._consume(TokenType.LPAREN)
+                        margs = []
+                        while self._current().type != TokenType.RPAREN:
+                            margs.append(self._parse_expression())
+                            if self._current().type == TokenType.COMMA:
+                                self._advance()
+                        self._consume(TokenType.RPAREN)
+                        expr = MethodCall(expr, prop, margs)
+                    else:
+                        expr = PropertyAccess(expr, prop)
+                else:
+                    self._advance()
+                    expr = self._finish_index_or_slice(expr)
+            return expr
+
         raise ParseError(
             f"Unexpected '{token.value}' — "
             f"expected a value, variable, or expression.",
             token.line
         )
     
+    def _apply_postfix(self, expr):
+        """Apply any trailing .method(), [index], or [slice] to expr."""
+        while self._current().type in (TokenType.DOT, TokenType.LBRACKET):
+            if self._current().type == TokenType.DOT:
+                self._advance()
+                prop = self._advance().value
+                if self._current().type == TokenType.LPAREN:
+                    self._consume(TokenType.LPAREN)
+                    args = []
+                    while self._current().type != TokenType.RPAREN:
+                        args.append(self._parse_expression())
+                        if self._current().type == TokenType.COMMA:
+                            self._advance()
+                    self._consume(TokenType.RPAREN)
+                    expr = MethodCall(expr, prop, args)
+                else:
+                    expr = PropertyAccess(expr, prop)
+            else:
+                self._advance()  # consume [
+                expr = self._finish_index_or_slice(expr)
+        return expr
+
     def _finish_index_or_slice(self, obj):
         """After consuming '[', parse index OR slice, then ']'."""
         line = self._current().line
@@ -1795,6 +1873,13 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
     def _current(self) -> Token:
         """Return the token at the current position."""
         return self.tokens[self.pos]
+
+    def _peek_type(self, offset: int = 1):
+        """Return the TokenType at pos+offset without consuming."""
+        idx = self.pos + offset
+        if idx < len(self.tokens):
+            return self.tokens[idx].type
+        return TokenType.EOF
 
     def _parse_fstring(self, raw: str) -> FStringLiteral:
         """

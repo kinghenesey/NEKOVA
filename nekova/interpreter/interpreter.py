@@ -1657,6 +1657,84 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         self.globals.set("list",     lambda x: list(x))
         self.globals.set("dict",     lambda: {})
         self.globals.set("print",    print)
+        # ── Math primitives (delegated to Python's math module) ──
+        import math as _math
+        self.globals.set("sqrt",   _math.sqrt)
+        self.globals.set("floor",  _math.floor)
+        self.globals.set("ceil",   _math.ceil)
+        self.globals.set("log",    _math.log)
+        self.globals.set("log10",  _math.log10)
+        self.globals.set("sin",    _math.sin)
+        self.globals.set("cos",    _math.cos)
+        self.globals.set("tan",    _math.tan)
+        self.globals.set("pow",    _math.pow)
+
+        # ── Phase 18: file builtins (used by file.nk) ────────
+        import os as _os
+
+        def _file_read(path):
+            with open(_os.path.expanduser(str(path)), "r", encoding="utf-8") as f:
+                return f.read()
+
+        def _file_write(path, content):
+            with open(_os.path.expanduser(str(path)), "w", encoding="utf-8") as f:
+                f.write(str(content))
+
+        def _file_append(path, content):
+            with open(_os.path.expanduser(str(path)), "a", encoding="utf-8") as f:
+                f.write(str(content))
+
+        def _file_exists(path):
+            return _os.path.exists(_os.path.expanduser(str(path)))
+
+        def _file_delete(path):
+            p = _os.path.expanduser(str(path))
+            if _os.path.exists(p):
+                _os.remove(p)
+
+        self.globals.set("file_read",   _file_read)
+        self.globals.set("file_write",  _file_write)
+        self.globals.set("file_append", _file_append)
+        self.globals.set("file_exists", _file_exists)
+        self.globals.set("file_delete", _file_delete)
+
+        # ── Phase 18: date builtins (used by date.nk) ────────
+        import datetime as _dt
+
+        def _date_now():
+            return _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        def _date_today():
+            return _dt.date.today().isoformat()
+
+        def _date_timestamp():
+            import time as _time
+            return int(_time.time())
+
+        def _date_format(date_str, fmt):
+            d = _dt.datetime.strptime(str(date_str)[:10], "%Y-%m-%d")
+            return d.strftime(str(fmt))
+
+        def _date_add_days(date_str, n):
+            d = _dt.datetime.strptime(str(date_str)[:10], "%Y-%m-%d").date()
+            return (d + _dt.timedelta(days=int(n))).isoformat()
+
+        def _date_diff_days(date_a, date_b):
+            a = _dt.datetime.strptime(str(date_a)[:10], "%Y-%m-%d").date()
+            b = _dt.datetime.strptime(str(date_b)[:10], "%Y-%m-%d").date()
+            return (b - a).days
+
+        def _date_day_of_week(date_str):
+            d = _dt.datetime.strptime(str(date_str)[:10], "%Y-%m-%d").date()
+            return d.strftime("%A")
+
+        self.globals.set("date_now",        _date_now)
+        self.globals.set("date_today",      _date_today)
+        self.globals.set("date_timestamp",  _date_timestamp)
+        self.globals.set("date_format",     _date_format)
+        self.globals.set("date_add_days",   _date_add_days)
+        self.globals.set("date_diff_days",  _date_diff_days)
+        self.globals.set("date_day_of_week", _date_day_of_week)
         # Math
         self.globals.set("pow",      lambda x, y: x ** y)
         self.globals.set("divmod",   lambda x, y: list(divmod(x, y)))

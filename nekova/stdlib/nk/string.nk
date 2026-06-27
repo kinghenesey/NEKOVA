@@ -1,0 +1,82 @@
+# ═══════════════════════════════════════════════════════════════
+# NEKOVA Standard Library — string.nk
+# Phase 18: String utilities written in NEKOVA
+# ═══════════════════════════════════════════════════════════════
+
+task str_repeat(s, n):
+    let result = ""
+    let i = 0
+    while i < n:
+        let result = result + s
+        let i = i + 1
+    return result
+
+task pad_left(s, width, char=" "):
+    let s = str(s)
+    while len(s) < width:
+        let s = char + s
+    return s
+
+task pad_right(s, width, char=" "):
+    let s = str(s)
+    while len(s) < width:
+        let s = s + char
+    return s
+
+task truncate(s, max_len, suffix="..."):
+    if len(s) <= max_len:
+        return s
+    return s[:max_len] + suffix
+
+task is_empty(s):
+    return len(s) == 0
+
+task count_occurrences(s, sub):
+    let count = 0
+    let i = 0
+    while i <= len(s) - len(sub):
+        if s[i:i + len(sub)] == sub:
+            let count = count + 1
+        let i = i + 1
+    return count
+
+task capitalize(s):
+    if len(s) == 0:
+        return s
+    return s[0].upper() + s[1:]
+
+task reverse(s):
+    return s[::-1]
+
+task is_palindrome(s):
+    let rev = reverse(s.lower())
+    return s.lower() == rev
+
+task starts_with(s, prefix):
+    return s[:len(prefix)] == prefix
+
+task ends_with(s, suffix):
+    return s[len(s) - len(suffix):] == suffix
+
+task contains(s, sub):
+    return sub in s
+
+task wrap(s, width):
+    let words = s.split(" ")
+    let lines = []
+    let current = ""
+    for word in words:
+        if len(current) + len(word) + 1 > width and len(current) > 0:
+            lines.append(current)
+            let current = word
+        else:
+            if len(current) == 0:
+                let current = word
+            else:
+                let current = current + " " + word
+    if len(current) > 0:
+        lines.append(current)
+    return "\n".join(lines)
+
+task repeat(s, n):
+    return str_repeat(s, n)
