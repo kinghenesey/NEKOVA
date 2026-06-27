@@ -1,11 +1,11 @@
 {
   "name": "nekova-lang",
   "displayName": "NEKOVA - AI Native Programming Language",
-  "description": "Syntax highlighting, snippets, and commands for the NEKOVA AI-Native Programming Language. Built by SYNEKCOT Tech.",
-  "version": "1.3.1",
+  "description": "Syntax highlighting, snippets, and commands for the NEKOVA AI-Native Programming Language",
+  "version": "1.8.0",
   "publisher": "SYNEKCOTTech",
   "engines": {
-    "vscode": "^1.60.0"
+    "vscode": "^1.75.0"
   },
   "categories": [
     "Programming Languages",
@@ -17,14 +17,12 @@
     "ai",
     "ai-native",
     "programming language",
-    "nigeria",
     "synekcot",
-    "think",
-    "connected forge",
+    "machine learning",
     "llm",
-    "claude",
-    "gemini",
-    "openai"
+    "sandbox",
+    "generators",
+    "decorators"
   ],
   "repository": {
     "type": "git",

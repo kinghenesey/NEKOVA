@@ -283,5 +283,211 @@
       "${3:show \"Hello, NEKOVA!\"}"
     ],
     "description": "Standard NEKOVA file header"
+  },
+  "Assert statement": {
+    "prefix": "assert",
+    "body": [
+      "assert ${1:condition}, \"${2:message}\""
+    ],
+    "description": "Assert a condition with optional message"
+  },
+  "Raise error": {
+    "prefix": "raise",
+    "body": [
+      "raise ${1:\"error message\"}"
+    ],
+    "description": "Raise an error"
+  },
+  "Ternary expression": {
+    "prefix": "ternary",
+    "body": [
+      "${1:value} if ${2:condition} else ${3:other}"
+    ],
+    "description": "Inline ternary expression"
+  },
+  "Try catch finally": {
+    "prefix": "tcf",
+    "body": [
+      "try:",
+      "\t${1:# code}",
+      "catch ${2:err}:",
+      "\t${3:show err}",
+      "finally:",
+      "\t${4:# cleanup}"
+    ],
+    "description": "Try / catch / finally block"
+  },
+  "Speak": {
+    "prefix": "speak",
+    "body": [
+      "speak \"${1:Hello, world!}\""
+    ],
+    "description": "Text-to-speech output"
+  },
+  "Listen": {
+    "prefix": "listen",
+    "body": [
+      "let ${1:response} = listen \"${2:Say something}\""
+    ],
+    "description": "Speech-to-text input"
+  },
+  "Every loop": {
+    "prefix": "every",
+    "body": [
+      "every ${1:5} s ${2:10} times:",
+      "\t${3:show \"tick\"}"
+    ],
+    "description": "Scheduled repeated execution"
+  },
+  "Test block": {
+    "prefix": "test",
+    "body": [
+      "test \"${1:test name}\":",
+      "\texpect ${2:1 + 1} == ${3:2}"
+    ],
+    "description": "Built-in test block with expect"
+  },
+  "Expect": {
+    "prefix": "expect",
+    "body": [
+      "expect ${1:expression} == ${2:expected}"
+    ],
+    "description": "Assertion inside a test block"
+  },
+  "Imagine": {
+    "prefix": "imagine",
+    "body": [
+      "let ${1:img} = imagine \"${2:a futuristic city}\" as ${3:url}"
+    ],
+    "description": "AI image generation"
+  },
+  "Shape definition": {
+    "prefix": "shape",
+    "body": [
+      "shape ${1:Name}:",
+      "\t${2:field} ${3:str}",
+      "\t${4:value} ${5:int} = ${6:0}"
+    ],
+    "description": "Data schema / validated struct"
+  },
+  "Watch file": {
+    "prefix": "watch",
+    "body": [
+      "watch \"${1:config.toml}\":",
+      "\t${2:show \"file changed\"}"
+    ],
+    "description": "File watcher \u2014 runs body when file changes"
+  },
+  "Generator task": {
+    "prefix": "taskgen",
+    "body": [
+      "task ${1:generate}(${2:n}):",
+      "\tlet i = 0",
+      "\twhile i < ${2:n}:",
+      "\t\tyield i",
+      "\t\tlet i = i + 1",
+      "",
+      "for ${3:x} in ${1:generate}(${4:10}):",
+      "\tshow ${3:x}"
+    ],
+    "description": "Generator task with yield"
+  },
+  "Decorator": {
+    "prefix": "decorator",
+    "body": [
+      "@${1:decorator}",
+      "task ${2:name}(${3:args}):",
+      "\t${4:return args}"
+    ],
+    "description": "Decorator applied to a task"
+  },
+  "Error type": {
+    "prefix": "error",
+    "body": [
+      "error ${1:NetworkError}:",
+      "\tmessage str",
+      "\tcode int = ${2:500}"
+    ],
+    "description": "Custom error type definition"
+  },
+  "Typed task": {
+    "prefix": "taskt",
+    "body": [
+      "task ${1:name}(${2:a}: ${3:int}, ${4:b}: ${5:int}) -> ${6:int}:",
+      "\treturn ${2:a} + ${4:b}"
+    ],
+    "description": "Task with type hints and return type"
+  },
+  "Class definition": {
+    "prefix": "class",
+    "body": [
+      "class ${1:Name}:",
+      "\t${2:field}: ${3:str}",
+      "\tinit(${2:field}: ${3:str}):",
+      "\t\tself.${2:field} = ${2:field}",
+      "\tfunc ${4:method}():",
+      "\t\treturn self.${2:field}"
+    ],
+    "description": "Class definition (alias for object)"
+  },
+  "Use math": {
+    "prefix": "usemath",
+    "body": [
+      "use math",
+      "show clamp(${1:value}, ${2:0}, ${3:100})"
+    ],
+    "description": "Import NEKOVA math stdlib"
+  },
+  "Use string": {
+    "prefix": "usestring",
+    "body": [
+      "use string",
+      "show pad_left(\"${1:text}\", ${2:10})"
+    ],
+    "description": "Import NEKOVA string stdlib"
+  },
+  "Use file": {
+    "prefix": "usefile",
+    "body": [
+      "use file",
+      "let content = read(\"${1:file.txt}\")",
+      "show content"
+    ],
+    "description": "Import NEKOVA file stdlib"
+  },
+  "Use date": {
+    "prefix": "usedate",
+    "body": [
+      "use date",
+      "show today()",
+      "show day_of_week(today())"
+    ],
+    "description": "Import NEKOVA date stdlib"
+  },
+  "Sandbox strict": {
+    "prefix": "sandboxs",
+    "body": [
+      "sandbox strict:",
+      "\t${1:# safe code only}",
+      "show sandbox_result[\"safe\"]"
+    ],
+    "description": "Strict sandbox block \u2014 blocks all file/system access"
+  },
+  "Sandbox relaxed": {
+    "prefix": "sandboxr",
+    "body": [
+      "sandbox relaxed:",
+      "\t${1:# read-only file access allowed}"
+    ],
+    "description": "Relaxed sandbox \u2014 allows read-only file operations"
+  },
+  "Sandbox run": {
+    "prefix": "sandboxrun",
+    "body": [
+      "let ${1:result} = sandbox_run(\"${2:show 42}\", \"${3:strict}\")",
+      "show ${1:result}[\"output\"]",
+      "show ${1:result}[\"safe\"]"
+    ],
+    "description": "Run NEKOVA code in a sandbox programmatically"
   }
 }

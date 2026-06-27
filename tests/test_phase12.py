@@ -46,7 +46,7 @@ class TestVersion:
         path = os.path.join(ROOT, "pyproject.toml")
         with open(path, encoding="utf-8") as f:
             text = f.read()
-        assert 'version = "1.3.1"' in text
+        assert 'version = "1.8.0"' in text
 
 
 # =============================================================

@@ -4,11 +4,11 @@
 
 ### The AI-Native Programming Language by SYNEKCOT Tech
 
-![Version](https://img.shields.io/badge/version-1.3.0-C41E0E?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.8.0-C41E0E?style=flat-square)
 ![PyPI](https://img.shields.io/pypi/v/nekova-lang?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.10+-blue?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-744%20passing-success?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-1033%20passing-success?style=flat-square)
 
 *"The first programming language where AI is syntax, not a library."*
 
@@ -22,24 +22,26 @@
 
 **NEKOVA** means *"Connected Forge"* — from Latin *nectere* (to connect) and *kova* (to forge). Built by **SYNEKCOT Tech** in Nigeria, for the world.
 
-NEKOVA is an **AI-native programming language** where `think` is syntax. AI isn't a library you import — it's part of the language itself. In one file you can write web routes, query a database, call an AI model, and define a class — with no boilerplate.
+NEKOVA is an **AI-native programming language** where `think` is syntax. AI isn't a library you import — it's part of the language itself. In one file you can write web routes, query a database, call an AI model, run sandboxed code, and define a class — with no boilerplate.
 
 ```nekova
 # AI is just syntax
 think "What should I build today?" as text
 
-# Remember context across calls
-remember "user" as "Emmanuel"
-recall "user"
+# Speak and listen — built in
+speak "Hello, world!"
+let command = listen "Say a command"
 
-# Chain AI agents with ->
-"Nigerian fintech trends" -> researcher -> analyst -> writer
+# Schedule tasks
+every 5 s:
+    think "Check for new emails" as text
 
-# Full web server
-route GET "/":
-    think "Write a welcome message" as text
+# Run untrusted code safely
+sandbox strict:
+    let result = 1 + 1
+    show result
 
-serve port: 8080
+show sandbox_result["safe"]
 ```
 
 ---
@@ -49,7 +51,7 @@ serve port: 8080
 > *"I didn't just learn to code. I built the tools other people use to code."*
 > — Emmanuel King Christopher, Founder of SYNEKCOT Tech
 
-NEKOVA was born in Nigeria to prove that world-class programming languages can come from anywhere. 744 tests. 12 development phases. One language.
+NEKOVA was born in Nigeria to prove that world-class programming languages can come from anywhere. **1033 tests. 19 development phases. One language.**
 
 ---
 
@@ -81,220 +83,260 @@ nekova hello.nk
 ```bash
 git clone https://github.com/kinghenesey/NEKOVA.git
 cd NEKOVA
-pip install -r requirements.txt
-python main.py examples/hello.nk
+pip install -e .
 ```
 
----
+### VS Code Extension
 
-## AI Providers
+Search **"NEKOVA"** in the VS Code Extension Marketplace, or install directly:
 
-| Provider | Environment Variable | Free? |
-|---|---|---|
-| Google Gemini | `GEMINI_API_KEY` | ✅ [aistudio.google.com](https://aistudio.google.com) |
-| Anthropic Claude | `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) |
-| OpenAI GPT | `OPENAI_API_KEY` | [platform.openai.com](https://platform.openai.com) |
-| Mock (no key) | — | ✅ Always available |
-
-Switch providers at runtime:
-
-```nekova
-model "gemini"
-think "Using Gemini" as text
-
-model "claude"
-think "Using Claude" as text
-
-model "openai"
-think "Using GPT" as text
+```bash
+ext install SYNEKCOTTech.nekova
 ```
 
 ---
 
 ## Features
 
-| Feature | Syntax | Description |
-|---|---|---|
-| 🧠 **Think** | `think "prompt" as json` | AI call — returns text, json, list, bool, or schema |
-| 💾 **Memory** | `remember / recall / forget` | Session memory built into the language |
-| 🔗 **Agent Pipelines** | `researcher -> analyst -> writer` | Chain AI agents with `->` |
-| 🔀 **Model Routing** | `model "gemini"` | Switch providers at runtime |
-| 🌐 **Web DSL** | `route GET "/" ... serve port: 8080` | HTTP server with zero boilerplate |
-| 🗄️ **Database DSL** | `connect / query / insert / create` | SQLite built in |
-| 🏗️ **Class System** | `object / init / self / extends` | Full OOP with inheritance |
-| 🔀 **Pattern Matching** | `match / when` | Rust-style exhaustive matching |
-| 📦 **Package System** | `nekova install <pkg>` | 11 built-in packages |
-| 📚 **Stdlib** | `use json / env / uuid / crypto` | Standard modules via `use` |
-| ⚡ **Async / Await** | `async task / await` | First-class async support |
-| ⚡ **Parallel** | `autonomous parallel:` | Run tasks simultaneously |
-| 🔒 **Sandbox** | `sandbox strict:` | Secure execution environment |
-| 🧬 **Neural Pipeline** | `pipeline name:` | Full AI workflow in one block |
-| 🏗️ **Compiler** | `nekova compile app.nk` | Compile to standalone Python |
-| ☁️ **Deploy** | `nekova deploy cloud app.nk` | One-command cloud deploy |
-| 🎨 **Templates** | `nekova new app --template web` | Scaffold web / ai / fullstack projects |
-| 👁️ **Auto-rerun** | `nekova run --watch` | Re-run on every file save |
-| 🖥️ **REPL** | `nekova repl` | Interactive shell with history |
-
----
-
-## Examples
-
-### Hello World
+### Core Language
 
 ```nekova
-name = "Emmanuel"
-show "Hello {name}!"
-show "Welcome to NEKOVA — where AI is syntax."
+# Variables
+let name = "Emmanuel"
+let age  = 21
+
+# Tasks (functions) with type hints
+task add(a: int, b: int) -> int:
+    return a + b
+
+# Default parameters
+task greet(name, greeting="Hello"):
+    show greeting + " " + name
+
+# Varargs
+task total(*nums):
+    return sum(nums)
+
+# Generators
+task count(n: int):
+    let i = 0
+    while i < n:
+        yield i
+        let i = i + 1
+
+for x in count(5):
+    show x
 ```
 
-### AI as Syntax
+### Classes and Objects
 
 ```nekova
-# Text response
-think "What is the capital of Nigeria?" as text
-
-# Captured result
-idea = think "Give me one startup idea in one sentence" as text
-show idea
-
-# Structured JSON
-data = think "Return a JSON object with name and country" as json
-show data["name"]
-
-# List response
-ideas = think "List 3 African tech trends" as list
-for item in ideas:
-    show item
-
-# Memory
-remember "language" as "NEKOVA"
-recall "language"
-forget "language"
-```
-
-### Web Server
-
-```nekova
-route GET "/":
-    return "Welcome to NEKOVA!"
-
-route GET "/health":
-    return "OK"
-
-route POST "/ai":
-    think request.body as text
-
-serve port: 8080
-```
-
-### Database
-
-```nekova
-let db = connect("myapp.db")
-db.create("users", "name text, age integer")
-db.insert("users", "Emmanuel, 20")
-let rows = db.query("users")
-show rows
-```
-
-### Class System
-
-```nekova
-object Animal:
-    init(name, sound):
+class Animal:
+    name: str
+    init(name: str):
         self.name = name
-        self.sound = sound
+    func speak():
+        return self.name + " says hello"
 
-    task speak():
-        show "{self.name} says {self.sound}!"
-
-object Dog extends Animal:
-    init(name):
-        super("Dog", "Woof")
-        self.name = name
+class Dog extends Animal:
+    func fetch():
+        return self.name + " fetches!"
 
 let d = new Dog("Rex")
-d.speak()
+show d.speak()
+show d.fetch()
+```
+
+### Decorators
+
+```nekova
+task log(fn):
+    task wrapper(x):
+        show "calling with " + str(x)
+        return fn(x)
+    return wrapper
+
+@log
+task double(n):
+    return n * 2
+
+show double(21)   # → calling with 21 \n 42
+```
+
+### Error Types
+
+```nekova
+error NetworkError:
+    message str
+    code    int = 500
+
+try:
+    raise NetworkError("timeout", 408)
+catch e:
+    show e["message"]   # → timeout
+    show e["code"]      # → 408
+```
+
+### AI — Built In
+
+```nekova
+# Single line AI calls
+think "Summarise this in 3 words" as text
+think "Extract the names" as list
+think "Is this positive?" as bool
+think "Parse this data" as json
+
+# Remember context across calls
+remember "user" as "Emmanuel"
+let name = recall "user"
+
+# Streaming
+stream think "Write a short story about Lagos" as text
+```
+
+### Speak, Listen, Imagine
+
+```nekova
+# Text-to-speech
+speak "Your report is ready"
+
+# Speech-to-text
+let answer = listen "What city are you in?"
+
+# AI image generation
+let img = imagine "a futuristic Lagos skyline at sunset" as url
+show img
+```
+
+### Scheduled Execution
+
+```nekova
+# Run every 10 seconds, 5 times
+every 10 s 5 times:
+    show "checking..."
+
+# Run forever in background
+every 1 m:
+    think "Any breaking news?" as text
+```
+
+### Built-in Test Runner
+
+```nekova
+task add(a, b):
+    return a + b
+
+test "addition":
+    expect add(1, 2) == 3
+    expect add(0, 0) == 0
+    expect add(-1, 1) == 0
+
+test "strings":
+    expect len("hello") == 5
+    expect "hello"[0] == "h"
+```
+
+### Data Shapes
+
+```nekova
+shape User:
+    name  str
+    age   int
+    email str = "unknown"
+
+let u = User("Emmanuel", 21)
+show u["name"]      # → Emmanuel
+show u["__shape__"] # → User
+```
+
+### Sandbox — Safe Execution
+
+```nekova
+# Run untrusted code in isolation
+sandbox strict:
+    let x = 10 * 10
+    show x              # prints 100
+
+show sandbox_result["safe"]      # → true
+show sandbox_result["duration"]  # → 0.001
+
+# Programmatic sandbox API
+let result = sandbox_run("show 42")
+show result["output"]  # → 42
+show result["safe"]    # → true
+```
+
+### Standard Library in NEKOVA
+
+```nekova
+# Math — written in NEKOVA
+use math
+show pi                     # → 3.141592653589793
+show clamp(15, 0, 10)       # → 10
+show factorial(10)          # → 3628800
+show lerp(0, 100, 0.5)      # → 50.0
+
+# String — written in NEKOVA
+use string
+show repeat("ha", 3)        # → hahaha
+show pad_left("5", 4)       # → "   5"
+show is_palindrome("racecar") # → true
+
+# File — written in NEKOVA
+use file
+write("data.txt", "hello")
+let content = read("data.txt")
+show line_count("data.txt")
+
+# Date — written in NEKOVA
+use date
+show today()                # → 2025-06-27
+show day_of_week(today())   # → Friday
+show add_days(today(), 7)   # → 2025-07-04
 ```
 
 ### Pattern Matching
 
 ```nekova
-let status = "active"
+let status = 404
 
 match status:
-    when "active":  show "User is active"
-    when "banned":  show "User is banned"
-    else:           show "Unknown status"
+    when 200: show "OK"
+    when 404: show "Not Found"
+    when 500: show "Server Error"
 ```
 
-### Package System
+### Web Routes
 
 ```nekova
-# Install a package
-nekova install validation
+route GET "/":
+    think "Write a welcome message" as text
 
-# Use it
-use validation
-let ok = validate_email("user@example.com")
-show ok
+route POST "/api/chat":
+    let msg = request["body"]["message"]
+    think msg as text
+
+serve port: 8080
 ```
 
-### Standard Library
+### Generators and Lazy Sequences
 
 ```nekova
-use json
-use env
-use uuid
-use crypto
+task fibonacci():
+    let a = 0
+    let b = 1
+    while true:
+        yield a
+        let temp = b
+        let b = a + b
+        let a = temp
 
-let id   = uuid()
-let key  = env("API_KEY")
-let hash = sha256("hello")
-let obj  = json.parse('{"x": 1}')
-show id
-```
-
-### Agent Pipelines
-
-```nekova
-# Chain agents — output flows left to right
-"Analyze Nigerian tech ecosystem" -> researcher -> marketer -> reporter
-
-# Captured result
-report = "Future of AI in Africa" -> analyst -> writer
-show report
-```
-
-### Neural Pipeline
-
-```nekova
-pipeline market_research:
-    collect "Nigerian startup ecosystem 2025"
-    process with ai
-    generate report
-    save to database
-
-run pipeline market_research
-```
-
-### Parallel Execution
-
-```nekova
-autonomous parallel:
-    think "Capital of Nigeria?" as text
-    think "Capital of Ghana?" as text
-    think "Capital of Kenya?" as text
-```
-
-### Async / Await
-
-```nekova
-async task fetch_data(url):
-    let result = await http_get(url)
-    return result
-
-await fetch_data("https://api.example.com/data")
+let count = 0
+for n in fibonacci():
+    show n
+    let count = count + 1
+    if count == 10:
+        break
 ```
 
 ---
@@ -302,243 +344,105 @@ await fetch_data("https://api.example.com/data")
 ## CLI Reference
 
 ```bash
-# Run files
+# Run a file
 nekova run app.nk
-nekova run app.nk --debug
-nekova run app.nk --watch       # Auto-rerun on save
-nekova run                      # Uses entry from nekova.toml
 
-# Project scaffolding
-nekova new myapp                            # Blank project
-nekova new myapp --template web             # Web server project
-nekova new myapp --template ai              # AI-native project
-nekova new myapp --template fullstack       # Web + AI + database
+# Run in sandbox mode
+nekova run app.nk --sandbox
+nekova run app.nk --sandbox --sandbox-mode relaxed
 
-# Developer tools
-nekova repl                     # Interactive shell (arrow-key history)
-nekova build app.nk             # Validate without running
-nekova fmt app.nk               # Format source
-nekova fmt --check              # Dry-run formatting check
-nekova check app.nk             # Static analysis
-nekova test                     # Run test suite
-nekova info                     # System info
-nekova clean                    # Remove cache files
+# Watch for changes
+nekova run app.nk --watch
 
-# Package manager
-nekova install <package>        # Install a package
-nekova uninstall <package>      # Uninstall a package
-nekova search <query>           # Search packages
-nekova info <package>           # Package details
-nekova deps                     # Install from nekova.toml
+# Start the REPL
+nekova repl
 
-# Deploy & compile
-nekova compile app.nk           # Compile to Python
-nekova deploy app.nk            # Full deploy pipeline
-nekova deploy cloud app.nk      # Deploy to cloud
-nekova export app.nk            # Export to HTML/script
+# Format code
+nekova fmt app.nk
 
-# Other
-nekova --version
-nekova --help
+# Check for errors
+nekova check app.nk
+
+# Create a new project
+nekova new myproject
+nekova new myproject --template web
+nekova new myproject --template ai
+nekova new myproject --template fullstack
+
+# Package management
+nekova install requests
+nekova uninstall requests
+nekova search "http client"
 ```
-
-### REPL Commands
-
-```
-help / ?help      Show help
-vars / ?vars      Show all variables
-history           Show last 10 commands
-reset             Clear session
-templates         List project templates
-version           Show version
-exit / quit / q   Exit
-```
-
-Arrow keys navigate history. `?<cmd>` is a shorthand for any command.
 
 ---
 
-## Project Templates
+## Language Reference
 
-| Template | Command | Includes |
-|---|---|---|
-| `default` | `nekova new myapp` | Blank starter project |
-| `web` | `nekova new myapp --template web` | Routes, serve, API scaffold |
-| `ai` | `nekova new myapp --template ai` | think, remember, recall, agent tasks |
-| `fullstack` | `nekova new myapp --template fullstack` | Web + AI + SQLite database |
+### Keywords
 
----
+| Category | Keywords |
+|----------|----------|
+| Control flow | `if` `else` `elif` `while` `for` `in` `return` `break` `continue` `match` `when` `yield` |
+| Declarations | `task` `let` `use` `import` `class` `object` `error` `shape` |
+| Exception | `try` `catch` `finally` `raise` `assert` `pass` |
+| AI | `think` `remember` `recall` `forget` `imagine` `speak` `listen` |
+| Scheduling | `every` |
+| Testing | `test` `expect` |
+| Watching | `watch` |
+| Sandbox | `sandbox` `strict` `relaxed` |
+| OOP | `init` `self` `new` `extends` `func` |
+| Async | `async` `await` `stream` |
+| Logic | `and` `or` `not` `is` `in` `not in` `is not` |
 
-## Built-in Packages
+### Operators
 
-Install any of these with `nekova install <name>`:
-
-| Package | Description |
-|---|---|
-| `requests` | HTTP client |
-| `validation` | Input validation (email, URL, schema) |
-| `crypto` | Hashing, encryption, JWT |
-| `charts` | ASCII + data charts |
-| `ui` | HTML UI generation |
-| `scheduler` | Cron-style task scheduler |
-| `forms` | Form parsing and validation |
-| `auth` | JWT authentication |
-| `email` | Email sending |
-| `storage` | File and object storage |
-| `ml` | Simple ML utilities |
-
----
-
-## Standard Library
-
-| Module | Key Exports |
-|---|---|
-| `use json` | `json.parse`, `json.stringify` |
-| `use env` | `env("KEY")` |
-| `use uuid` | `uuid()` |
-| `use crypto` | `sha256`, `md5`, `encrypt`, `decrypt` |
-| `use math` | `sqrt`, `floor`, `ceil`, `abs`, `pi` |
-| `use text` | `upper`, `lower`, `trim`, `replace`, `split` |
-
----
-
-## nekova.toml
-
-Every NEKOVA project is configured with `nekova.toml`:
-
-```toml
-[project]
-name        = "myapp"
-version     = "0.1.0"
-description = "My NEKOVA project"
-entry       = "src/main.nk"
-
-[ai]
-model   = "claude"      # claude | gemini | openai | mock
-api_key = ""            # or set via .env
-
-[dependencies]
-packages = ["validation", "requests"]
-
-[run]
-strict_types = false
-debug        = false
-```
-
-Run `nekova install` (no args) to install all packages listed in `[dependencies]`.
-
----
-
-## Error Messages
-
-NEKOVA produces Rust-style error output with source context, carets, error codes, and *did-you-mean* suggestions:
-
-```
-error[E005] undefined variable 'nme'
-  --> app.nk:3:6
-   |
- 3 |   show nme
-   |        ^^^ not found in this scope
-   |
-   = did you mean: name
-```
-
-Error codes: `E001`–`E011`, `W003`, `W005`, `W006`.
-
----
-
-## Project Structure
-
-```
-NEKOVA/
-├── main.py                   ← CLI entry point
-├── runner.py                 ← File runner
-├── repl.py                   ← Interactive shell
-├── watcher.py                ← --watch auto-rerun
-├── nekova.toml               ← Project config
-├── CHANGELOG.md
-├── nekova/
-│   ├── config.py             ← Version & constants
-│   ├── lexer/                ← Tokenizer
-│   ├── parser/               ← AST builder
-│   ├── interpreter/          ← Execution engine
-│   │   ├── interpreter.py
-│   │   ├── class_interpreter.py
-│   │   └── environment.py
-│   ├── ai/                   ← AI runtime
-│   │   ├── think_engine.py
-│   │   ├── memory_store.py
-│   │   └── providers/        ← claude / gemini / openai / mock
-│   ├── cli/
-│   │   ├── commands.py
-│   │   ├── templates.py      ← Project scaffolding
-│   │   ├── package_manager.py
-│   │   ├── formatter.py
-│   │   └── checker.py
-│   ├── stdlib/               ← use json/env/uuid/crypto
-│   ├── packages/             ← 11 built-in packages
-│   ├── database/             ← SQLite DSL
-│   ├── compiler/             ← Bytecode compiler + VM
-│   └── deploy/               ← Deploy pipeline
-└── tests/                    ← 744 passing tests
-```
+| Operator | Description |
+|----------|-------------|
+| `+` `-` `*` `/` | Arithmetic |
+| `//` | Floor division |
+| `%` `**` | Modulo, power |
+| `==` `!=` `<` `>` `<=` `>=` | Comparison |
+| `in` `not in` | Membership |
+| `is` `is not` | Identity |
+| `and` `or` `not` | Logic |
+| `@` | Decorator |
+| `->` | Return type hint |
+| `x if c else y` | Ternary |
 
 ---
 
 ## Roadmap
 
-- [x] Core language — lexer, parser, interpreter
-- [x] Standard library — json, env, uuid, crypto
-- [x] AI runtime — Claude, Gemini, OpenAI, Mock
-- [x] `think` keyword — AI as syntax (text, json, list, bool, schema)
-- [x] `remember` / `recall` / `forget` — session memory
-- [x] Agent pipelines — `->` operator
-- [x] Model routing — `model "gemini"`
-- [x] Web DSL — `route` / `serve`
-- [x] Database DSL — `connect` / `query` / `insert`
-- [x] Class system — `object` / `init` / `self` / `extends`
-- [x] Pattern matching — `match` / `when`
-- [x] Async / await
-- [x] Parallel execution — `autonomous parallel`
-- [x] Neural pipelines — `pipeline name:`
-- [x] Sandbox — `sandbox strict / relaxed`
-- [x] Rust-style errors with did-you-mean
-- [x] Strict types + type registry
-- [x] CLI args via `ArgsObject`
-- [x] `nekova fmt` — formatter
-- [x] `nekova check` — static analyser
-- [x] Package system — 11 built-in packages
-- [x] Bytecode compiler + VM
-- [x] Cloud deployment
-- [x] VS Code extension
-- [x] PyPI package (`nekova-lang`)
-- [x] Project templates — `--template web / ai / fullstack`
-- [x] REPL improvements — history, `?help`, persistent `~/.nekova_history`
-- [x] `nekova run --watch` — auto-rerun on save
-- [ ] Native compilation
-- [ ] Language Server Protocol (LSP)
-- [ ] NEKOVA community platform
+| Phase | Status | Description |
+|-------|--------|-------------|
+| 1–14 | ✅ | Core language, AI, classes, web, packages |
+| 15 | ✅ | Stability — `in/not in`, `//`, `range()`, slicing, builtins |
+| 16 | ✅ | Standout features — `speak`, `listen`, `every`, `test/expect`, `imagine`, `shape`, `watch` |
+| 17 | ✅ | Power user layer — generators, decorators, error types, typed tasks, `class` keyword |
+| 18 | ✅ | Standard library in NEKOVA — `math.nk`, `string.nk`, `file.nk`, `date.nk` |
+| 19 | ✅ | NEKOVA Sandbox — isolated execution, resource limits, violation tracking |
+| 20 | 🔜 | Self-Hosting — NEKOVA lexer written in NEKOVA |
+| 21 | 🔜 | NEKOVA Game Engine |
 
 ---
 
-## Built By
+## About
 
-**Emmanuel King Christopher** — Founder, SYNEKCOT Tech. Built from scratch in Nigeria.
+**SYNEKCOT Tech** is a technology company founded by Emmanuel King Christopher (age 21) in Nigeria, building tools that empower developers across Africa and the world.
 
-> *"I didn't just learn to code. I built the tools other people use to code."*
+NEKOVA is open source and built entirely in public. Every commit, every test, every phase — documented and shipped.
 
----
-
-## License
-
-MIT — free to use, modify, and distribute.
+- GitHub: [github.com/kinghenesey/NEKOVA](https://github.com/kinghenesey/NEKOVA)
+- PyPI: [pypi.org/project/nekova-lang](https://pypi.org/project/nekova-lang)
+- VS Code: Search "NEKOVA" in the marketplace
 
 ---
 
 <div align="center">
 
-**Star ⭐ this repo if NEKOVA inspired you.**
+Built with ❤️ in Nigeria by SYNEKCOT Tech
 
-[github.com/kinghenesey/NEKOVA](https://github.com/kinghenesey/NEKOVA) · [PyPI](https://pypi.org/project/nekova-lang/) · Built by SYNEKCOT Tech 🇳🇬
+*"Connected Forge — NEKOVA"*
 
 </div>
