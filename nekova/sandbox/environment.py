@@ -56,6 +56,18 @@ ALWAYS_BLOCKED = {
     "delattr", "object", "__class__", "__bases__",
 }
 
+# Operations blocked in strict mode only
+STRICT_BLOCKED = {
+    # Database — file system side effect
+    "connect",
+    # AI calls — external network
+    "think",
+    # I/O — voice, image generation
+    "speak", "listen", "imagine",
+    # File write operations
+    "write", "append", "delete", "write_json",
+}
+
 
 class SandboxEnvironment(Environment):
     """
@@ -85,6 +97,12 @@ class SandboxEnvironment(Environment):
             raise NEKOVARuntimeError(
                 f"[sandbox:{self.mode}] Access to '{name}' is blocked.\n"
                 f"  This operation is not permitted in any sandbox mode."
+            )
+        if self.mode == "strict" and name in STRICT_BLOCKED:
+            self._record_violation(name)
+            raise NEKOVARuntimeError(
+                f"[sandbox:{self.mode}] Access to '{name}' is blocked.\n"
+                f"  Use relaxed mode to enable this operation."
             )
         return super().get(name)
 
