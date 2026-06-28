@@ -127,7 +127,7 @@ debug        = false
 
 [web]
 port = 8080
-host = "0.0.0.0"
+host = "127.0.0.1"
 ''',
     "README.md": '''\
 # {name}
@@ -377,7 +377,7 @@ debug        = false
 
 [web]
 port = 8080
-host = "0.0.0.0"
+host = "127.0.0.1"
 
 [database]
 path = "{name}.db"
