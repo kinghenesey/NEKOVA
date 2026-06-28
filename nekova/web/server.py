@@ -34,7 +34,7 @@ class NEKOVAServer:
         log.setLevel(logging.ERROR)
 
         self._app.run(
-            host="0.0.0.0",
+            host="127.0.0.1",
             port=int(port),
             debug=debug,
             use_reloader=False
