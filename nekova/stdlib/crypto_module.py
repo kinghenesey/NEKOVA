@@ -156,10 +156,10 @@ def _hmac(message: str, key: str, algorithm: str = "sha256") -> str:
     return sig.hexdigest()
 
 
-def _hmac_valid(message: str, key: str, signature: str) -> bool:
+def _hmac_valid(message: str, key: str, signature: str, algorithm: str = "sha256") -> bool:
     """Verify an HMAC signature in constant time."""
     try:
-        expected = _hmac(message, key)
+        expected = _hmac(message, key, algorithm)
         return _secrets.compare_digest(str(signature), expected)
     except Exception:
         return False
@@ -200,6 +200,7 @@ def load() -> dict:
         # Secure tokens
         "token":          _token,
         "token_url":      _token_url,
+        "token_bytes":    _token_bytes,
 
         # Base64
         "encode_b64":     _encode_b64,
