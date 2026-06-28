@@ -947,11 +947,13 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
             if node.catch_body:
                 self._execute_block(node.catch_body)
+            else:
+                raise  # Bug 19: re-raise when no catch block
 
         finally:
             if node.finally_body:
                 self._execute_block(node.finally_body)
-    
+
     def _exec_ForStatement(self, node: ForStatement):
         """
         Execute:
@@ -1208,9 +1210,22 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
     def _exec_BinaryOp(self, node: BinaryOp):
         """Evaluate a binary operation like age + 1 or x == y."""
+        op = node.operator
+
+        # Bug 15 fix: short-circuit and/or before evaluating right side
+        if op == "and":
+            left = self._execute_node(node.left)
+            if not self._is_truthy(left):
+                return left  # short-circuit: return falsy left
+            return self._execute_node(node.right)
+        if op == "or":
+            left = self._execute_node(node.left)
+            if self._is_truthy(left):
+                return left  # short-circuit: return truthy left
+            return self._execute_node(node.right)
+
         left  = self._execute_node(node.left)
         right = self._execute_node(node.right)
-        op    = node.operator
 
         try:
             if op == "+":
@@ -1235,8 +1250,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             if op == "<=": return left <= right
             if op == ">":  return left >  right
             if op == ">=": return left >= right
-            if op == "and": return bool(left) and bool(right)
-            if op == "or":  return bool(left) or  bool(right)
+            # and/or handled above with short-circuit
             if op == "//":  return int(left // right)
             if op == "in":     return left in right
             if op == "not in": return left not in right
