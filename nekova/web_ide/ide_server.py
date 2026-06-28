@@ -254,5 +254,5 @@ def start_ide(port: int = 3000):
     print()
 
     app = create_ide_app()
-    app.run(host="0.0.0.0", port=int(port),
+    app.run(host="127.0.0.1", port=int(port),
             debug=False, use_reloader=False)

@@ -33,8 +33,25 @@ def _delete(key: str) -> None:
 
 
 def _all() -> dict:
-    """Return all environment variables as a dict."""
-    return dict(_os.environ)
+    """
+    Return a filtered view of environment variables.
+    Sensitive keys (API keys, passwords, tokens, secrets) are
+    redacted to protect credentials from being exposed to NEKOVA scripts.
+    Use env_get() to access a specific variable by name.
+    """
+    _SENSITIVE_PATTERNS = (
+        "key", "secret", "password", "passwd", "token",
+        "auth", "credential", "private", "api_key",
+        "access_key", "client_secret", "signing",
+    )
+    safe = {}
+    for k, v in _os.environ.items():
+        k_lower = k.lower()
+        if any(pat in k_lower for pat in _SENSITIVE_PATTERNS):
+            safe[k] = "[REDACTED]"
+        else:
+            safe[k] = v
+    return safe
 
 
 def _load(filepath: str = ".env") -> dict:

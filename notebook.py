@@ -290,7 +290,7 @@ def start_notebook(filepath: str = None,
     print()
 
     app = create_notebook_app(notebook)
-    app.run(host="0.0.0.0",
+    app.run(host="127.0.0.1",
             port=int(port),
             debug=False,
             use_reloader=False)
