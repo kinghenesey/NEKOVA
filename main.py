@@ -41,6 +41,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from nekova.config import NEKOVA_VERSION, NEKOVA_CODENAME, Color
 from nekova.cli    import print_banner, print_error, print_info, print_success, print_warning
+from nekova.toml_loader import load_config, ConfigError
 from runner import NEKOVARunner
 
 
@@ -315,7 +316,6 @@ def main():
                 # resolve filepath first (may come from toml)
                 run_file = arg
                 if not run_file:
-                    from nekova.toml_loader import load_config, ConfigError
                     try:
                         _cfg = load_config()
                         if _cfg:
@@ -328,7 +328,6 @@ def main():
                 watch(run_file)
                 sys.exit(0)
             if not arg:
-                from nekova.toml_loader import load_config, ConfigError
                 try:
                     config = load_config()
                 except ConfigError as e:
@@ -379,7 +378,6 @@ def main():
         if cmd == "watch":
             from watcher import watch
             if not arg:
-                from nekova.toml_loader import load_config, ConfigError
                 try:
                     _cfg = load_config()
                     arg = _cfg.entry_path if _cfg else None
