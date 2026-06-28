@@ -54,7 +54,7 @@ class CloudDeployer:
         print(f"📦 Preparing deployment for '{filepath}'...")
 
         # Build the deployment bundle
-        from deploy.bundle import AppBundler
+        from nekova.deploy.bundle import AppBundler
         bundler = AppBundler()
         bundle_dir = bundler.bundle(filepath)
 
