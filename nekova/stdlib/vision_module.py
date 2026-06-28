@@ -2,10 +2,10 @@
 # NEKOVA Standard Library — Vision Module
 # =============================================================
 import os
-import base64
 
 
-def _encode_image(filepath: str) -> tuple:
+def _read_image(filepath: str) -> tuple:
+    """Read an image file and return (raw_bytes, mime_type)."""
     ext = os.path.splitext(filepath)[1].lower()
     mime_types = {
         ".jpg":  "image/jpeg",
@@ -16,7 +16,7 @@ def _encode_image(filepath: str) -> tuple:
     }
     mime = mime_types.get(ext, "image/jpeg")
     with open(filepath, "rb") as f:
-        data = base64.b64encode(f.read()).decode("utf-8")
+        data = f.read()
     return data, mime
 
 
@@ -50,7 +50,7 @@ def vision_scan(filepath: str, prompt: str = None) -> str:
         from google.genai import types
 
         client = genai.Client(api_key=api_key)
-        image_data, mime_type = _encode_image(filepath)
+        image_bytes, mime_type = _read_image(filepath)
 
         response = client.models.generate_content(
             model="gemini-2.5-flash",
@@ -60,7 +60,7 @@ def vision_scan(filepath: str, prompt: str = None) -> str:
                         types.Part(
                             inline_data=types.Blob(
                                 mime_type=mime_type,
-                                data=base64.b64decode(image_data)
+                                data=image_bytes
                             )
                         ),
                         types.Part(text=prompt)
@@ -93,8 +93,8 @@ def vision_compare(filepath1: str, filepath2: str) -> str:
         from google.genai import types
 
         client = genai.Client(api_key=api_key)
-        data1, mime1 = _encode_image(filepath1)
-        data2, mime2 = _encode_image(filepath2)
+        bytes1, mime1 = _read_image(filepath1)
+        bytes2, mime2 = _read_image(filepath2)
 
         response = client.models.generate_content(
             model="gemini-2.5-flash",
@@ -104,13 +104,13 @@ def vision_compare(filepath1: str, filepath2: str) -> str:
                         types.Part(
                             inline_data=types.Blob(
                                 mime_type=mime1,
-                                data=base64.b64decode(data1)
+                                data=bytes1
                             )
                         ),
                         types.Part(
                             inline_data=types.Blob(
                                 mime_type=mime2,
-                                data=base64.b64decode(data2)
+                                data=bytes2
                             )
                         ),
                         types.Part(
