@@ -22,12 +22,19 @@ class AsyncParserMixin:
     # ── async func ───────────────────────────────────────────────────────────
     def parse_async_function(self):
         """
-        async func <name>(<params>):
+        async func <name>(<params>):   -- or --
+        async task <name>(<params>):
             <body>
         """
         self.expect("ASYNC")
-        self.expect("FUNC")
-        name = self.expect("IDENTIFIER").value
+        # Bug 25 fix: accept both 'func' and 'task' after 'async'
+        if self.current_token_is("FUNC"):
+            self.expect("FUNC")
+        elif self.current_token_is("TASK"):
+            self.expect("TASK")
+        else:
+            self.expect("FUNC")  # trigger the normal error
+        name = self.advance().value  # allow keyword names (uses mixin's advance)
 
         self.expect("LPAREN")
         params = self._parse_param_list()
