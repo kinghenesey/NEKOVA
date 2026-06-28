@@ -100,7 +100,7 @@ class OpenAIProvider(BaseProvider):
             )
 
         try:
-            full_prompt = self.get_memory_context() + prompt
+            full_prompt = prompt  # memory already injected by think_engine
             return self._with_timeout(self._raw_complete, full_prompt)
 
         except RuntimeError:
@@ -144,7 +144,7 @@ class OpenAIProvider(BaseProvider):
             )
 
         try:
-            full_prompt = self.get_memory_context() + prompt
+            full_prompt = prompt  # memory already injected by think_engine
             client      = self._get_client()
 
             print(f"\033[96m", end="", flush=True)
