@@ -11,6 +11,18 @@
 #   show trim("  hello  ")     → hello
 
 
+def _is_number(s: str) -> bool:
+    """Return True only if s is a valid number (int or float, single minus sign)."""
+    s = s.strip()
+    if not s:
+        return False
+    if s.startswith('-'):
+        s = s[1:]  # strip exactly one minus
+        if not s:
+            return False
+    return s.replace('.', '', 1).isdigit()
+
+
 def load() -> dict:
     """
     Returns all text functions to be loaded
@@ -45,7 +57,6 @@ def load() -> dict:
 
         # Info
         "length":   lambda s: len(str(s)),
-        "is_number": lambda s: str(s).replace(
-                        ".", "", 1).lstrip("-").isdigit(),
+        "is_number": lambda s: _is_number(str(s)),
         "is_empty": lambda s: str(s).strip() == "",
     }
