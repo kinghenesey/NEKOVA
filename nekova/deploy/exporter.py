@@ -55,7 +55,7 @@ class Exporter:
             # Run the NEKOVA file to generate HTML
             from lexer import Lexer
             from parser.parser import Parser
-            from interpreter.interpreter import Interpreter
+            from nekova.interpreter.interpreter import Interpreter
 
             tokens      = Lexer(self.source).tokenize()
             program     = Parser(tokens).parse()
@@ -147,7 +147,7 @@ sys.path.insert(0, NEKOVA_PATH)
 try:
     from lexer import Lexer
     from parser.parser import Parser
-    from interpreter.interpreter import Interpreter
+    from nekova.interpreter.interpreter import Interpreter
 
     tokens      = Lexer(SOURCE).tokenize()
     program     = Parser(tokens).parse()
