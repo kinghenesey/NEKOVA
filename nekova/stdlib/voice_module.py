@@ -9,7 +9,6 @@
 #   transcript = voice_listen()
 
 import os
-import sys
 
 
 def voice_speak(text: str) -> str:
@@ -28,6 +27,7 @@ def voice_speak(text: str) -> str:
         import asyncio
         import tempfile
         import subprocess
+        import time
 
         async def _speak():
             communicate = edge_tts.Communicate(
@@ -44,16 +44,28 @@ def voice_speak(text: str) -> str:
 
         tmp_path = asyncio.run(_speak())
 
-        # Play the mp3 on Windows
-        subprocess.run(
-            ["powershell", "-c",
-             f"Add-Type -AssemblyName presentationCore;"
-             f"$p=New-Object system.windows.media.mediaplayer;"
-             f"$p.Open('{tmp_path}');"
-             f"$p.Play();"
-             f"Start-Sleep -s 10"],
-            capture_output=True
-        )
+        try:
+            # Estimate audio duration: ~150 words/minute, mp3 ~1 sec/word rough
+            word_count  = max(1, len(text.split()))
+            duration_s  = max(2, int(word_count / 2.5) + 1)
+
+            # Play the mp3 on Windows using a subprocess list (safe, no injection)
+            subprocess.run(
+                ["powershell", "-c",
+                 "Add-Type -AssemblyName presentationCore;"
+                 "$p=New-Object system.windows.media.mediaplayer;"
+                 f"$p.Open([uri]'{tmp_path}');"
+                 "$p.Play();"
+                 f"Start-Sleep -s {duration_s}"],
+                capture_output=True
+            )
+        finally:
+            # Always clean up the temp file
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
         return text
 
     except ImportError:
