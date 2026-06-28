@@ -155,11 +155,59 @@ class Lexer:
 
     def _read_fstring(self):
         """
-        Read an f-string literal: f"Hello {name}!"
+        Read an f-string literal: f"Hello {name}!" or f\"\"\"multi-line {name}\"\"\"
         Stores the raw string value — interpolation is
         handled at parse time by _parse_fstring().
         """
         quote = self._current()
+
+        # Check for triple-quote opening: f\"\"\" or f'''
+        if (not self._at_end() and
+                self._peek() == quote and
+                len(self.source) > self.pos + 1 and
+                self.source[self.pos + 1] == quote):
+            # Triple-quoted f-string
+            self._advance()  # skip first quote
+            self._advance()  # skip second quote
+            self._advance()  # skip third quote
+            triple = quote * 3
+            value  = []
+            while not self._at_end():
+                # Check for closing triple-quote
+                if (self._current() == quote and
+                        not self._at_end() and
+                        self._peek() == quote and
+                        len(self.source) > self.pos + 1 and
+                        self.source[self.pos + 1] == quote):
+                    self._advance()  # skip first closing quote
+                    self._advance()  # skip second closing quote
+                    self._advance()  # skip third closing quote
+                    break
+                if self._current() == "\n":
+                    value.append("\n")
+                    self._advance()
+                    self.line  += 1
+                    self.column = 1
+                elif (self._current() == "\\" and
+                      self._peek() in ('"', "'", "n", "t", "\\")):
+                    escape = self._peek()
+                    self._advance()
+                    self._advance()
+                    if escape == "n":   value.append("\n")
+                    elif escape == "t": value.append("\t")
+                    else:               value.append(escape)
+                else:
+                    value.append(self._current())
+                    self._advance()
+            else:
+                raise LexerError(
+                    "Triple-quoted f-string was never closed — "
+                    f"did you forget closing {triple}?",
+                    self.line, self.column)
+            self._add_token(TokenType.F_STRING, "".join(value))
+            return
+
+        # Single-quoted f-string
         self._advance()  # skip opening quote
 
         value = []
@@ -168,12 +216,9 @@ class Lexer:
                 escape = self._peek()
                 self._advance()
                 self._advance()
-                if escape == "n":
-                    value.append("\n")
-                elif escape == "t":
-                    value.append("\t")
-                else:
-                    value.append(escape)
+                if escape == "n":   value.append("\n")
+                elif escape == "t": value.append("\t")
+                else:               value.append(escape)
             else:
                 value.append(self._current())
                 self._advance()
