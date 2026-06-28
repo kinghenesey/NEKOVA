@@ -36,7 +36,7 @@ def cmd_export(filepath: str,
     print()
 
     try:
-        from deploy.exporter import Exporter
+        from nekova.deploy.exporter import Exporter
         exporter = Exporter(filepath)
 
         # Export to HTML
@@ -73,7 +73,7 @@ def cmd_package(project_dir: str = ".",
     print()
 
     try:
-        from deploy.packager import Packager
+        from nekova.deploy.packager import Packager
         packager = Packager(project_dir)
         pkg_path = packager.build(output_dir)
 
@@ -104,7 +104,7 @@ def cmd_publish(pkg_path: str) -> bool:
     print()
 
     try:
-        from deploy.publisher import Publisher
+        from nekova.deploy.publisher import Publisher
         publisher = Publisher()
         success   = publisher.publish_local(pkg_path)
 
@@ -212,7 +212,7 @@ def cmd_deploy_cloud(filepath: str) -> bool:
     print()
 
     try:
-        from deploy.cloud import CloudDeployer
+        from nekova.deploy.cloud import CloudDeployer
         deployer = CloudDeployer()
         result   = deployer.deploy(filepath)
 
