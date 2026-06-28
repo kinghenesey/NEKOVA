@@ -88,7 +88,7 @@ class GeminiProvider(BaseProvider):
             )
 
         try:
-            full_prompt = self.get_memory_context() + prompt
+            full_prompt = prompt  # memory already injected by think_engine
             return self._with_timeout(self._raw_complete, full_prompt)
 
         except RuntimeError:
