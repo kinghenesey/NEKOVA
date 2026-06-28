@@ -119,7 +119,6 @@ def run_sandboxed(
     sys.stdout  = output_buf
 
     # ── Timeout enforcement ───────────────────────────────────
-    timed_out   = threading.Event()
     exec_error  = [None]
 
     def _run():

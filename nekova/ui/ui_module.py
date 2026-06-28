@@ -96,7 +96,7 @@ def _ui_save(filepath: str = "output.html"):
     renderer = HTMLRenderer(_current_app)
     renderer.save(str(filepath))
 
-    from config import Color
+    from nekova.config import Color
     print(f"{Color.GREEN}✓ UI saved to '{filepath}'{Color.RESET}")
     print(f"{Color.DIM}  Open it in your browser to see your app!{Color.RESET}")
     return filepath

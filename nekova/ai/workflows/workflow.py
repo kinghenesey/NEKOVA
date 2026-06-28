@@ -76,7 +76,7 @@ class Workflow:
         Each step's result is available to the next.
         Returns list of all step results.
         """
-        from config import Color
+        from nekova.config import Color
 
         self.status     = "running"
         self.started_at = datetime.now()

@@ -57,11 +57,10 @@ def load() -> dict:
 def _agent_create(name: str,
                   goal: str = "Complete tasks") -> str:
     """Create a new AI agent."""
-    global _agents
     agent = Agent(name=str(name), goal=str(goal))
     _agents[str(name)] = agent
 
-    from config import Color
+    from nekova.config import Color
     print(f"{Color.CYAN}✓ Agent '{name}' created{Color.RESET}")
     print(f"{Color.DIM}  Goal: {goal}{Color.RESET}")
     return name
@@ -165,7 +164,7 @@ def _workflow_create(name: str,
     )
     _workflows[str(name)] = wf
 
-    from config import Color
+    from nekova.config import Color
     print(f"{Color.CYAN}✓ Workflow '{name}' "
           f"created{Color.RESET}")
     return name

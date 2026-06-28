@@ -3,6 +3,7 @@ from nekova.parser.nodes import (
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
+    StringLiteral,
     MemoryStatement, SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UnpackStatement, UseStatement,
@@ -333,7 +334,6 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 value = self._execute_node(step)
 
             # First step: only treat as seed if it came from a string literal
-            from nekova.parser.nodes import StringLiteral
             if i == 0 and isinstance(step, StringLiteral) and len(node.steps) > 1:
                 current_output = value
                 print(f"{Fore.YELLOW}⟶ Seed: {current_output}{Style.RESET_ALL}")
@@ -2514,10 +2514,9 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         """expect <expr>  — must evaluate to truthy, else raises _ExpectFailed."""
         result = self._execute_node(node.expression)
         if not self._is_truthy(result):
-            # Try to format a helpful message
             expr_repr = repr(node.expression)
             raise _ExpectFailed(
-                f"expect failed: got {self._to_string(result)!r}"
+                f"expect failed: {expr_repr} → got {self._to_string(result)!r}"
             )
         return result
 

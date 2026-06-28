@@ -225,5 +225,8 @@ def ask_structured(provider, prompt: str, fmt: str,
             # "text" or unknown — return raw string
             return raw.strip()
     except Exception as e:
-        # Graceful degradation — return raw on parse failure
+        # Graceful degradation — log and return raw on parse failure
+        import sys
+        print(f"[think] Warning: structured extraction failed: {e}",
+              file=sys.stderr)
         return raw.strip()

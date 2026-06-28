@@ -133,18 +133,18 @@ class NEKOVARunner:
             # Phase 4 â€” Interpreter (default)
             # Phase 13 â€” Compiler (when --compile flag used)
             if self.compile_mode:
-                from nekova.compiler import Compiler, VirtualMachine
-                from nekova.compiler import CompileError
-                compiler = Compiler()
-                code     = compiler.compile(program)
-
-                if self.debug:
-                    print_info("Bytecode:")
-                    print(code.disassemble())
-                    print()
-
-                vm = VirtualMachine()
-                vm.run(code)
+                from nekova.compiler import Compiler, VirtualMachine, CompileError
+                try:
+                    compiler = Compiler()
+                    code     = compiler.compile(program)
+                    if self.debug:
+                        print_info("Bytecode:")
+                        print(code.disassemble())
+                        print()
+                    vm = VirtualMachine()
+                    vm.run(code)
+                except CompileError as e:
+                    raise NEKOVARuntimeError(f"Compile error: {e}") from e
             else:
                 interpreter = Interpreter(strict_types=self.strict_types)
                 # Inject CLI script args as built-in 'args' object

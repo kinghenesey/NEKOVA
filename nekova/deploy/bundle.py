@@ -125,7 +125,7 @@ def load_env():
 
 load_env()
 
-from runner import NEKOVARunner
+from nekova.runner import NEKOVARunner
 
 if __name__ == "__main__":
     filepath = sys.argv[1] if len(sys.argv) > 1 else "{app_name}.NEKOVA"

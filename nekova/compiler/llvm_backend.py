@@ -75,7 +75,7 @@ class LLVMCompiler:
         Check if the program only uses LLVM-supported features.
         Currently: integer math, basic print, variables.
         """
-        from parser.nodes import (
+        from nekova.parser.nodes import (
             Program, IntegerLiteral, FloatLiteral,
             BinaryOp, ShowStatement, AssignStatement,
             Identifier
@@ -132,7 +132,7 @@ class LLVMCompiler:
             fmt_float = builder.global_string_ptr("%.6f\n", "fmt_float")
 
             def compile_expr(node):
-                from parser.nodes import (
+                from nekova.parser.nodes import (
                     IntegerLiteral, FloatLiteral,
                     BinaryOp, Identifier
                 )
@@ -157,7 +157,7 @@ class LLVMCompiler:
                     if op == "/": return builder.sdiv(left, right)
                 return ir.Constant(ir.IntType(64), 0)
 
-            from parser.nodes import (
+            from nekova.parser.nodes import (
                 ShowStatement, AssignStatement
             )
 
@@ -172,7 +172,11 @@ class LLVMCompiler:
 
                 elif isinstance(stmt, ShowStatement):
                     val = compile_expr(stmt.expression)
-                    builder.call(printf, [fmt_int, val])
+                    # Choose format string based on value type
+                    if val.type == ir.DoubleType():
+                        builder.call(printf, [fmt_float, val])
+                    else:
+                        builder.call(printf, [fmt_int, val])
 
             # Return 0
             builder.ret(ir.Constant(ir.IntType(32), 0))
@@ -198,7 +202,10 @@ class LLVMCompiler:
             return output_path
 
         except Exception as e:
-            # Fall back to transpiler
+            # LLVM compilation failed — log and fall back to transpiler
+            import sys
+            print(f"[llvm] Warning: LLVM compilation failed: {e}",
+                  file=sys.stderr)
             return self._compile_transpiler(
                 None, source, output_path)
 

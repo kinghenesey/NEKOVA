@@ -18,12 +18,11 @@
 
 import sys
 import io
+import os
 if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
-import sys
-import os
 # Load environment variables from .env file
 def _load_env():
     env_path = os.path.join(
@@ -41,7 +40,7 @@ _load_env()
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from nekova.config import NEKOVA_VERSION, NEKOVA_CODENAME, Color
-from nekova.cli    import print_banner, print_error, print_info, print_success
+from nekova.cli    import print_banner, print_error, print_info, print_success, print_warning
 from runner import NEKOVARunner
 
 

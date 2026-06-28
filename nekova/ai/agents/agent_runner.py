@@ -34,7 +34,7 @@ class AgentRunner:
         Run an agent on a task.
         Returns the agent's response.
         """
-        from config import Color
+        from nekova.config import Color
 
         print(f"{Color.CYAN}⚡ Agent '{agent.name}' "
               f"starting...{Color.RESET}")
@@ -43,14 +43,14 @@ class AgentRunner:
         agent.status = "running"
 
         try:
-            # Step 1: Agent thinks about the task
+            # Step 1: Agent thinks about the task to form a plan
             plan = agent.think(task)
 
+            # Step 2: Execute using the plan as context
             if agent.tools:
-                result = self._run_with_tools(
-                    agent, task)
+                result = self._run_with_tools(agent, plan or task)
             else:
-                result = self._run_simple(agent, task)
+                result = self._run_simple(agent, plan or task)
 
             # Store result
             agent.result = result

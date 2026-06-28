@@ -245,7 +245,7 @@ def start_ide(port: int = 3000):
     log = logging.getLogger("werkzeug")
     log.setLevel(logging.ERROR)
 
-    from config import Color
+    from nekova.config import Color
     print()
     print(f"{Color.CYAN}{Color.BOLD}  NEKOVA Web IDE v2.0{Color.RESET}")
     print(f"  {Color.DIM}{'─' * 40}{Color.RESET}")
