@@ -227,10 +227,15 @@ def _space_operators(code: str) -> str:
     # Only fix standalone =
     code = re.sub(r"(?<![=!<>+\-*/])\s*=\s*(?!=)", " = ", code)
 
-    # Arithmetic operators (only between tokens, not unary minus)
-    # +  and  *  /  are safe; - is tricky (unary vs binary)
-    for op in (r"\+", r"\*", r"/"):
-        code = re.sub(r"\s*" + op + r"\s*", f" {op[1:]} ", code)
+    # Arithmetic operators — handle multi-char FIRST to avoid splitting ** into * *
+    import re as _re
+    # Normalise ** and // spacing first
+    code = _re.sub(r" *\*\* *", " ** ", code)
+    code = _re.sub(r" *// *", " // ", code)
+    # Single-char + * / (using negative lookahead to skip ** and //)
+    code = _re.sub(r" *(?<!\*)\*(?!\*) *", " * ", code)
+    code = _re.sub(r" *(?<!/)/(?!/) *", " / ", code)
+    code = _re.sub(r" *\+ *", " + ", code)
 
     # Clean up multiple spaces
     code = re.sub(r"  +", " ", code)
