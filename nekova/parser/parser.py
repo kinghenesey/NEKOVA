@@ -1888,41 +1888,72 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         Splits the raw string on {expr} placeholders and
         produces a list of ('str', text) and ('expr', AST node) parts.
 
+        Supports nested f-strings: f"outer {f'inner {x}'}"
+        Uses brace-depth counting so inner braces are handled correctly.
+
         Examples:
             f"Hello {name}!"
             f"Result: {a + b}"
             f"{greeting}, {first} {last}!"
+            f"outer {f'inner {x}'}"
         """
-        import re
-        parts = []
+        parts  = []
+        i      = 0
+        length = len(raw)
+        buf    = []   # accumulates plain-text characters
 
-        # Split on {expr} — keep the delimiters
-        segments = re.split(r'(\{[^}]*\})', raw)
+        while i < length:
+            ch = raw[i]
 
-        for segment in segments:
-            if not segment:
+            if ch != '{':
+                buf.append(ch)
+                i += 1
                 continue
 
-            if segment.startswith('{') and segment.endswith('}'):
-                # Expression inside braces
-                expr_src = segment[1:-1].strip()
-                if not expr_src:
-                    # Empty braces {} — treat as empty string
-                    parts.append(('str', ''))
-                    continue
-                try:
-                    # Parse the inner expression using a fresh parser
-                    from nekova.lexer.lexer import Lexer
-                    from nekova.lexer.token_types import TokenType as TT
-                    inner_tokens = Lexer(expr_src).tokenize()
-                    inner_parser = Parser(inner_tokens)
-                    expr_node = inner_parser._parse_expression()
-                    parts.append(('expr', expr_node))
-                except Exception:
-                    # If parsing fails, treat as a plain string
-                    parts.append(('str', segment))
-            else:
-                parts.append(('str', segment))
+            # Flush buffered plain text
+            if buf:
+                parts.append(('str', ''.join(buf)))
+                buf = []
+
+            # Scan forward to the matching closing brace,
+            # counting depth so nested braces work correctly.
+            depth = 1
+            i    += 1   # skip opening {
+            expr_chars = []
+
+            while i < length and depth > 0:
+                c = raw[i]
+                if c == '{':
+                    depth += 1
+                    expr_chars.append(c)
+                elif c == '}':
+                    depth -= 1
+                    if depth > 0:
+                        expr_chars.append(c)
+                else:
+                    expr_chars.append(c)
+                i += 1
+
+            expr_src = ''.join(expr_chars).strip()
+
+            if not expr_src:
+                # Empty braces {} — treat as empty string
+                parts.append(('str', ''))
+                continue
+
+            try:
+                from nekova.lexer.lexer import Lexer
+                inner_tokens = Lexer(expr_src).tokenize()
+                inner_parser = Parser(inner_tokens)
+                expr_node    = inner_parser._parse_expression()
+                parts.append(('expr', expr_node))
+            except Exception:
+                # If parsing the inner expression fails, keep it as literal text
+                parts.append(('str', '{' + expr_src + '}'))
+
+        # Flush any remaining plain text
+        if buf:
+            parts.append(('str', ''.join(buf)))
 
         return FStringLiteral(parts)
 
