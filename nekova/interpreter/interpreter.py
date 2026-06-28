@@ -47,6 +47,10 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     """
 
     def __init__(self, strict_types: bool = False):
+        # Isolate this interpreter's memory from all other instances
+        from nekova.ai.memory_store import init_interpreter_memory
+        init_interpreter_memory()
+
         # Global environment — lives for the entire program
         self.globals      = Environment()
         self.env          = self.globals
@@ -2982,80 +2986,100 @@ class _DBRow:
 
 class _NEKOVAGenerator:
     """
-    Lazy sequence produced by a generator task (one with yield).
-    Uses a separate interpreter instance with a patched _exec_YieldStatement
-    that appends to a shared list, allowing while/for/if to all work
-    transparently — the key insight is we collect ALL values upfront
-    by temporarily redirecting yield to a collector.
+    Truly lazy sequence produced by a generator task (one with yield).
+
+    Uses a background thread and a queue so values are produced one at a
+    time on demand — infinite generators work, and side-effects happen at
+    iteration time rather than at construction time.
+
+    Protocol:
+      - Producer thread runs the task body, putting each yielded value
+        onto a queue.  A sentinel (_DONE) marks exhaustion.
+      - The consumer (__next__) blocks on queue.get() until a value or
+        the sentinel arrives.
     """
+
+    _DONE = object()  # sentinel
 
     def __init__(self, task_node, args, interp):
         self._task   = task_node
         self._args   = args
         self._interp = interp
-        self._values = None
+        self._queue  = None   # created lazily on first iteration
+        self._thread = None
 
-    def _materialize(self):
-        if self._values is not None:
-            return
-
+    def _start(self):
+        """Spin up the producer thread."""
+        import queue
+        import threading
         from nekova.interpreter.environment import Environment
         from nekova.runtime import ReturnSignal
         from nekova.interpreter.exceptions import _YieldSignal
 
+        q      = queue.Queue(maxsize=1)   # back-pressure: one item ahead
         task   = self._task
         args   = self._args
         interp = self._interp
 
-        closure   = getattr(task, "closure_env", interp.globals)
-        local_env = Environment(parent=closure)
-        prev_env  = interp.env
-        interp.env = local_env
+        def _producer():
+            closure   = getattr(task, "closure_env", interp.globals)
+            local_env = Environment(parent=closure)
+            prev_env  = interp.env
+            interp.env = local_env
 
-        # Bind params
-        params = task.params
-        for i, param in enumerate(params):
-            if len(param) == 4:
-                pname, _, default, is_vararg = param
-            else:
-                pname, default, is_vararg = param
-            if is_vararg:
-                local_env.set(pname, list(args[i:]))
-            elif i < len(args):
-                local_env.set(pname, args[i])
-            elif default is not None:
-                local_env.set(pname, interp._execute_node(default))
+            # Bind params
+            params = task.params
+            for i, param in enumerate(params):
+                if len(param) == 4:
+                    pname, _, default, is_vararg = param
+                else:
+                    pname, default, is_vararg = param
+                if is_vararg:
+                    local_env.set(pname, list(args[i:]))
+                elif i < len(args):
+                    local_env.set(pname, args[i])
+                elif default is not None:
+                    local_env.set(pname, interp._execute_node(default))
 
-        collected = []
+            original_yield = interp._exec_YieldStatement
 
-        # Temporarily replace yield handler so it collects rather than raises
-        original_yield = interp._exec_YieldStatement
+            def _lazy_yield(node):
+                value = interp._execute_node(node.expression) if node.expression else None
+                q.put(value)           # blocks until consumer calls next()
 
-        def _collecting_yield(node):
-            value = interp._execute_node(node.expression) if node.expression else None
-            collected.append(value)
-            # Do NOT raise — just return so execution continues
+            interp._exec_YieldStatement = _lazy_yield
 
-        interp._exec_YieldStatement = _collecting_yield
+            try:
+                for stmt in task.body:
+                    try:
+                        interp._execute_node(stmt)
+                    except ReturnSignal:
+                        break
+                    except _YieldSignal as y:
+                        q.put(y.value)
+            except Exception:
+                pass   # generator body errors stop iteration silently
+            finally:
+                interp._exec_YieldStatement = original_yield
+                interp.env = prev_env
+                q.put(_NEKOVAGenerator._DONE)   # signal exhaustion
 
-        try:
-            for stmt in task.body:
-                try:
-                    interp._execute_node(stmt)
-                except ReturnSignal:
-                    break
-                except _YieldSignal as y:
-                    # Fallback if something raises directly
-                    collected.append(y.value)
-        finally:
-            interp._exec_YieldStatement = original_yield
-            interp.env = prev_env
-
-        self._values = collected
+        self._queue  = q
+        self._thread = threading.Thread(target=_producer, daemon=True)
+        self._thread.start()
 
     def __iter__(self):
-        self._materialize()
-        return iter(self._values)
+        if self._queue is None:
+            self._start()
+        return self
+
+    def __next__(self):
+        if self._queue is None:
+            self._start()
+        value = self._queue.get()
+        if value is _NEKOVAGenerator._DONE:
+            raise StopIteration
+        return value
 
     def __repr__(self):
         return f"<generator {self._task.name}>"
