@@ -1577,14 +1577,14 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         return left
 
     def _parse_unary(self):
-        """Parse unary operators: - not"""
+        """Parse unary operators: - not (recursive for not not x, - -x)"""
         if self._current().type == TokenType.MINUS:
             self._advance()
-            return UnaryOp("-", self._parse_primary())
+            return UnaryOp("-", self._parse_unary())
 
         if self._current().type == TokenType.NOT:
             self._advance()
-            return UnaryOp("not", self._parse_primary())
+            return UnaryOp("not", self._parse_unary())
 
         return self._parse_primary()
 
