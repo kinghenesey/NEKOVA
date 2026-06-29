@@ -150,7 +150,7 @@ class AnthropicProvider(BaseProvider):
             full_prompt = prompt  # memory already injected by think_engine
             client = self._get_client()
 
-            print(f"\033[96m", end="", flush=True)
+            print("\033[96m", end="", flush=True)
 
             full_response = []
             with client.messages.stream(
@@ -164,7 +164,7 @@ class AnthropicProvider(BaseProvider):
                     print(text, end="", flush=True)
                     full_response.append(text)
 
-            print(f"\033[0m")
+            print("\033[0m")
 
             response_text = "".join(full_response)
 
