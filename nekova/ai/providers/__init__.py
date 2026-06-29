@@ -32,8 +32,6 @@ def get_provider():
     Otherwise auto-detect from available API keys:
       Gemini → Claude → OpenAI → Mock
     """
-    global _active_provider
-
     if _active_provider is not None:
         return get_provider_by_name(_active_provider)
 
