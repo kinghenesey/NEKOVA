@@ -443,7 +443,6 @@ class TestREPLExecute:
         r = REPL()
         # Bad syntax — should print error, not raise
         r._execute('!!invalid!!')
-        out = capsys.readouterr().out
         assert len(r.history) == 0  # not appended on error
 
 
