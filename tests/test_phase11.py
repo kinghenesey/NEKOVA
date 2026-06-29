@@ -169,17 +169,17 @@ class TestInstall:
             assert os.path.exists(os.path.join(tmpdir, "auth.py"))
 
     def test_install_validation(self):
-        with IsolatedRegistry() as tmpdir:
+        with IsolatedRegistry() as _:
             ok = silence(install_package, "validation")
             assert ok
 
     def test_install_colors(self):
-        with IsolatedRegistry() as tmpdir:
+        with IsolatedRegistry() as _:
             ok = silence(install_package, "colors")
             assert ok
 
     def test_install_random(self):
-        with IsolatedRegistry() as tmpdir:
+        with IsolatedRegistry() as _:
             ok = silence(install_package, "random")
             assert ok
 
@@ -190,22 +190,22 @@ class TestInstall:
             assert os.path.exists(os.path.join(tmpdir, "csv.py"))
 
     def test_install_slug(self):
-        with IsolatedRegistry() as tmpdir:
+        with IsolatedRegistry() as _:
             ok = silence(install_package, "slug")
             assert ok
 
     def test_install_sendmail(self):
-        with IsolatedRegistry() as tmpdir:
+        with IsolatedRegistry() as _:
             ok = silence(install_package, "sendmail")
             assert ok
 
     def test_install_requests(self):
-        with IsolatedRegistry() as tmpdir:
+        with IsolatedRegistry() as _:
             ok = silence(install_package, "requests")
             assert ok
 
     def test_install_updates_registry(self):
-        with IsolatedRegistry() as tmpdir:
+        with IsolatedRegistry() as _:
             import nekova.packages as pkg_mod
             silence(install_package, "charts")
             reg = load_registry()
