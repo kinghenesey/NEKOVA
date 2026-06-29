@@ -162,8 +162,6 @@ def cmd_deploy(filepath: str) -> bool:
     print()
     print(f"  {Color.BOLD}Step 3/3{Color.RESET} "
           f"— Publishing...")
-    name = os.path.splitext(
-        os.path.basename(filepath))[0]
 
     # Find the package file
     dist_dir = "dist"
@@ -176,6 +174,9 @@ def cmd_deploy(filepath: str) -> bool:
 
     if pkg_file:
         publish_ok = cmd_publish(pkg_file)
+        if not publish_ok:
+            print_error("Publishing failed. The package was built but not published.")
+            return False
     else:
         print_error("No package file found to publish.")
         return False
