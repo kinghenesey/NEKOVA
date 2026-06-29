@@ -104,6 +104,8 @@ class CloudDeployer:
                     bundle_dir, filepath)
 
         except Exception as e:
+            print(f"  [deploy] Cloud deploy unavailable ({type(e).__name__}: {e}). "
+                  f"Falling back to bundle...")
             return self._deploy_bundle(
                 bundle_dir, filepath)
 
