@@ -79,8 +79,6 @@ def _ui_page(name: str):
 
 def _ui_save(filepath: str = "output.html"):
     """Render the UI app and save it to an HTML file."""
-    global _current_app
-
     if _current_app is None:
         raise RuntimeError(
             "No UI app defined.\n"
@@ -206,7 +204,6 @@ def _ui_row_end():
 
 def _require_page():
     """Ensure a page exists before adding components."""
-    global _current_page
     if _current_page is None:
         # Auto-create a default page
         _ui_page("Home")
