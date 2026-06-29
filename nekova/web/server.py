@@ -18,10 +18,10 @@ class NEKOVAServer:
         self._setup_flask()
 
         print()
-        print(f"  \033[96m\033[1mNEKOVA Web Server\033[0m")
+        print("  \033[96m\033[1mNEKOVA Web Server\033[0m")
         print(f"  {'─' * 40}")
         print(f"  \033[92m✓ Server running at http://localhost:{port}\033[0m")
-        print(f"  Press Ctrl+C to stop")
+        print("  Press Ctrl+C to stop")
         print()
 
         for route in self.router.get_routes():
