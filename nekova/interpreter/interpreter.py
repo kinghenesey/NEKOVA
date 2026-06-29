@@ -3,7 +3,6 @@ from nekova.parser.nodes import (
     BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
-    StringLiteral,
     MemoryStatement, SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UnpackStatement, UseStatement,
@@ -2437,8 +2436,32 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         seconds      = float(interval_val) * multipliers.get(unit, 1)
         max_runs     = int(node.max_runs) if node.max_runs is not None else None
 
-        def _run_body_once():
-            """Run body once in the current scope. Returns 'break', 'continue', or 'ok'."""
+        # ── finite loop error handler ──────────────────────────
+        def _run_body_finite():
+            """
+            Run body once for a finite loop.
+            Propagates all exceptions so the caller sees them.
+            Returns 'break', 'continue', or 'ok'.
+            """
+            try:
+                self._execute_block(node.body, new_scope=False)
+                return "ok"
+            except BreakSignal:
+                return "break"
+            except ContinueSignal:
+                return "continue"
+            # All other exceptions propagate to the caller — finite loops
+            # must not silently swallow errors. The programmer should know.
+
+        # ── infinite loop error handler ────────────────────────
+        def _run_body_infinite():
+            """
+            Run body once for an infinite loop.
+            Prints a full error message (with type and value) and
+            continues — stopping an infinite loop on every error
+            would be too disruptive for long-running background tasks.
+            Returns 'break', 'continue', or 'ok'.
+            """
             try:
                 self._execute_block(node.body, new_scope=False)
                 return "ok"
@@ -2447,26 +2470,27 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             except ContinueSignal:
                 return "continue"
             except Exception as e:
-                print(f"[every] Error: {e}")
+                # Print full error so the programmer can see what failed
+                err_type = type(e).__name__
+                err_msg  = str(e).strip() or "(no message)"
+                print(f"[every] {err_type}: {err_msg}")
                 return "ok"
 
         if max_runs is not None:
-            # Finite — run synchronously
+            # Finite — run synchronously and let errors propagate
             for _ in range(max_runs):
-                result = _run_body_once()
+                result = _run_body_finite()
                 if result == "break":
                     break
                 if _ < max_runs - 1:
                     time.sleep(seconds)
         else:
-            # Infinite — check if body will self-terminate via break
-            # Run synchronously with a hard iteration guard so tests
-            # don't hang; real programs use Ctrl+C or break inside
+            # Infinite — run in a background daemon thread
             stop_event = threading.Event()
 
             def _loop():
                 while not stop_event.is_set():
-                    result = _run_body_once()
+                    result = _run_body_infinite()
                     if result == "break":
                         stop_event.set()
                         break
@@ -2746,7 +2770,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         else:
             # Expression watcher — run body when value changes
             last_val = self._execute_node(node.target)
-            print(f"[watch] Watching expression (Ctrl+C to stop)")
+            print("[watch] Watching expression (Ctrl+C to stop)")
             try:
                 while True:
                     time.sleep(0.1)
