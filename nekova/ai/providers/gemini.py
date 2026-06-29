@@ -137,7 +137,7 @@ class GeminiProvider(BaseProvider):
             from google import genai
             client = self._get_client()
 
-            print(f"\033[96m", end="", flush=True)
+            print("\033[96m", end="", flush=True)
 
             response = client.models.generate_content_stream(
                 model=self.MODEL,
@@ -151,7 +151,7 @@ class GeminiProvider(BaseProvider):
                           end="", flush=True)
                     full_response.append(chunk.text)
 
-            print(f"\033[0m")
+            print("\033[0m")
             return "".join(full_response)
 
         except Exception as e:
@@ -169,7 +169,7 @@ class GeminiProvider(BaseProvider):
         import urllib.parse
         import time
 
-        print(f"\033[96m⚡ Generating image...\033[0m",
+        print("\033[96m⚡ Generating image...\033[0m",
               flush=True)
 
         encoded = urllib.parse.quote(prompt)
@@ -204,7 +204,7 @@ class GeminiProvider(BaseProvider):
 
             except Exception as e:
                 if attempt < 2:
-                    print(f"\033[93m  Retrying...\033[0m",
+                    print("\033[93m  Retrying...\033[0m",
                           flush=True)
                     time.sleep(3)
                 else:
