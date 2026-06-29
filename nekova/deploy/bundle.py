@@ -32,10 +32,10 @@ class AppBundler:
         bundle_dir = tempfile.mkdtemp(
             prefix=f"NEKOVA_{app_name}_")
 
-        print(f"  → Copying app files...")
+        print("  → Copying app files...")
         self._copy_app(filepath, bundle_dir, app_name)
 
-        print(f"  → Writing runtime files...")
+        print("  → Writing runtime files...")
         self._write_requirements(bundle_dir)
         self._write_procfile(bundle_dir, app_name)
         self._write_main(bundle_dir, app_name)
