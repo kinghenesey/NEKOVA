@@ -148,11 +148,11 @@ class MockProvider(BaseProvider):
         response = self.ask(prompt)
         words    = response.split()
 
-        print(f"\033[96m", end="", flush=True)
+        print("\033[96m", end="", flush=True)
         for word in words:
             print(word + " ", end="", flush=True)
             time.sleep(0.05)
-        print(f"\033[0m")
+        print("\033[0m")
 
         return response
     
