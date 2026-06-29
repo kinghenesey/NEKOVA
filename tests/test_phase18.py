@@ -291,7 +291,7 @@ class TestFileNk(unittest.TestCase):
         self.assertEqual(out, "true")
 
     def test_exists_false(self):
-        out = run(f'use file\nshow exists("/nonexistent/path/file.txt")')
+        out = run('use file\nshow exists("/nonexistent/path/file.txt")')
         self.assertEqual(out, "false")
 
     def test_lines(self):
@@ -330,7 +330,13 @@ class TestFileNk(unittest.TestCase):
 
     def test_copy(self):
         dest = os.path.join(self.tmpdir, "dest.txt").replace("\\", "/")
-
+        out  = run(
+            f'use file\n'
+            f'write("{self.tmpfile}", "copy me")\n'
+            f'copy("{self.tmpfile}", "{dest}")\n'
+            f'show read("{dest}")'
+        )
+        self.assertEqual(out, "copy me")
 
 # ── date.nk ───────────────────────────────────────────────────
 
