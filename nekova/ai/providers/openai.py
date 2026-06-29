@@ -147,7 +147,7 @@ class OpenAIProvider(BaseProvider):
             full_prompt = prompt  # memory already injected by think_engine
             client      = self._get_client()
 
-            print(f"\033[96m", end="", flush=True)
+            print("\033[96m", end="", flush=True)
 
             full_response = []
             stream = client.chat.completions.create(
@@ -165,7 +165,7 @@ class OpenAIProvider(BaseProvider):
                     print(text, end="", flush=True)
                     full_response.append(text)
 
-            print(f"\033[0m")
+            print("\033[0m")
 
             response_text = "".join(full_response)
 
@@ -199,7 +199,7 @@ class OpenAIProvider(BaseProvider):
             import urllib.request
             client = self._get_client()
 
-            print(f"\033[96m⚡ Generating image with DALL-E...\033[0m",
+            print("\033[96m⚡ Generating image with DALL-E...\033[0m",
                   flush=True)
 
             response = client.images.generate(
