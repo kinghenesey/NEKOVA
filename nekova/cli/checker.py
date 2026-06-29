@@ -245,7 +245,7 @@ class _Analyser:
         elif name in _BUILTINS:
             self.warn("W005", line,
                       f"'{name}' shadows a built-in NEKOVA name.",
-                      f"Consider renaming to avoid confusion.")
+                      "Consider renaming to avoid confusion.")
 
         self.scope.define(name, line)
         self._visit(node.value)
@@ -433,7 +433,7 @@ class _Analyser:
                 if name and not name.startswith("_"):
                     self.warn("W002", line,
                               f"'{name}' is defined but never used.",
-                              f"Remove it or use it somewhere in your code.")
+                              "Remove it or use it somewhere in your code.")
 
     def _check_calls(self):
         """Warn about calls with wrong argument count."""
