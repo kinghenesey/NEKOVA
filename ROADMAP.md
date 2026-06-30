@@ -1,6 +1,6 @@
 # NEKOVA Language — Official Roadmap
 
-**Version:** 1.9.0 · Genesis  
+**Version:** 1.9.1 · Genesis  
 **Tests:** 1,130 passing · 181 test classes · 22 test phases  
 **Status:** Active development · Phase 20 in progress  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
@@ -28,7 +28,7 @@ No imports. No boilerplate. No setup. Just the idea.
 
 | Version | Phase | What Ships |
 |---------|-------|-----------|
-| 1.9.0 | 19b | Current — self-hosting blockers fixed, 38 security bugs resolved |
+| 1.9.1 | 19b | Current — self-hosting blockers fixed, 38 security bugs resolved |
 | **1.4** | 20 | Lexer in NEKOVA — self-hosting begins |
 | **1.5** | 21 | Prompt blocks, retry/fallback, enforced types |
 | **1.6** | 22 | Observe, mock think, pipe operator |
@@ -181,7 +181,7 @@ Sandbox as a deployable commercial API. `nekova teach` — AI-powered interactiv
 | Test phases | 22 |
 | Test classes | 181 |
 | Tests passing | 1,130 / 1,130 |
-| Version | 1.9.0 |
+| Version | 1.9.1 |
 | PyPI package | `nekova-lang` |
 | VS Code extension | ✅ Published |
 | Self-hosting blockers | 0 remaining |

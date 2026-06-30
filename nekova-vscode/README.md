@@ -1,4 +1,4 @@
-﻿# NEKOVA VS Code Extension — v1.9.0
+﻿# NEKOVA VS Code Extension — v1.9.1
 
 Syntax highlighting, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
@@ -169,7 +169,7 @@ match status:
 
 ## Release Notes
 
-### 1.9.0
+### 1.9.1
 - Grammar updated for Phases 15–19: `yield`, `class`, `error`, `shape`, `every`, `test`/`expect`, `imagine`, `speak`/`listen`, `watch`, `sandbox`/`strict`/`relaxed`
 - Decorator syntax (`@`) and return type hints (`->`) highlighted
 - Floor division (`//`) and range operator (`..`) added to operator highlighting

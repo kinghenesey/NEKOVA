@@ -5,7 +5,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.9.0] — 2026-06-27 · Phase 19b "Self-Hosting Blockers + Security"
+## [1.9.1] — 2026-06-30 · Patch
+
+### Fixed
+- `nekova --version` was displaying `v1.3.1` instead of the current version —
+  `nekova/config.py` had never been updated past the initial release while
+  `pyproject.toml` was correctly bumped each phase
+- Mojibake `Â·` in CLI output (version line and banner) caused by double-encoded
+  UTF-8 bytes baked into `main.py` source — fixed at binary level
+- Hardcoded `"nekova_version": "1.2.0"` in package manifest —
+  now reads from `NEKOVA_VERSION` in `config.py`
+- Version tests in `test_phase12.py` were asserting literal `"1.3.1"` and
+  `"1.8.0"` — replaced with dynamic checks against `NEKOVA_VERSION` so they
+  never need manual updating when the version bumps
+- License changed from MIT to Business Source License 1.1 (BUSL-1.1)
+
+### Added
+- `LICENSING_FAQ.md` — plain-English explanation of what the BUSL license
+  means for users, contributors, and companies building on NEKOVA
+
+## [1.9.1] — 2026-06-27 · Phase 19b "Self-Hosting Blockers + Security"
 
 ### Self-Hosting Blockers — All Cleared
 - **`dict[key] = value`** — subscript assignment now works for dicts, lists, and chained `d["x"]["y"] = z`
@@ -47,7 +66,7 @@ All self-hosting blockers cleared. Phase 20 begins: write the NEKOVA lexer in NE
 
 ---
 
-## [1.9.0] — 2026-06-27 · Phase 19 "NEKOVA Sandbox"
+## [1.9.1] — 2026-06-27 · Phase 19 "NEKOVA Sandbox"
 
 ### Added
 - **`nekova/sandbox/`** — full sandbox package: `SandboxEnvironment`, `SandboxResult`, `run_sandboxed()`

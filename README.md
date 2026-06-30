@@ -4,7 +4,7 @@
 
 ### The AI-Native Programming Language by SYNEKCOT Tech
 
-![Version](https://img.shields.io/badge/version-1.9.0-C41E0E?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.9.1-C41E0E?style=flat-square)
 ![PyPI](https://img.shields.io/pypi/v/nekova-lang?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.10+-blue?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
