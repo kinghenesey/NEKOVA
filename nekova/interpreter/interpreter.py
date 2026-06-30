@@ -6,7 +6,7 @@ from nekova.parser.nodes import (
     MemoryStatement, SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UnpackStatement, UseStatement,
-    ImportStatement, CallExpression, IndexExpression,
+    ImportStatement, CallExpression, IndexExpression, IndexAssignStatement,
     MethodCall,
     PropertyAccess,
     ClassDefinition, NewInstance, SelfAccess, SelfAssign,
@@ -1378,6 +1378,34 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 f"'{type(collection).__name__}'."
             )
     
+    def _exec_IndexAssignStatement(self, node: IndexAssignStatement):
+        """
+        Assign a value into a list or dict by index/key.
+            items[0]   = "new"
+            d["key"]   = 99
+        """
+        collection = self._execute_node(node.collection)
+        index      = self._execute_node(node.index)
+        value      = self._execute_node(node.value)
+
+        if isinstance(collection, dict):
+            collection[str(index)] = value
+        elif isinstance(collection, list):
+            try:
+                collection[int(index)] = value
+            except IndexError:
+                raise NEKOVARuntimeError(
+                    f"Index {index} is out of range.\n"
+                    f"  List has {len(collection)} items."
+                )
+        else:
+            raise NEKOVARuntimeError(
+                f"Cannot assign by index into "
+                f"'{type(collection).__name__}'. "
+                f"Only lists and dicts support this."
+            )
+        return value
+
     def _exec_PropertyAccess(self, node: PropertyAccess):
         """
         Execute property access: obj.prop (no parentheses).
@@ -1870,6 +1898,23 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                     if isinstance(result, ReturnSignal):
                         return result
                 return result
+
+            # ── range arm: when 'a'..'z' or when 0..9 ────────
+            if arm.is_range:
+                lo = self._execute_node(arm.pattern)
+                hi = self._execute_node(arm.range_end)
+                try:
+                    matched = lo <= subject <= hi
+                except TypeError:
+                    matched = False
+                if matched:
+                    result = None
+                    for stmt in arm.body:
+                        result = self._execute_node(stmt)
+                        if isinstance(result, ReturnSignal):
+                            return result
+                    return result
+                continue
 
             # ── type-check arm ────────────────────────────────
             if arm.is_type_check:
