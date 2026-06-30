@@ -60,6 +60,8 @@ class MatchParserMixin:
 
                 cur = self._current()
                 is_type_check = False
+                is_range      = False
+                range_end     = None
                 pattern       = None
 
                 if cur.type == TokenType.IDENTIFIER:
@@ -82,10 +84,18 @@ class MatchParserMixin:
                 else:
                     pattern = self._parse_expression()
 
+                # ── Range pattern: when 'a'..'z' or when 0..9 ─
+                if self._current().type == TokenType.DOTDOT:
+                    self._advance()                  # consume '..'
+                    range_end = self._parse_expression()
+                    is_range  = True
+
                 self._consume(TokenType.COLON)
                 body = self._parse_inline_or_block()
                 arms.append(MatchArm(pattern, body,
-                                     is_type_check=is_type_check))
+                                     is_type_check=is_type_check,
+                                     is_range=is_range,
+                                     range_end=range_end))
                 continue
 
             # Anything unrecognised ends the match block
