@@ -335,20 +335,72 @@ class Lexer:
         )
 
     def _read_number(self):
-        """Read an integer or float literal."""
-        value  = []
+        """
+        Read a numeric literal. Supports:
+          - integers:            42
+          - floats:              3.14
+          - underscore sep:      1_000_000   →  1000000
+          - scientific notation: 1.5e-3      →  0.0015
+          - hex literals:        0xFF        →  255
+        """
+        # ── Hex literal: 0x... / 0X... ────────────────────────
+        if (self._current() == "0" and not self._at_end()
+                and self._peek().lower() == "x"):
+            self._advance()  # consume '0'
+            self._advance()  # consume 'x'
+            hex_digits = []
+            while not self._at_end() and (
+                    self._current() in "0123456789abcdefABCDEF_"):
+                if self._current() != "_":
+                    hex_digits.append(self._current())
+                self._advance()
+            if not hex_digits:
+                raise LexerError(
+                    "Invalid hex literal — expected digits after '0x'.",
+                    self.line, self.column)
+            self._add_token(TokenType.INTEGER,
+                            int("".join(hex_digits), 16))
+            return
+
+        # ── Decimal integer or float ───────────────────────────
+        value    = []
         is_float = False
 
-        while not self._at_end() and self._current().isdigit():
-            value.append(self._current())
+        # Integer part (underscores allowed as separators)
+        while not self._at_end() and (self._current().isdigit()
+                                       or self._current() == "_"):
+            if self._current() != "_":
+                value.append(self._current())
             self._advance()
 
-        # Check for decimal point
+        # Optional decimal point
         if (not self._at_end() and self._current() == "."
                 and self._peek().isdigit()):
             is_float = True
             value.append(".")
             self._advance()
+            while not self._at_end() and (self._current().isdigit()
+                                           or self._current() == "_"):
+                if self._current() != "_":
+                    value.append(self._current())
+                self._advance()
+
+        # Optional scientific notation: e / E followed by optional +/- and digits
+        if (not self._at_end()
+                and self._current().lower() == "e"
+                and (self._peek().isdigit()
+                     or self._peek() in ("+", "-"))):
+            is_float = True
+            value.append("e")
+            self._advance()                   # consume 'e'
+            if not self._at_end() and self._current() in ("+", "-"):
+                value.append(self._current())
+                self._advance()               # consume sign
+            if self._at_end() or not self._current().isdigit():
+                raise LexerError(
+                    "Invalid scientific notation — "
+                    "expected digits after exponent.",
+                    self.line, self.column)
             while not self._at_end() and self._current().isdigit():
                 value.append(self._current())
                 self._advance()
@@ -438,6 +490,13 @@ class Lexer:
             "}": TokenType.RBRACE,
             ".": TokenType.DOT,
         }
+
+        # ── Range operator: .. (must check before single-char '.') ─
+        if char == "." and not self._at_end() and self._peek() == ".":
+            self._add_token(TokenType.DOTDOT, "..")
+            self._advance()   # consume first  '.'
+            self._advance()   # consume second '.'
+            return
 
         if char in single:
             self._add_token(single[char], char)
