@@ -126,6 +126,7 @@ class TokenType(Enum):
     # ── Punctuation ───────────────────────────────────────────
     COLON       = auto()
     DOT         = auto()
+    DOTDOT      = auto()   # range operator: 'a'..'z'  or  0..9
     COMMA       = auto()
     LPAREN      = auto()
     RPAREN      = auto()
