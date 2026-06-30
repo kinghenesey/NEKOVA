@@ -8,7 +8,7 @@ from nekova.parser.nodes import (
     SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UnpackStatement, UseStatement,
-    ImportStatement, CallExpression, IndexExpression,
+    ImportStatement, CallExpression, IndexExpression, IndexAssignStatement,
     MethodCall,
     PropertyAccess,
     ClassDefinition, MethodDefinition,
@@ -118,7 +118,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             if self._current().type == TokenType.ARROW:
                 return self._parse_pipeline(first)
             raise ParseError(
-                f"Unexpected string — did you mean to use 'show' or '->'?",
+                "Unexpected string — did you mean to use 'show' or '->'?",
                 token.line
             )
 
@@ -1389,6 +1389,54 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
             self._expect_newline_or_eof()
             return self._stamp(AssignStatement(name, value, type_hint=type_hint), line)
+
+        # Index assignment: name["key"] = val  or  name[0] = val
+        if token.type == TokenType.LBRACKET:
+            self._advance()                          # consume '['
+            index = self._parse_expression()
+            self._consume(TokenType.RBRACKET)
+            # Must be followed by '=' to be an assignment statement
+            if self._current().type == TokenType.ASSIGN:
+                self._advance()                      # consume '='
+                value = self._parse_expression()
+                self._expect_newline_or_eof()
+                return self._stamp(
+                    IndexAssignStatement(Identifier(name), index, value),
+                    line)
+            # Otherwise it's a read — rebuild as expression, supporting chains
+            expr = IndexExpression(Identifier(name), index)
+            # Handle further chaining: name[a][b] = val  or  name[a].method()
+            while self._current().type in (
+                    TokenType.DOT, TokenType.LBRACKET):
+                if self._current().type == TokenType.DOT:
+                    self._advance()
+                    prop = self._advance().value
+                    if self._current().type == TokenType.LPAREN:
+                        self._consume(TokenType.LPAREN)
+                        args = []
+                        while self._current().type != TokenType.RPAREN:
+                            args.append(self._parse_expression())
+                            if self._current().type == TokenType.COMMA:
+                                self._advance()
+                        self._consume(TokenType.RPAREN)
+                        expr = MethodCall(expr, prop, args)
+                    else:
+                        expr = PropertyAccess(expr, prop)
+                else:
+                    # Another index: name[a][b] — could be assignment LHS
+                    self._advance()                  # consume '['
+                    idx2 = self._parse_expression()
+                    self._consume(TokenType.RBRACKET)
+                    # Peek: if followed by '=' this is a chained assignment
+                    if self._current().type == TokenType.ASSIGN:
+                        self._advance()              # consume '='
+                        value = self._parse_expression()
+                        self._expect_newline_or_eof()
+                        return self._stamp(
+                            IndexAssignStatement(expr, idx2, value), line)
+                    expr = IndexExpression(expr, idx2)
+            self._expect_newline_or_eof()
+            return expr
 
         # Function call
         if token.type == TokenType.LPAREN:
