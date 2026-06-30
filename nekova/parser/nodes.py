@@ -103,6 +103,23 @@ class IndexExpression(Node):
     def __repr__(self):
         return f"Index({self.collection}[{self.index}])"
 
+
+class IndexAssignStatement(Node):
+    """
+    Assign a value to a list or dict by index/key.
+    Example:
+        items[0]   = "new"
+        d["key"]   = 99
+        matrix[i]  = row
+    """
+    def __init__(self, collection: Node, index: Node, value: Node):
+        self.collection = collection
+        self.index      = index
+        self.value      = value
+
+    def __repr__(self):
+        return f"IndexAssign({self.collection}[{self.index}] = {self.value})"
+
 class MethodCall(Node):
     """
     A method call on a value.
@@ -694,18 +711,25 @@ class MatchArm(Node):
     """
     A single arm inside a match block.
         when 200: show "OK"
+        when 'a'..'z': show "lowercase"
     pattern: the value/type to match against (Node or str)
     is_type_check: True if matching a type name (e.g. when text:)
     is_else: True if this is the else arm
+    is_range: True if matching a character/number range (e.g. 'a'..'z')
+    range_end: the end of the range (Node), used when is_range=True
     body: list of statements
     """
     def __init__(self, pattern, body: list,
                  is_type_check: bool = False,
-                 is_else: bool = False):
+                 is_else: bool = False,
+                 is_range: bool = False,
+                 range_end=None):
         self.pattern       = pattern
         self.body          = body
         self.is_type_check = is_type_check
         self.is_else       = is_else
+        self.is_range      = is_range
+        self.range_end     = range_end
 
     def __repr__(self):
         if self.is_else:

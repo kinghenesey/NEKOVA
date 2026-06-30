@@ -118,7 +118,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             if self._current().type == TokenType.ARROW:
                 return self._parse_pipeline(first)
             raise ParseError(
-                "Unexpected string — did you mean to use 'show' or '->'?",
+                f"Unexpected string — did you mean to use 'show' or '->'?",
                 token.line
             )
 
