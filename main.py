@@ -47,7 +47,7 @@ from runner import NEKOVARunner
 
 HELP_TEXT = f"""
 {Color.CYAN}{Color.BOLD}NEKOVA Programming Language{Color.RESET} \
-v{NEKOVA_VERSION} Â· {NEKOVA_CODENAME}
+v{NEKOVA_VERSION} · {NEKOVA_CODENAME}
 
 {Color.BOLD}Running files:{Color.RESET}
   python main.py <file.nk>              Run an NEKOVA file
@@ -237,7 +237,7 @@ def main():
         sys.exit(0)
 
     if args["version"]:
-        print(f"NEKOVA v{NEKOVA_VERSION} Â· {NEKOVA_CODENAME}")
+        print(f"NEKOVA v{NEKOVA_VERSION} · {NEKOVA_CODENAME}")
         sys.exit(0)
 
     if args["help"]:

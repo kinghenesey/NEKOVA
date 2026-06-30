@@ -47,7 +47,7 @@ All self-hosting blockers cleared. Phase 20 begins: write the NEKOVA lexer in NE
 
 ---
 
-## [1.8.0] — 2025-06-27 · Phase 19 "NEKOVA Sandbox"
+## [1.9.0] — 2026-06-27 · Phase 19 "NEKOVA Sandbox"
 
 ### Added
 - **`nekova/sandbox/`** — full sandbox package: `SandboxEnvironment`, `SandboxResult`, `run_sandboxed()`

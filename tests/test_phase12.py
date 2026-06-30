@@ -24,9 +24,15 @@ sys.path.insert(0, ROOT)
 # =============================================================
 
 class TestVersion:
-    def test_version_is_1_3_0(self):
+    def test_version_is_current(self):
         from nekova.config import NEKOVA_VERSION
-        assert NEKOVA_VERSION == "1.3.1"
+        # Version must be semver-shaped: X.Y.Z
+        parts = NEKOVA_VERSION.split(".")
+        assert len(parts) == 3, f"Expected semver X.Y.Z, got {NEKOVA_VERSION}"
+        assert all(p.isdigit() for p in parts), \
+            f"All version parts must be numeric, got {NEKOVA_VERSION}"
+        assert NEKOVA_VERSION == "1.9.0", \
+            f"Expected 1.9.0, got {NEKOVA_VERSION} — update this test when bumping"
 
     def test_codename_unchanged(self):
         from nekova.config import NEKOVA_CODENAME
@@ -36,17 +42,21 @@ class TestVersion:
         path = os.path.join(ROOT, "CHANGELOG.md")
         assert os.path.isfile(path), "CHANGELOG.md not found"
 
-    def test_changelog_mentions_1_3_0(self):
+    def test_changelog_mentions_current_version(self):
+        from nekova.config import NEKOVA_VERSION
         path = os.path.join(ROOT, "CHANGELOG.md")
         with open(path, encoding="utf-8") as f:
             text = f.read()
-        assert "1.3.1" in text
+        assert NEKOVA_VERSION in text, \
+            f"CHANGELOG.md does not mention current version {NEKOVA_VERSION}"
 
-    def test_pyproject_version(self):
+    def test_pyproject_version_matches_config(self):
+        from nekova.config import NEKOVA_VERSION
         path = os.path.join(ROOT, "pyproject.toml")
         with open(path, encoding="utf-8") as f:
             text = f.read()
-        assert 'version = "1.8.0"' in text
+        assert f'version = "{NEKOVA_VERSION}"' in text, \
+            f"pyproject.toml version does not match config.py ({NEKOVA_VERSION})"
 
 
 # =============================================================
@@ -199,10 +209,11 @@ class TestScaffoldFilesystem:
         assert "tomltest" in text
 
     def test_main_nk_contains_nekova_version(self):
+        from nekova.config import NEKOVA_VERSION
         self._scaffold("vtest", "ai")
         with open("vtest/src/main.nk", encoding="utf-8") as f:
             text = f.read()
-        assert "1.3.1" in text
+        assert NEKOVA_VERSION in text
 
     def test_files_are_utf8_without_bom(self):
         self._scaffold("bomtest", "fullstack")
@@ -344,10 +355,11 @@ class TestREPLQmarkCommands:
         assert result is True
 
     def test_qmark_version(self, capsys):
+        from nekova.config import NEKOVA_VERSION
         result = self.repl._handle_command("?version")
         assert result is True
         out = capsys.readouterr().out
-        assert "1.3.1" in out
+        assert NEKOVA_VERSION in out
 
     def test_qmark_templates(self, capsys):
         result = self.repl._handle_command("?templates")
@@ -367,9 +379,10 @@ class TestREPLQmarkCommands:
         assert self.repl.history == []
 
     def test_version_command(self, capsys):
+        from nekova.config import NEKOVA_VERSION
         self.repl._handle_command("version")
         out = capsys.readouterr().out
-        assert "1.3.1" in out
+        assert NEKOVA_VERSION in out
 
     def test_exit_commands(self):
         for cmd in ("exit", "quit", "q", ":q"):

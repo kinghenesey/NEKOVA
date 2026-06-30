@@ -6,7 +6,7 @@ import os
 import sys
 import json
 
-from nekova.config import Color
+from nekova.config import Color, NEKOVA_VERSION
 from nekova.cli    import print_success, print_error, print_info, print_warning
 from nekova.packages import (
     BUILTIN_PACKAGES, load_registry, save_registry,
@@ -277,7 +277,7 @@ def publish_package(directory: str = ".") -> bool:
                 "version":    version,
                 "author":     author,
                 "built_at":   datetime.datetime.utcnow().isoformat(),
-                "nekova_version": "1.2.0",
+                "nekova_version": NEKOVA_VERSION,
             }
             zf.writestr("manifest.json",
                         json.dumps(manifest, indent=2))
