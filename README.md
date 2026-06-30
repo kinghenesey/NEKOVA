@@ -4,11 +4,11 @@
 
 ### The AI-Native Programming Language by SYNEKCOT Tech
 
-![Version](https://img.shields.io/badge/version-1.8.0-C41E0E?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.9.0-C41E0E?style=flat-square)
 ![PyPI](https://img.shields.io/pypi/v/nekova-lang?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.10+-blue?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-1033%20passing-success?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-1130%20passing-success?style=flat-square)
 
 *"The first programming language where AI is syntax, not a library."*
 
@@ -48,10 +48,10 @@ show sandbox_result["safe"]
 
 ## Why NEKOVA?
 
-> *"I didn't just learn to code. I built the tools other people use to code."*
-> — Emmanuel King Christopher, Founder of SYNEKCOT Tech
+> *"Because every other language makes you import AI as a library, and I believe if AI is the future of how we build software, it should be a keyword — not an afterthought."*
+> — Emmanuel King Christopher, Founder of SYNEKCOT Tech and Sole Author of Nekova Programming Language
 
-NEKOVA was born in Nigeria to prove that world-class programming languages can come from anywhere. **1033 tests. 19 development phases. One language.**
+NEKOVA was born in Nigeria to prove that world-class programming languages can come from anywhere. **1130 tests. 20 development phases. One language.**
 
 ---
 
@@ -341,6 +341,37 @@ for n in fibonacci():
 
 ---
 
+
+### Self-Hosting Blockers (Phase 19b)
+
+All five blockers for writing NEKOVA in NEKOVA are now fixed:
+
+```nekova
+# 1. Dict subscript assignment
+let tokens = {}
+let tokens["IF"] = "keyword"
+show tokens["IF"]   # → keyword
+
+# 2. Hex literals
+let mask = 0xFF
+let color = 0xDEADBEEF
+
+# 3. Scientific notation
+let avogadro = 6.022e23
+let epsilon  = 1e-9
+
+# 4. Underscore separators
+let million = 1_000_000
+let pi_approx = 3.141_592
+
+# 5. Range arms in match
+let c = "k"
+match c:
+    when "a".."z": show "lowercase"
+    when "A".."Z": show "uppercase"
+    when "0".."9": show "digit"
+```
+
 ## CLI Reference
 
 ```bash
@@ -422,8 +453,13 @@ nekova search "http client"
 | 17 | ✅ | Power user layer — generators, decorators, error types, typed tasks, `class` keyword |
 | 18 | ✅ | Standard library in NEKOVA — `math.nk`, `string.nk`, `file.nk`, `date.nk` |
 | 19 | ✅ | NEKOVA Sandbox — isolated execution, resource limits, violation tracking |
-| 20 | 🔜 | Self-Hosting — NEKOVA lexer written in NEKOVA |
-| 21 | 🔜 | NEKOVA Game Engine |
+| 19b | ✅ | Security fixes — 38 bugs fixed, self-hosting blockers cleared |
+| 20 | 🔄 | **Self-Hosting begins** — NEKOVA lexer written in NEKOVA |
+| 21 | 🔜 | Prompt blocks, retry/fallback, enforced types |
+| 22 | 🔜 | Observe blocks, mock think, pipe operator |
+| 23 | 🔜 | Polish — inline errors, destructuring, docstrings |
+| 24 | 🔜 | NEKOVA parser in NEKOVA — v2.0 milestone |
+| 27 | 🎯 | Full self-hosting — interpreter in NEKOVA — v3.0 |
 
 ---
 
@@ -431,7 +467,7 @@ nekova search "http client"
 
 **SYNEKCOT Tech** is a technology company founded by Emmanuel King Christopher (age 21) in Nigeria, building tools that empower developers across Africa and the world.
 
-NEKOVA is open source and built entirely in public. Every commit, every test, every phase — documented and shipped.
+NEKOVA's source is publicly available and built entirely in public — every commit, every test, every phase, documented and shipped. NEKOVA is licensed under the [Business Source License 1.1](LICENSE): free to use, modify, and build on for personal projects, learning, and commercial products under $1M/year in revenue. The license converts automatically to Apache 2.0 four years after each release. See [LICENSE](LICENSE) for full terms, or the [Licensing FAQ](LICENSING_FAQ.md) for a plain-English explanation.
 
 - GitHub: [github.com/kinghenesey/NEKOVA](https://github.com/kinghenesey/NEKOVA)
 - PyPI: [pypi.org/project/nekova-lang](https://pypi.org/project/nekova-lang)

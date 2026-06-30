@@ -5,6 +5,48 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.9.0] — 2026-06-27 · Phase 19b "Self-Hosting Blockers + Security"
+
+### Self-Hosting Blockers — All Cleared
+- **`dict[key] = value`** — subscript assignment now works for dicts, lists, and chained `d["x"]["y"] = z`
+- **`0xFF` / `0XFF`** — hex integer literals with `_` separators (`0xFF_FF`)
+- **`1e5` / `2.5e-3` / `1.5E+10`** — scientific notation floats
+- **`1_000_000`** — underscore digit separators in all number literals
+- **`..` DOTDOT token** — range operator for `match` arms
+- **`match` range arms** — `when "a".."z":` matches character ranges, `when 1..10:` matches int ranges
+
+### Security Fixes (38 bugs resolved)
+- `not not x` / `--x` — unary operators now recurse correctly (Bug 14)
+- `and`/`or` — true short-circuit evaluation, right side skipped when result known (Bug 15)
+- SQL injection — full parameterised query rewrite with `_safe_identifier()` validation (Bug 16)
+- `hmac_valid()` — now accepts `algorithm` parameter (Bug 17)
+- `token_bytes` — exported from crypto module (Bug 18)
+- `try` without `catch` — now re-raises instead of swallowing (Bug 19)
+- All servers default to `127.0.0.1` not `0.0.0.0` (Bug 20)
+- Formatter `**` preserved — no longer split to `* *` (Bug 22)
+- `async task` keyword accepted alongside `async func` (Bug 25)
+- `init_interpreter_memory()` wired to `Interpreter.__init__` — per-interpreter memory isolation (Bug 33)
+- Double memory injection removed from all AI providers (Bug 35)
+- `env_all()` redacts secrets (`*KEY*`, `*SECRET*`, `*TOKEN*`, `*PASSWORD*`) (Bug 37)
+- Bare imports in `deploy/` and `cli/deploy.py` fixed to use full `nekova.*` paths (Bug 38)
+- `is_number("--5")` now returns `false` (Bug 44)
+- Voice temp file deleted after playback, sleep duration computed from word count (Bug 36)
+- Vision module base64 round-trip removed — raw bytes passed directly (Bug vision)
+- `ConfigError` hoisted to single top-level import in `main.py` (duplicate import)
+
+### New String Methods
+- `.join()`, `.lstrip()`, `.rstrip()`, `.zfill()`, `.center()`, `.is_digit()`, `.is_alpha()`
+
+### Tests
+- 53 new self-hosting tests in `tests/test_self_hosting.py`
+- 44 bug fix regression tests in `tests/test_bugfixes2.py`
+- Total: **1130 passing**, zero regressions
+
+### Milestone
+All self-hosting blockers cleared. Phase 20 begins: write the NEKOVA lexer in NEKOVA.
+
+---
+
 ## [1.8.0] — 2025-06-27 · Phase 19 "NEKOVA Sandbox"
 
 ### Added

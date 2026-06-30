@@ -1,8 +1,8 @@
 {
   "name": "nekova-lang",
   "displayName": "NEKOVA - AI Native Programming Language",
-  "description": "Syntax highlighting, snippets, and commands for the NEKOVA AI-Native Programming Language",
-  "version": "1.8.0",
+  "description": "NEKOVA: AI-native syntax highlighting, snippets, sandbox, and tooling for the NEKOVA programming language \u2014 where think is a keyword",
+  "version": "1.9.0",
   "publisher": "SYNEKCOTTech",
   "engines": {
     "vscode": "^1.75.0"
@@ -182,5 +182,6 @@
   },
   "devDependencies": {
     "@vscode/vsce": "^2.0.0"
-  }
+  },
+  "license": "SEE LICENSE IN LICENSE"
 }
