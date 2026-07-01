@@ -1,0 +1,19 @@
+# tools/nk_tokenize.nk
+# Diff harness: tokenizes a target .nk source file using the
+# self-hosted lexer (nekova/stdlib/nk/lexer.nk) and writes the
+# resulting token stream to tools/nk_tokens.json as JSON, so it
+# can be diffed against the Python reference lexer's output.
+#
+# Usage:  nekova run tools/nk_tokenize.nk
+
+use json
+use lexer
+use file
+
+let target = "tools/diff_target.nk"
+let source = read(target)
+
+let tokens = tokenize(source)
+
+write("tools/nk_tokens.json", json_encode(tokens))
+show "wrote " + str(len(tokens)) + " tokens to tools/nk_tokens.json"

@@ -47,3 +47,6 @@ nekova-vscode/.vscode-test/
 temp_test.txt
 test.db
 test_*.nk
+
+diff_target.nk
+nk_tokens.nk
