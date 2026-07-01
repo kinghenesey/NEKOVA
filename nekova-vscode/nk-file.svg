@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- File body -->
+  <rect x="2" y="1" width="10" height="13" rx="1.5" fill="#1a1a2e"/>
+  <!-- Folded corner -->
+  <path d="M9 1 L12 4 L9 4 Z" fill="#00bcd4" opacity="0.8"/>
+  <rect x="9" y="1" width="3" height="3" rx="0.5" fill="#0d1b2a"/>
+  <path d="M9 1 L12 4 L9 4 Z" fill="#00bcd4" opacity="0.6"/>
+  <!-- NK text -->
+  <text x="4" y="11" font-family="monospace" font-size="5.5" font-weight="bold" fill="#00e5ff">.nk</text>
+</svg>

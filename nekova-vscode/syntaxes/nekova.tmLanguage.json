@@ -1,4 +1,5 @@
 ﻿{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "NEKOVA",
   "scopeName": "source.nekova",
   "fileTypes": [
@@ -9,13 +10,31 @@
       "include": "#comments"
     },
     {
-      "include": "#fstrings"
+      "include": "#fstrings_double"
     },
     {
-      "include": "#strings"
+      "include": "#fstrings_single"
     },
     {
-      "include": "#think_types"
+      "include": "#strings_triple_double"
+    },
+    {
+      "include": "#strings_triple_single"
+    },
+    {
+      "include": "#strings_double"
+    },
+    {
+      "include": "#strings_single"
+    },
+    {
+      "include": "#think_as_clause"
+    },
+    {
+      "include": "#decorators"
+    },
+    {
+      "include": "#keywords_ai"
     },
     {
       "include": "#keywords_control"
@@ -24,7 +43,10 @@
       "include": "#keywords_declaration"
     },
     {
-      "include": "#keywords_ai"
+      "include": "#keywords_class"
+    },
+    {
+      "include": "#keywords_memory"
     },
     {
       "include": "#keywords_web"
@@ -33,19 +55,13 @@
       "include": "#keywords_db"
     },
     {
-      "include": "#keywords_class"
-    },
-    {
-      "include": "#keywords_memory"
+      "include": "#keywords_sandbox"
     },
     {
       "include": "#keywords_logic"
     },
     {
-      "include": "#stdlib_modules"
-    },
-    {
-      "include": "#builtins"
+      "include": "#keywords_test"
     },
     {
       "include": "#booleans"
@@ -57,30 +73,68 @@
       "include": "#operators"
     },
     {
-      "include": "#functions"
+      "include": "#task_definition"
+    },
+    {
+      "include": "#function_calls"
+    },
+    {
+      "include": "#stdlib_modules"
+    },
+    {
+      "include": "#builtins"
+    },
+    {
+      "include": "#self_keyword"
     },
     {
       "include": "#variables"
-    },
-    {
-      "include": "#keywords_sandbox"
     }
   ],
   "repository": {
     "comments": {
-      "name": "comment.line.hash.nekova",
+      "name": "comment.line.number-sign.nekova",
       "match": "#.*$"
     },
-    "fstrings": {
-      "name": "string.quoted.double.nekova meta.fstring.nekova",
+    "fstrings_double": {
+      "name": "string.quoted.double.nekova",
       "begin": "f\"",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.begin.nekova"
+        }
+      },
       "end": "\"",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.nekova"
+        }
+      },
       "patterns": [
         {
           "name": "meta.interpolation.nekova",
           "begin": "\\{",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.section.interpolation.begin.nekova"
+            }
+          },
           "end": "\\}",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.interpolation.end.nekova"
+            }
+          },
           "patterns": [
+            {
+              "include": "#numbers"
+            },
+            {
+              "include": "#operators"
+            },
+            {
+              "include": "#function_calls"
+            },
             {
               "include": "#variables"
             }
@@ -92,96 +146,207 @@
         }
       ]
     },
-    "strings": {
+    "fstrings_single": {
+      "name": "string.quoted.single.nekova",
+      "begin": "f'",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.begin.nekova"
+        }
+      },
+      "end": "'",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.nekova"
+        }
+      },
       "patterns": [
         {
-          "name": "string.quoted.double.nekova",
-          "begin": "\"",
-          "end": "\"",
+          "name": "meta.interpolation.nekova",
+          "begin": "\\{",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.section.interpolation.begin.nekova"
+            }
+          },
+          "end": "\\}",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.interpolation.end.nekova"
+            }
+          },
           "patterns": [
             {
-              "name": "meta.interpolation.nekova",
-              "match": "\\{([a-zA-Z_][a-zA-Z0-9_.]*)\\}",
-              "captures": {
-                "1": {
-                  "name": "variable.other.nekova"
-                }
-              }
+              "include": "#numbers"
             },
             {
-              "name": "constant.character.escape.nekova",
-              "match": "\\\\."
+              "include": "#operators"
+            },
+            {
+              "include": "#function_calls"
+            },
+            {
+              "include": "#variables"
             }
           ]
         },
         {
-          "name": "string.quoted.single.nekova",
-          "begin": "'",
-          "end": "'",
-          "patterns": [
-            {
-              "name": "constant.character.escape.nekova",
-              "match": "\\\\."
-            }
-          ]
+          "name": "constant.character.escape.nekova",
+          "match": "\\\\."
         }
       ]
     },
-    "think_types": {
-      "comment": "as <type> after think",
-      "match": "\\bas\\s+(text|json|list|bool|schema)\\b",
-      "captures": {
+    "strings_triple_double": {
+      "name": "string.quoted.triple.double.nekova",
+      "begin": "\"\"\"",
+      "beginCaptures": {
         "0": {
-          "name": "keyword.ai.nekova"
+          "name": "punctuation.definition.string.begin.nekova"
+        }
+      },
+      "end": "\"\"\"",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.nekova"
+        }
+      },
+      "patterns": [
+        {
+          "name": "constant.character.escape.nekova",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "strings_triple_single": {
+      "name": "string.quoted.triple.single.nekova",
+      "begin": "'''",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.begin.nekova"
+        }
+      },
+      "end": "'''",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.nekova"
+        }
+      },
+      "patterns": [
+        {
+          "name": "constant.character.escape.nekova",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "strings_double": {
+      "name": "string.quoted.double.nekova",
+      "begin": "\"",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.begin.nekova"
+        }
+      },
+      "end": "\"",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.nekova"
+        }
+      },
+      "patterns": [
+        {
+          "name": "meta.interpolation.nekova",
+          "match": "\\{([a-zA-Z_][a-zA-Z0-9_.]*)\\}",
+          "captures": {
+            "1": {
+              "name": "variable.other.nekova"
+            }
+          }
         },
+        {
+          "name": "constant.character.escape.nekova",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "strings_single": {
+      "name": "string.quoted.single.nekova",
+      "begin": "'",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.begin.nekova"
+        }
+      },
+      "end": "'",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.nekova"
+        }
+      },
+      "patterns": [
+        {
+          "name": "constant.character.escape.nekova",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "think_as_clause": {
+      "match": "\\b(as)\\s+(text|json|list|bool|number|schema)\\b",
+      "captures": {
         "1": {
+          "name": "keyword.operator.nekova"
+        },
+        "2": {
           "name": "support.type.nekova"
         }
       }
     },
+    "decorators": {
+      "name": "entity.name.function.decorator.nekova",
+      "match": "@[a-zA-Z_][a-zA-Z0-9_]*"
+    },
+    "keywords_ai": {
+      "name": "keyword.other.ai.nekova",
+      "match": "\\b(think|stream|imagine|speak|listen|model|autonomous|parallel|collect|generate|process|pipeline|run|prompt|retry|observe|fallback|each|fetch|watch|every|shape)\\b"
+    },
     "keywords_control": {
       "name": "keyword.control.nekova",
-      "match": "\\b(if|else|elif|repeat|while|for|in|not\\s+in|return|break|continue|try|catch|finally|raise|pass|assert|match|when|yield)\\b"
+      "match": "\\b(if|else|elif|repeat|while|for|in|return|break|continue|try|catch|finally|raise|pass|match|when|yield|with|global|assert)\\b"
     },
     "keywords_declaration": {
       "name": "keyword.declaration.nekova",
-      "match": "\\b(task|use|import|from|let|async|await|pipeline|sandbox|strict|relaxed|class|object|error|shape|every|watch|test|expect|imagine|speak|listen|global|yield)\\b"
+      "match": "\\b(task|func|use|import|from|let|async|await|class|object|error|schema|save)\\b"
     },
-    "keywords_ai": {
-      "name": "keyword.ai.nekova",
-      "match": "\\b(think|model|autonomous|parallel|collect|generate|process|save|with|run|stream)\\b"
+    "keywords_class": {
+      "name": "keyword.other.class.nekova",
+      "match": "\\b(init|new|extends|super)\\b"
+    },
+    "keywords_memory": {
+      "name": "keyword.other.memory.nekova",
+      "match": "\\b(remember|recall|forget|memory)\\b"
     },
     "keywords_web": {
-      "name": "keyword.web.nekova",
+      "name": "keyword.other.web.nekova",
       "match": "\\b(route|serve|GET|POST|PUT|DELETE|PATCH|request|response|port)\\b"
     },
     "keywords_db": {
-      "name": "keyword.db.nekova",
+      "name": "keyword.other.db.nekova",
       "match": "\\b(connect|query|insert|create|update|delete)\\b"
     },
-    "keywords_class": {
-      "name": "keyword.class.nekova",
-      "match": "\\b(object|class|init|self|new|extends|super)\\b"
-    },
-    "keywords_memory": {
-      "name": "keyword.memory.nekova",
-      "match": "\\b(remember|recall|forget|memory)\\b"
+    "keywords_sandbox": {
+      "name": "keyword.other.sandbox.nekova",
+      "match": "\\b(sandbox|strict|relaxed)\\b"
     },
     "keywords_logic": {
       "name": "keyword.operator.logical.nekova",
-      "match": "\\b(and|or|not|is|as|in)\\b"
+      "match": "\\b(and|or|not|is|as)\\b"
     },
-    "stdlib_modules": {
-      "name": "entity.name.namespace.nekova",
-      "match": "(?<=use )\\b(math|string|file|date|text|files|datetime|collections|json|env|uuid|crypto|ai|agents|ui|web|database|vision|audio|payments|auth)\\b"
-    },
-    "builtins": {
-      "name": "support.function.builtin.nekova",
-      "match": "\\b(show|ask|sleep|clear|type_of|length|range|to_text|to_number|to_list|random_num|sqrt|floor|ceil|log|sin|cos|tan|pow|len|str|int|float|bool|abs|round|min|max|sum|sorted|reversed|list|dict|print|file_read|file_write|file_exists|file_delete|date_now|date_today|sandbox_run|clamp|lerp|factorial|fibonacci|gcd|lcm|average|product|pad_left|pad_right|truncate|reverse|capitalize|is_palindrome|is_even|is_odd)\\b"
+    "keywords_test": {
+      "name": "keyword.other.test.nekova",
+      "match": "\\b(test|expect|mock)\\b"
     },
     "booleans": {
       "name": "constant.language.nekova",
-      "match": "\\b(true|false|null|none|True|False|None)\\b"
+      "match": "\\b(true|false|null)\\b"
     },
     "numbers": {
       "patterns": [
@@ -210,28 +375,32 @@
           "match": "(==|!=|<=|>=|<|>)"
         },
         {
+          "name": "keyword.operator.augmented-assignment.nekova",
+          "match": "(\\+=|-=|\\*=|/=)"
+        },
+        {
           "name": "keyword.operator.assignment.nekova",
-          "match": "(?<![=!<>])=(?!=)"
+          "match": "(?<![=!<>+\\-*/])=(?!=)"
+        },
+        {
+          "name": "keyword.operator.power.nekova",
+          "match": "\\*\\*"
+        },
+        {
+          "name": "keyword.operator.floor-division.nekova",
+          "match": "//"
         },
         {
           "name": "keyword.operator.arithmetic.nekova",
-          "match": "(\\+|-|\\*\\*|\\*|/|%)"
+          "match": "[+\\-*/%]"
         },
         {
-          "name": "keyword.operator.pipeline.nekova",
+          "name": "keyword.operator.pipeline.ai.nekova",
           "match": "->"
         },
         {
-          "name": "keyword.operator.walrus.nekova",
-          "match": ":="
-        },
-        {
-          "name": "keyword.operator.decorator.nekova",
-          "match": "@[a-zA-Z_][a-zA-Z0-9_]*"
-        },
-        {
-          "name": "keyword.operator.arrow.nekova",
-          "match": "->"
+          "name": "keyword.operator.pipe.nekova",
+          "match": "\\|>"
         },
         {
           "name": "keyword.operator.range.nekova",
@@ -239,17 +408,44 @@
         }
       ]
     },
-    "functions": {
-      "name": "entity.name.function.nekova",
-      "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)(?=\\s*\\()"
+    "task_definition": {
+      "match": "\\b(task|func)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+      "captures": {
+        "1": {
+          "name": "keyword.declaration.nekova"
+        },
+        "2": {
+          "name": "entity.name.function.nekova"
+        }
+      }
+    },
+    "function_calls": {
+      "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)(?=\\s*\\()",
+      "captures": {
+        "1": {
+          "name": "entity.name.function.nekova"
+        }
+      }
+    },
+    "stdlib_modules": {
+      "match": "(?<=use )\\b(math|string|file|date|text|files|datetime|collections|json|env|uuid|crypto|vision|voice|random|csv)\\b",
+      "captures": {
+        "0": {
+          "name": "entity.name.namespace.nekova"
+        }
+      }
+    },
+    "builtins": {
+      "name": "support.function.builtin.nekova",
+      "match": "\\b(show|ask|sleep|clear|type_of|len|length|range|int|str|float|bool|list|abs|min|max|sum|round|sorted|reversed|enumerate|zip|map|filter|any|all|input|pow|chr|ord|hex|bin|oct|print|to_text|to_number|to_list|random_number|random_choice|error_message)\\b"
+    },
+    "self_keyword": {
+      "name": "variable.language.self.nekova",
+      "match": "\\bself\\b"
     },
     "variables": {
       "name": "variable.other.nekova",
       "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\b"
-    },
-    "keywords_sandbox": {
-      "name": "keyword.sandbox.nekova",
-      "match": "\\b(sandbox|strict|relaxed|sandbox_run|sandbox_result)\\b"
     }
   }
 }

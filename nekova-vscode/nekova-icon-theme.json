@@ -1,0 +1,14 @@
+{
+  "iconDefinitions": {
+    "_nk_file": {
+      "iconPath": "./icons/nk-file.svg"
+    }
+  },
+  "fileExtensions": {
+    "nk": "_nk_file"
+  },
+  "fileNames": {
+    "nekova.toml": "_nk_file",
+    "main.nk": "_nk_file"
+  }
+}
