@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿# NEKOVA Programming Language
+=======
+# NEKOVA Programming Language
+>>>>>>> 3a2735c3b9411ed30379a256c69a30efe81d2b92
 
 ### The AI-Native Programming Language by SYNEKCOT Tech
 
@@ -498,4 +502,8 @@ NEKOVA is licensed under the **Business Source License 1.1**: free to use, modif
 
 **Star ⭐ this repo if NEKOVA inspired you!**
 
+<<<<<<< HEAD
 [github.com/kinghenesey/NEKOVA](https://github.com/kinghenesey/NEKOVA) · [PyPI](https://pypi.org/project/nekova-lang/) · Built by SYNEKCOT Tech 🇳🇬
+=======
+[github.com/kinghenesey/NEKOVA](https://github.com/kinghenesey/NEKOVA) · [PyPI](https://pypi.org/project/nekova-lang/) · Built by SYNEKCOT Tech 🇳🇬
+>>>>>>> 3a2735c3b9411ed30379a256c69a30efe81d2b92
