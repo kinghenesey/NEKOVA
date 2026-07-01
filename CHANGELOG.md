@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.9.1] — 2026-06-30 · Patch
+## [1.9.2] — 2026-06-30 · Patch
 
 ### Fixed
 - `nekova --version` was displaying `v1.3.1` instead of the current version —
@@ -24,7 +24,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `LICENSING_FAQ.md` — plain-English explanation of what the BUSL license
   means for users, contributors, and companies building on NEKOVA
 
-## [1.9.1] — 2026-06-27 · Phase 19b "Self-Hosting Blockers + Security"
+## [1.9.2] — 2026-06-27 · Phase 19b "Self-Hosting Blockers + Security"
 
 ### Self-Hosting Blockers — All Cleared
 - **`dict[key] = value`** — subscript assignment now works for dicts, lists, and chained `d["x"]["y"] = z`
@@ -66,7 +66,7 @@ All self-hosting blockers cleared. Phase 20 begins: write the NEKOVA lexer in NE
 
 ---
 
-## [1.9.1] — 2026-06-27 · Phase 19 "NEKOVA Sandbox"
+## [1.9.2] — 2026-06-27 · Phase 19 "NEKOVA Sandbox"
 
 ### Added
 - **`nekova/sandbox/`** — full sandbox package: `SandboxEnvironment`, `SandboxResult`, `run_sandboxed()`

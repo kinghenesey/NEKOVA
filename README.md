@@ -1,20 +1,16 @@
-﻿<div align="center">
-
-# NEKOVA Programming Language
+﻿# NEKOVA Programming Language
 
 ### The AI-Native Programming Language by SYNEKCOT Tech
 
-![Version](https://img.shields.io/badge/version-1.9.1-C41E0E?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.9.2-C41E0E?style=flat-square)
 ![PyPI](https://img.shields.io/pypi/v/nekova-lang?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.10+-blue?style=flat-square)
-![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
+![License](https://img.shields.io/badge/license-BUSL--1.1-blue?style=flat-square)
 ![Tests](https://img.shields.io/badge/tests-1130%20passing-success?style=flat-square)
 
 *"The first programming language where AI is syntax, not a library."*
 
 [Install](#installation) · [Features](#features) · [Examples](#examples) · [CLI Reference](#cli-reference) · [Roadmap](#roadmap)
-
-</div>
 
 ---
 
@@ -24,7 +20,7 @@
 
 NEKOVA is an **AI-native programming language** where `think` is syntax. AI isn't a library you import — it's part of the language itself. In one file you can write web routes, query a database, call an AI model, run sandboxed code, and define a class — with no boilerplate.
 
-```nekova
+```
 # AI is just syntax
 think "What should I build today?" as text
 
@@ -49,9 +45,9 @@ show sandbox_result["safe"]
 ## Why NEKOVA?
 
 > *"Because every other language makes you import AI as a library, and I believe if AI is the future of how we build software, it should be a keyword — not an afterthought."*
-> — Emmanuel King Christopher, Founder of SYNEKCOT Tech and Sole Author of Nekova Programming Language
+> — Emmanuel King Christopher, Founder of SYNEKCOT Tech and Sole Author of NEKOVA
 
-NEKOVA was born in Nigeria to prove that world-class programming languages can come from anywhere. **1130 tests. 20 development phases. One language.**
+NEKOVA was born in Nigeria to prove that world-class programming languages can come from anywhere. **1,130 tests. 20 development phases. One language.**
 
 ---
 
@@ -59,13 +55,13 @@ NEKOVA was born in Nigeria to prove that world-class programming languages can c
 
 ### Option 1 — pip (recommended)
 
-```bash
+```
 pip install nekova-lang
 ```
 
 Add your AI key to a `.env` file in your project:
 
-```env
+```
 # You only need ONE key — NEKOVA auto-detects it
 GEMINI_API_KEY=your_key_here        # Free — aistudio.google.com
 ANTHROPIC_API_KEY=your_key_here     # console.anthropic.com
@@ -74,13 +70,13 @@ OPENAI_API_KEY=your_key_here        # platform.openai.com
 
 Run your first program:
 
-```bash
+```
 nekova hello.nk
 ```
 
 ### Option 2 — Clone from GitHub
 
-```bash
+```
 git clone https://github.com/kinghenesey/NEKOVA.git
 cd NEKOVA
 pip install -e .
@@ -90,7 +86,7 @@ pip install -e .
 
 Search **"NEKOVA"** in the VS Code Extension Marketplace, or install directly:
 
-```bash
+```
 ext install SYNEKCOTTech.nekova
 ```
 
@@ -100,7 +96,7 @@ ext install SYNEKCOTTech.nekova
 
 ### Core Language
 
-```nekova
+```
 # Variables
 let name = "Emmanuel"
 let age  = 21
@@ -130,7 +126,7 @@ for x in count(5):
 
 ### Classes and Objects
 
-```nekova
+```
 class Animal:
     name: str
     init(name: str):
@@ -149,7 +145,7 @@ show d.fetch()
 
 ### Decorators
 
-```nekova
+```
 task log(fn):
     task wrapper(x):
         show "calling with " + str(x)
@@ -165,7 +161,7 @@ show double(21)   # → calling with 21 \n 42
 
 ### Error Types
 
-```nekova
+```
 error NetworkError:
     message str
     code    int = 500
@@ -179,7 +175,7 @@ catch e:
 
 ### AI — Built In
 
-```nekova
+```
 # Single line AI calls
 think "Summarise this in 3 words" as text
 think "Extract the names" as list
@@ -196,7 +192,7 @@ stream think "Write a short story about Lagos" as text
 
 ### Speak, Listen, Imagine
 
-```nekova
+```
 # Text-to-speech
 speak "Your report is ready"
 
@@ -210,7 +206,7 @@ show img
 
 ### Scheduled Execution
 
-```nekova
+```
 # Run every 10 seconds, 5 times
 every 10 s 5 times:
     show "checking..."
@@ -222,7 +218,7 @@ every 1 m:
 
 ### Built-in Test Runner
 
-```nekova
+```
 task add(a, b):
     return a + b
 
@@ -238,7 +234,7 @@ test "strings":
 
 ### Data Shapes
 
-```nekova
+```
 shape User:
     name  str
     age   int
@@ -251,7 +247,7 @@ show u["__shape__"] # → User
 
 ### Sandbox — Safe Execution
 
-```nekova
+```
 # Run untrusted code in isolation
 sandbox strict:
     let x = 10 * 10
@@ -268,7 +264,7 @@ show result["safe"]    # → true
 
 ### Standard Library in NEKOVA
 
-```nekova
+```
 # Math — written in NEKOVA
 use math
 show pi                     # → 3.141592653589793
@@ -290,14 +286,14 @@ show line_count("data.txt")
 
 # Date — written in NEKOVA
 use date
-show today()                # → 2025-06-27
-show day_of_week(today())   # → Friday
-show add_days(today(), 7)   # → 2025-07-04
+show today()                # → 2026-06-30
+show day_of_week(today())   # → Tuesday
+show add_days(today(), 7)   # → 2026-07-07
 ```
 
 ### Pattern Matching
 
-```nekova
+```
 let status = 404
 
 match status:
@@ -308,7 +304,7 @@ match status:
 
 ### Web Routes
 
-```nekova
+```
 route GET "/":
     think "Write a welcome message" as text
 
@@ -321,7 +317,7 @@ serve port: 8080
 
 ### Generators and Lazy Sequences
 
-```nekova
+```
 task fibonacci():
     let a = 0
     let b = 1
@@ -341,12 +337,11 @@ for n in fibonacci():
 
 ---
 
-
 ### Self-Hosting Blockers (Phase 19b)
 
 All five blockers for writing NEKOVA in NEKOVA are now fixed:
 
-```nekova
+```
 # 1. Dict subscript assignment
 let tokens = {}
 let tokens["IF"] = "keyword"
@@ -372,9 +367,11 @@ match c:
     when "0".."9": show "digit"
 ```
 
+---
+
 ## CLI Reference
 
-```bash
+```
 # Run a file
 nekova run app.nk
 
@@ -412,73 +409,93 @@ nekova search "http client"
 
 ### Keywords
 
-| Category | Keywords |
-|----------|----------|
-| Control flow | `if` `else` `elif` `while` `for` `in` `return` `break` `continue` `match` `when` `yield` |
-| Declarations | `task` `let` `use` `import` `class` `object` `error` `shape` |
-| Exception | `try` `catch` `finally` `raise` `assert` `pass` |
-| AI | `think` `remember` `recall` `forget` `imagine` `speak` `listen` |
-| Scheduling | `every` |
-| Testing | `test` `expect` |
-| Watching | `watch` |
-| Sandbox | `sandbox` `strict` `relaxed` |
-| OOP | `init` `self` `new` `extends` `func` |
-| Async | `async` `await` `stream` |
-| Logic | `and` `or` `not` `is` `in` `not in` `is not` |
+| Category     | Keywords                                                                                 |
+| ------------ | ----------------------------------------------------------------------------------------- |
+| Control flow | `if` `else` `elif` `while` `for` `in` `return` `break` `continue` `match` `when` `yield`   |
+| Declarations | `task` `let` `use` `import` `class` `object` `error` `shape`                              |
+| Exception    | `try` `catch` `finally` `raise` `assert` `pass`                                           |
+| AI           | `think` `remember` `recall` `forget` `imagine` `speak` `listen`                           |
+| Scheduling   | `every`                                                                                    |
+| Testing      | `test` `expect`                                                                            |
+| Watching     | `watch`                                                                                    |
+| Sandbox      | `sandbox` `strict` `relaxed`                                                               |
+| OOP          | `init` `self` `new` `extends` `func`                                                      |
+| Async        | `async` `await` `stream`                                                                  |
+| Logic        | `and` `or` `not` `is` `in` `not in` `is not`                                               |
 
 ### Operators
 
-| Operator | Description |
-|----------|-------------|
-| `+` `-` `*` `/` | Arithmetic |
-| `//` | Floor division |
-| `%` `**` | Modulo, power |
-| `==` `!=` `<` `>` `<=` `>=` | Comparison |
-| `in` `not in` | Membership |
-| `is` `is not` | Identity |
-| `and` `or` `not` | Logic |
-| `@` | Decorator |
-| `->` | Return type hint |
-| `x if c else y` | Ternary |
+| Operator                    | Description      |
+| ---------------------------- | ----------------- |
+| `+` `-` `*` `/`               | Arithmetic        |
+| `//`                          | Floor division     |
+| `%` `**`                      | Modulo, power      |
+| `==` `!=` `<` `>` `<=` `>=`   | Comparison         |
+| `in` `not in`                 | Membership         |
+| `is` `is not`                 | Identity           |
+| `and` `or` `not`              | Logic              |
+| `@`                            | Decorator          |
+| `->`                           | Return type hint   |
+| `x if c else y`                | Ternary            |
+
+---
+
+## Project Structure
+
+```
+NEKOVA/
+├── nekova/              ← Core package: lexer, parser, interpreter, AI runtime, stdlib (.nk + .py)
+├── nekova-vscode/        ← VS Code extension source (published on the marketplace)
+├── myproject/            ← Example / scaffold project generated by `nekova new`
+├── tests/                ← Test suite (1,130 tests across 19 phases)
+├── main.py                ← Entry point
+├── runner.py              ← Pipeline orchestrator
+├── nekova_cli.py          ← pip CLI entry point
+├── repl.py                ← Interactive shell
+├── debugger.py            ← Debugger
+├── formatter.py           ← `nekova fmt`
+├── pyproject.toml         ← Package metadata
+└── website.html           ← Project landing page
+```
 
 ---
 
 ## Roadmap
 
-| Phase | Status | Description |
-|-------|--------|-------------|
-| 1–14 | ✅ | Core language, AI, classes, web, packages |
-| 15 | ✅ | Stability — `in/not in`, `//`, `range()`, slicing, builtins |
-| 16 | ✅ | Standout features — `speak`, `listen`, `every`, `test/expect`, `imagine`, `shape`, `watch` |
-| 17 | ✅ | Power user layer — generators, decorators, error types, typed tasks, `class` keyword |
-| 18 | ✅ | Standard library in NEKOVA — `math.nk`, `string.nk`, `file.nk`, `date.nk` |
-| 19 | ✅ | NEKOVA Sandbox — isolated execution, resource limits, violation tracking |
-| 19b | ✅ | Security fixes — 38 bugs fixed, self-hosting blockers cleared |
-| 20 | 🔄 | **Self-Hosting begins** — NEKOVA lexer written in NEKOVA |
-| 21 | 🔜 | Prompt blocks, retry/fallback, enforced types |
-| 22 | 🔜 | Observe blocks, mock think, pipe operator |
-| 23 | 🔜 | Polish — inline errors, destructuring, docstrings |
-| 24 | 🔜 | NEKOVA parser in NEKOVA — v2.0 milestone |
-| 27 | 🎯 | Full self-hosting — interpreter in NEKOVA — v3.0 |
+| Phase | Status | Description                                                                                |
+| ----- | :----: | ------------------------------------------------------------------------------------------ |
+| 1–14  | ✅     | Core language, AI, classes, web, packages                                                  |
+| 15    | ✅     | Stability — `in`/`not in`, `//`, `range()`, slicing, builtins                              |
+| 16    | ✅     | Standout features — `speak`, `listen`, `every`, `test`/`expect`, `imagine`, `shape`, `watch`|
+| 17    | ✅     | Power user layer — generators, decorators, error types, typed tasks, `class` keyword        |
+| 18    | ✅     | Standard library in NEKOVA — `math.nk`, `string.nk`, `file.nk`, `date.nk`                   |
+| 19    | ✅     | NEKOVA Sandbox — isolated execution, resource limits, violation tracking                    |
+| 19b   | ✅     | Security fixes — 38 bugs fixed, self-hosting blockers cleared                               |
+| 20    | 🔄     | **Self-hosting begins** — NEKOVA lexer written in NEKOVA (`nekova/stdlib/nk/lexer.nk`)       |
+| 21    | 🔜     | `prompt` blocks, `retry`/`fallback`, enforced types                                          |
+| 22    | 🔜     | `observe` telemetry, `mock think` in tests, `\|>` pipe operator                              |
+| 23    | 🔜     | Polish — inline errors, destructuring, docstrings                                            |
+| 24    | 🔜     | NEKOVA parser in NEKOVA — v2.0 milestone                                                     |
+| 27    | 🎯     | Full self-hosting — interpreter in NEKOVA — v3.0                                             |
+
+**Long term:** NEKOVA Game Engine, WASM compilation.
 
 ---
 
-## About
+## License
 
-**SYNEKCOT Tech** is a technology company founded by Emmanuel King Christopher (age 21) in Nigeria, building tools that empower developers across Africa and the world.
-
-NEKOVA's source is publicly available and built entirely in public — every commit, every test, every phase, documented and shipped. NEKOVA is licensed under the [Business Source License 1.1](LICENSE): free to use, modify, and build on for personal projects, learning, and commercial products under $1M/year in revenue. The license converts automatically to Apache 2.0 four years after each release. See [LICENSE](LICENSE) for full terms, or the [Licensing FAQ](LICENSING_FAQ.md) for a plain-English explanation.
-
-- GitHub: [github.com/kinghenesey/NEKOVA](https://github.com/kinghenesey/NEKOVA)
-- PyPI: [pypi.org/project/nekova-lang](https://pypi.org/project/nekova-lang)
-- VS Code: Search "NEKOVA" in the marketplace
+NEKOVA is licensed under the **Business Source License 1.1**: free to use, modify, and build on for personal projects, learning, and commercial products under $1M/year in revenue. The license converts automatically to Apache 2.0 four years after each release. See [`LICENSE`](LICENSE) for full terms, or the [Licensing FAQ](LICENSING_FAQ.md) for a plain-English explanation.
 
 ---
 
-<div align="center">
+## Built By
 
-Built with ❤️ in Nigeria by SYNEKCOT Tech
+**Emmanuel King Christopher** — Founder, SYNEKCOT Tech. 21 years old, Nigeria. Built from scratch in Python 3.11, starting October 2025.
 
-*"Connected Forge — NEKOVA"*
+> *"Because every other language makes you import AI as a library, and I believe if AI is the future of how we build software, it should be a keyword — not an afterthought."*
 
-</div>
+---
+
+**Star ⭐ this repo if NEKOVA inspired you!**
+
+[github.com/kinghenesey/NEKOVA](https://github.com/kinghenesey/NEKOVA) · [PyPI](https://pypi.org/project/nekova-lang/) · Built by SYNEKCOT Tech 🇳🇬

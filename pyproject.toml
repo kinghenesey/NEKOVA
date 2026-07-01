@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nekova-lang"
-version = "1.9.1"
+version = "1.9.2"
 description = "NEKOVA - The AI-Native Programming Language by SYNEKCOT Tech"
 authors = [
   {name = "Emmanuel King Christopher", email = "emmanuelkingchristopher@gmail.com"}

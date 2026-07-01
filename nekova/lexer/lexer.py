@@ -121,12 +121,19 @@ class Lexer:
         Process a newline character.
         After the newline we check indentation to decide
         whether to emit INDENT or DEDENT tokens.
+
+        Blank lines (lines with only whitespace or nothing)
+        are completely ignored — they never change the indent
+        level. This lets developers write readable code with
+        blank lines inside task/if/for/while bodies without
+        getting spurious INDENT/DEDENT errors.
         """
         self._add_token(TokenType.NEWLINE, "\\n")
         self._advance()  # consume the \n
 
-        # Count leading whitespace (spaces and tabs)
+        # Count leading whitespace of the NEXT line
         indent = 0
+        start  = self.pos
         while not self._at_end() and self._current() in (" ", "\t"):
             if self._current() == "\t":
                 indent += 4  # 1 tab = 4 spaces
@@ -134,6 +141,13 @@ class Lexer:
                 indent += 1
             self._advance()
 
+        # ── Blank line: next non-whitespace is \n, \r, or EOF ─
+        # Completely skip it — don't emit INDENT or DEDENT.
+        # Reset pos to re-read any consumed whitespace via the
+        # normal scanner on the next iteration.
+        if self._at_end() or self._current() in ("\n", "\r", "#"):
+            self.pos = start   # rewind — let the scanner re-read
+            return
 
         current_indent = self.indent_stack[-1]
 

@@ -31,8 +31,8 @@ class TestVersion:
         assert len(parts) == 3, f"Expected semver X.Y.Z, got {NEKOVA_VERSION}"
         assert all(p.isdigit() for p in parts), \
             f"All version parts must be numeric, got {NEKOVA_VERSION}"
-        assert NEKOVA_VERSION == "1.9.1", \
-            f"Expected 1.9.1, got {NEKOVA_VERSION} — update this test when bumping"
+        assert NEKOVA_VERSION == "1.9.2", \
+            f"Expected 1.9.2, got {NEKOVA_VERSION} — update this test when bumping"
 
     def test_codename_unchanged(self):
         from nekova.config import NEKOVA_CODENAME

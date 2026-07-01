@@ -152,6 +152,86 @@ class TestErrors(unittest.TestCase):
             tokenize("~")
 
 
+class TestBlankLinesInBlocks(unittest.TestCase):
+    """
+    Blank lines inside indented blocks must not emit spurious
+    INDENT or DEDENT tokens. This was a real bug: a blank line
+    between two statements inside a task/if/for would produce an
+    'Unexpected token INDENT' parse error.
+    """
+
+    def _no_spurious_indent(self, tokens):
+        """
+        Assert that no INDENT token appears where it shouldn't:
+        i.e. no INDENT directly preceded by a NEWLINE at the
+        same depth (a blank line artefact).
+        """
+        types = [t.type for t in tokens]
+        for i, tt in enumerate(types):
+            if tt == TokenType.INDENT and i > 0:
+                # INDENT after a NEWLINE that followed another NEWLINE
+                # is a blank-line artefact
+                if types[i - 1] == TokenType.NEWLINE and i >= 2 and \
+                        types[i - 2] == TokenType.NEWLINE:
+                    self.fail(
+                        "Spurious INDENT after blank line detected "
+                        f"at token index {i}: {types[max(0,i-3):i+3]}"
+                    )
+
+    def test_blank_line_in_task_body_no_indent_token(self):
+        src = "task greet(name):\n    let x = 1\n\n    show x\n"
+        tokens = tokenize(src)
+        types = [t.type for t in tokens]
+        # After the blank line there must not be an INDENT
+        # (there's already one at the start of the task body)
+        indent_count = types.count(TokenType.INDENT)
+        self.assertEqual(indent_count, 1,
+            f"Expected 1 INDENT (task body open), got {indent_count}")
+
+    def test_blank_line_in_if_body(self):
+        src = "if true:\n    show \"a\"\n\n    show \"b\"\n"
+        tokens = tokenize(src)
+        types = [t.type for t in tokens]
+        self.assertEqual(types.count(TokenType.INDENT), 1)
+        self.assertEqual(types.count(TokenType.DEDENT), 1)
+
+    def test_blank_line_in_for_body(self):
+        src = "for i in [1, 2]:\n    show i\n\n    show i\n"
+        tokens = tokenize(src)
+        types = [t.type for t in tokens]
+        self.assertEqual(types.count(TokenType.INDENT), 1)
+
+    def test_multiple_consecutive_blank_lines(self):
+        src = "task foo():\n    let x = 1\n\n\n\n    show x\n"
+        tokens = tokenize(src)
+        types = [t.type for t in tokens]
+        self.assertEqual(types.count(TokenType.INDENT), 1)
+
+    def test_blank_line_between_nested_blocks(self):
+        src = (
+            "task outer():\n"
+            "    if true:\n"
+            "        show \"hi\"\n"
+            "\n"
+            "        show \"bye\"\n"
+        )
+        tokens = tokenize(src)
+        types = [t.type for t in tokens]
+        # Two INDENTs: outer task body + inner if body
+        self.assertEqual(types.count(TokenType.INDENT), 2)
+
+    def test_comment_line_inside_block_not_spurious(self):
+        src = "task foo():\n    let x = 1\n    # a comment\n    show x\n"
+        tokens = tokenize(src)
+        types = [t.type for t in tokens]
+        self.assertEqual(types.count(TokenType.INDENT), 1)
+
+    def test_blank_line_at_end_of_file_no_error(self):
+        src = "show 1\n\n"
+        tokens = tokenize(src)
+        self.assertIn(TokenType.EOF, [t.type for t in tokens])
+
+
 if __name__ == "__main__":
     print("=" * 50)
     print("  NEKOVA Phase 2 — Lexer Test Suite")
