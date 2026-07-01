@@ -1,0 +1,571 @@
+# ═══════════════════════════════════════════════════════════════
+# NEKOVA Standard Library — lexer.nk
+# Phase 20: Self-Hosting — the NEKOVA lexer, written in NEKOVA.
+#
+# This is a line-for-line port of nekova/lexer/lexer.py (the
+# Python reference lexer) into NEKOVA itself. It mirrors the same
+# behaviour, including the bracket-depth fix that suspends
+# NEWLINE/INDENT/DEDENT emission while inside an unclosed (), [],
+# or {} — so multi-line dict/list/call literals inside a block
+# parse correctly, and blank lines inside blocks are ignored.
+#
+# Token shape: {"type": "SHOW" | "INTEGER" | ..., "value": ...,
+#               "line": <int>, "column": <int>}
+# Type names match the Python TokenType enum member names 1:1,
+# so output from this lexer can be diffed directly against the
+# Python lexer's token stream.
+#
+# Entry point:  tokenize(source) -> list of token dicts
+# ═══════════════════════════════════════════════════════════════
+
+# ── Character classification ─────────────────────────────────
+# NEKOVA has no built-in isdigit()/isalpha()/isalnum(), so these
+# are written from scratch using range comparisons — in keeping
+# with self-hosting, the lexer doesn't lean on the host language.
+
+task is_digit(c):
+    return c >= "0" and c <= "9"
+
+task is_alpha(c):
+    return (c >= "a" and c <= "z") or (c >= "A" and c <= "Z")
+
+task is_alnum(c):
+    return is_digit(c) or is_alpha(c)
+
+task is_hex_digit(c):
+    return is_digit(c) or (c >= "a" and c <= "f") or (c >= "A" and c <= "F")
+
+task hex_digit_value(c):
+    if is_digit(c):
+        return int(c)
+    lc = c.lower()
+    if lc == "a":
+        return 10
+    if lc == "b":
+        return 11
+    if lc == "c":
+        return 12
+    if lc == "d":
+        return 13
+    if lc == "e":
+        return 14
+    return 15
+
+# ── Keyword table ─────────────────────────────────────────────
+# Mirrors nekova/lexer/token_types.py::KEYWORDS exactly.
+
+KEYWORDS = {
+    "show": "SHOW", "if": "IF", "else": "ELSE", "repeat": "REPEAT",
+    "while": "WHILE", "try": "TRY", "catch": "CATCH", "for": "FOR",
+    "in": "IN", "task": "TASK", "return": "RETURN", "use": "USE",
+    "import": "IMPORT", "and": "AND", "or": "OR", "not": "NOT",
+    "true": "BOOLEAN", "false": "BOOLEAN", "null": "NULL",
+    "think": "THINK", "model": "MODEL", "autonomous": "AUTONOMOUS",
+    "parallel": "PARALLEL", "memory": "MEMORY", "sandbox": "SANDBOX",
+    "strict": "STRICT", "relaxed": "RELAXED", "pipeline": "PIPELINE_DEF",
+    "collect": "COLLECT", "generate": "GENERATE", "save": "SAVE",
+    "with": "WITH", "run": "RUN", "async": "ASYNC", "await": "AWAIT",
+    "stream": "STREAM", "each": "EACH", "fetch": "FETCH", "func": "FUNC",
+    "let": "LET", "object": "OBJECT", "new": "NEW", "init": "INIT",
+    "self": "SELF", "match": "MATCH", "when": "WHEN", "elif": "ELIF",
+    "break": "BREAK", "continue": "CONTINUE", "global": "GLOBAL",
+    "route": "ROUTE", "serve": "SERVE", "remember": "REMEMBER",
+    "recall": "RECALL", "forget": "FORGET", "as": "AS", "yield": "YIELD",
+    "error": "ERROR_TYPE", "class": "CLASS", "speak": "SPEAK",
+    "listen": "LISTEN", "every": "EVERY", "test": "TEST",
+    "expect": "EXPECT", "imagine": "IMAGINE", "shape": "SHAPE",
+    "watch": "WATCH"
+}
+
+# ── Lexer state ───────────────────────────────────────────────
+# NEKOVA dicts/lists are reference types, so a plain dict passed
+# around and mutated in place stands in for the Python Lexer
+# object's instance fields.
+
+task new_lexer_state(source):
+    return {
+        "source": source,
+        "pos": 0,
+        "line": 1,
+        "column": 1,
+        "tokens": [],
+        "indent_stack": [0],
+        "bracket_depth": 0
+    }
+
+# ── Low-level cursor helpers ────────────────────────────────────
+
+task at_end(state):
+    return state["pos"] >= len(state["source"])
+
+task current(state):
+    if at_end(state):
+        return "\0"
+    return state["source"][state["pos"]]
+
+task peek(state):
+    if state["pos"] + 1 >= len(state["source"]):
+        return "\0"
+    return state["source"][state["pos"] + 1]
+
+task peek2(state):
+    if state["pos"] + 2 >= len(state["source"]):
+        return "\0"
+    return state["source"][state["pos"] + 2]
+
+task advance(state):
+    ch = state["source"][state["pos"]]
+    state["pos"] = state["pos"] + 1
+    if ch == "\n":
+        state["line"] = state["line"] + 1
+        state["column"] = 1
+    else:
+        state["column"] = state["column"] + 1
+    return ch
+
+task add_token(state, type, value):
+    tok = {
+        "type": type,
+        "value": value,
+        "line": state["line"],
+        "column": state["column"]
+    }
+    state["tokens"].append(tok)
+
+# ── Newlines & indentation ──────────────────────────────────────
+
+task handle_newline(state):
+    # Inside brackets: newline is pure whitespace. Suspend
+    # NEWLINE/INDENT/DEDENT emission entirely while bracket_depth
+    # > 0 — this is what lets multi-line dict/list/call literals
+    # live inside a block without confusing the indent tracker.
+    if state["bracket_depth"] > 0:
+        advance(state)
+        return
+
+    add_token(state, "NEWLINE", "\\n")
+    advance(state)
+
+    # Count leading whitespace of the next line
+    indent = 0
+    start = state["pos"]
+    while not at_end(state) and (current(state) == " " or current(state) == "\t"):
+        if current(state) == "\t":
+            indent = indent + 4
+        else:
+            indent = indent + 1
+        advance(state)
+
+    # Blank line (or comment-only line): completely ignore it —
+    # never emits INDENT/DEDENT, rewind so the scanner re-reads
+    # the whitespace normally on the next pass.
+    if at_end(state) or current(state) == "\n" or current(state) == "\r" or current(state) == "#":
+        state["pos"] = start
+        return
+
+    # NOTE: NEKOVA deep-copies dict/list values on plain assignment
+    # (e.g. `stack = state["indent_stack"]`) to prevent aliasing
+    # bugs — so a local alias would silently stop tracking the
+    # real stack. Always mutate through the state["indent_stack"]
+    # subscript chain directly instead.
+    current_indent = state["indent_stack"][-1]
+
+    if indent > current_indent:
+        state["indent_stack"].append(indent)
+        add_token(state, "INDENT", "INDENT")
+    elif indent < current_indent:
+        while state["indent_stack"][-1] > indent:
+            state["indent_stack"].pop()
+            add_token(state, "DEDENT", "DEDENT")
+    # equal indent: same block continues, no token
+
+task skip_comment(state):
+    while not at_end(state) and current(state) != "\n":
+        advance(state)
+
+# ── Strings ───────────────────────────────────────────────────
+
+task is_escape_char(c):
+    return c == "\"" or c == "'" or c == "n" or c == "t" or c == "\\"
+
+task read_string(state, quote):
+    advance(state)  # skip opening quote
+    start_line = state["line"]
+    chars = []
+
+    while not at_end(state) and current(state) != quote:
+        if current(state) == "\n":
+            raise "String was never closed on line " + str(start_line) + " — did you forget a closing quote?"
+        if current(state) == "\\" and is_escape_char(peek(state)):
+            advance(state)  # skip backslash
+            escape = current(state)
+            if escape == "n":
+                chars.append("\n")
+            elif escape == "t":
+                chars.append("\t")
+            else:
+                chars.append(escape)
+        else:
+            chars.append(current(state))
+        advance(state)
+
+    if at_end(state):
+        raise "String was never closed on line " + str(start_line) + " — did you forget a closing quote?"
+
+    advance(state)  # skip closing quote
+    add_token(state, "STRING", "".join(chars))
+
+task read_triple_string(state, quote):
+    start_line = state["line"]
+    advance(state)
+    advance(state)
+    advance(state)  # consume opening quotes
+
+    # Strip a single leading newline right after the opening quotes
+    if not at_end(state) and current(state) == "\n":
+        advance(state)
+
+    chars = []
+    closed = false
+
+    while not at_end(state):
+        c = current(state)
+
+        if c == quote and peek(state) == quote and peek2(state) == quote:
+            advance(state)
+            advance(state)
+            advance(state)
+            closed = true
+            break
+
+        if c == "\\" and not at_end(state):
+            nxt = peek(state)
+            if nxt == "\"" or nxt == "'" or nxt == "\\":
+                advance(state)
+                chars.append(current(state))
+                advance(state)
+            elif nxt == "n":
+                advance(state)
+                advance(state)
+                chars.append("\n")
+            elif nxt == "t":
+                advance(state)
+                advance(state)
+                chars.append("\t")
+            else:
+                chars.append(c)
+                advance(state)
+        elif c == "\n":
+            chars.append("\n")
+            advance(state)
+        else:
+            chars.append(c)
+            advance(state)
+
+    if not closed:
+        raise "Triple-quoted string was never closed on line " + str(start_line) + " — did you forget the closing quotes?"
+
+    add_token(state, "STRING", "".join(chars))
+
+task read_fstring(state):
+    quote = current(state)
+
+    # Triple-quoted f-string: f"""...{name}..."""
+    if peek(state) == quote and peek2(state) == quote:
+        advance(state)
+        advance(state)
+        advance(state)  # consume opening triple-quote
+
+        if not at_end(state) and current(state) == "\n":
+            advance(state)
+
+        chars = []
+        closed = false
+        while not at_end(state):
+            c = current(state)
+            if c == quote and peek(state) == quote and peek2(state) == quote:
+                advance(state)
+                advance(state)
+                advance(state)
+                closed = true
+                break
+            if c == "\\" and is_escape_char(peek(state)):
+                escape = peek(state)
+                advance(state)
+                advance(state)
+                if escape == "n":
+                    chars.append("\n")
+                elif escape == "t":
+                    chars.append("\t")
+                else:
+                    chars.append(escape)
+            elif c == "\n":
+                chars.append("\n")
+                advance(state)
+            else:
+                chars.append(c)
+                advance(state)
+
+        if not closed:
+            raise "Triple-quoted f-string was never closed — did you forget the closing quotes?"
+
+        add_token(state, "F_STRING", "".join(chars))
+        return
+
+    # Single-quoted f-string: f"Hello {name}!"
+    advance(state)  # skip opening quote
+    chars = []
+    while not at_end(state) and current(state) != quote:
+        if current(state) == "\\" and is_escape_char(peek(state)):
+            escape = peek(state)
+            advance(state)
+            advance(state)
+            if escape == "n":
+                chars.append("\n")
+            elif escape == "t":
+                chars.append("\t")
+            else:
+                chars.append(escape)
+        else:
+            chars.append(current(state))
+            advance(state)
+
+    if at_end(state):
+        raise "f-string was never closed — did you forget a closing quote?"
+
+    advance(state)  # skip closing quote
+    add_token(state, "F_STRING", "".join(chars))
+
+# ── Numbers ───────────────────────────────────────────────────
+# Supports integers, floats, underscore separators (1_000),
+# scientific notation (1.5e-3), and hex literals (0xFF).
+
+task read_number(state):
+    # Hex literal: 0x... / 0X...
+    if current(state) == "0" and (peek(state) == "x" or peek(state) == "X"):
+        advance(state)  # consume '0'
+        advance(state)  # consume 'x'
+        value = 0
+        digit_count = 0
+        while not at_end(state) and (is_hex_digit(current(state)) or current(state) == "_"):
+            if current(state) != "_":
+                value = value * 16 + hex_digit_value(current(state))
+                digit_count = digit_count + 1
+            advance(state)
+        if digit_count == 0:
+            raise "Invalid hex literal — expected digits after '0x'."
+        add_token(state, "INTEGER", value)
+        return
+
+    chars = []
+    is_float = false
+
+    # Integer part (underscores allowed as separators)
+    while not at_end(state) and (is_digit(current(state)) or current(state) == "_"):
+        if current(state) != "_":
+            chars.append(current(state))
+        advance(state)
+
+    # Optional decimal point
+    if not at_end(state) and current(state) == "." and is_digit(peek(state)):
+        is_float = true
+        chars.append(".")
+        advance(state)
+        while not at_end(state) and (is_digit(current(state)) or current(state) == "_"):
+            if current(state) != "_":
+                chars.append(current(state))
+            advance(state)
+
+    # Optional scientific notation: e/E followed by optional +/- and digits
+    if not at_end(state) and (current(state) == "e" or current(state) == "E"):
+        nxt = peek(state)
+        if is_digit(nxt) or nxt == "+" or nxt == "-":
+            is_float = true
+            chars.append("e")
+            advance(state)  # consume 'e'
+            if not at_end(state) and (current(state) == "+" or current(state) == "-"):
+                chars.append(current(state))
+                advance(state)  # consume sign
+            if at_end(state) or not is_digit(current(state)):
+                raise "Invalid scientific notation — expected digits after exponent."
+            while not at_end(state) and is_digit(current(state)):
+                chars.append(current(state))
+                advance(state)
+
+    raw = "".join(chars)
+    if is_float:
+        add_token(state, "FLOAT", float(raw))
+    else:
+        add_token(state, "INTEGER", int(raw))
+
+# ── Identifiers & keywords ───────────────────────────────────
+
+task read_identifier(state):
+    chars = []
+    while not at_end(state) and (is_alnum(current(state)) or current(state) == "_"):
+        chars.append(current(state))
+        advance(state)
+
+    word = "".join(chars)
+
+    # f-string prefix: f"..." or f'...'
+    if word == "f" and not at_end(state) and (current(state) == "\"" or current(state) == "'"):
+        read_fstring(state)
+        return
+
+    if word in KEYWORDS:
+        tok_type = KEYWORDS[word]
+    else:
+        tok_type = "IDENTIFIER"
+
+    if word == "true":
+        add_token(state, tok_type, true)
+    elif word == "false":
+        add_token(state, tok_type, false)
+    elif word == "null":
+        add_token(state, tok_type, null)
+    else:
+        add_token(state, tok_type, word)
+
+# ── Operators & punctuation ──────────────────────────────────
+
+SINGLE_SYMBOLS = {
+    "+": "PLUS", "-": "MINUS", "*": "MULTIPLY", "/": "DIVIDE",
+    "@": "AT", "%": "MODULO", "<": "LESS", ">": "GREATER",
+    "=": "ASSIGN", ":": "COLON", ",": "COMMA",
+    "(": "LPAREN", ")": "RPAREN", "[": "LBRACKET", "]": "RBRACKET",
+    "{": "LBRACE", "}": "RBRACE", ".": "DOT"
+}
+
+task read_symbol(state):
+    ch = current(state)
+    two = ch + peek(state)
+
+    if two == "==":
+        add_token(state, "EQUALS", "==")
+        advance(state)
+        advance(state)
+        return
+    if two == "!=":
+        add_token(state, "NOT_EQUALS", "!=")
+        advance(state)
+        advance(state)
+        return
+    if two == "<=":
+        add_token(state, "LESS_EQ", "<=")
+        advance(state)
+        advance(state)
+        return
+    if two == ">=":
+        add_token(state, "GREATER_EQ", ">=")
+        advance(state)
+        advance(state)
+        return
+    if two == "**":
+        add_token(state, "POWER", "**")
+        advance(state)
+        advance(state)
+        return
+    if two == "->":
+        add_token(state, "ARROW", "->")
+        advance(state)
+        advance(state)
+        return
+    if two == "+=":
+        add_token(state, "PLUS_EQUAL", "+=")
+        advance(state)
+        advance(state)
+        return
+    if two == "-=":
+        add_token(state, "MINUS_EQUAL", "-=")
+        advance(state)
+        advance(state)
+        return
+    if two == "*=":
+        add_token(state, "STAR_EQUAL", "*=")
+        advance(state)
+        advance(state)
+        return
+    if two == "//":
+        add_token(state, "FLOOR_DIVIDE", "//")
+        advance(state)
+        advance(state)
+        return
+    if two == "/=":
+        add_token(state, "SLASH_EQUAL", "/=")
+        advance(state)
+        advance(state)
+        return
+
+    # Range operator: .. (must be checked before single-char '.')
+    if ch == "." and peek(state) == ".":
+        add_token(state, "DOTDOT", "..")
+        advance(state)
+        advance(state)
+        return
+
+    if ch in SINGLE_SYMBOLS:
+        add_token(state, SINGLE_SYMBOLS[ch], ch)
+        advance(state)
+        if ch == "(" or ch == "[" or ch == "{":
+            state["bracket_depth"] = state["bracket_depth"] + 1
+        elif ch == ")" or ch == "]" or ch == "}":
+            if state["bracket_depth"] > 0:
+                state["bracket_depth"] = state["bracket_depth"] - 1
+        return
+
+    raise "Unexpected character '" + ch + "' — NEKOVA doesn't know what this means."
+
+# ── Core scanner ──────────────────────────────────────────────
+
+task scan_token(state):
+    ch = current(state)
+
+    if ch == "\n":
+        handle_newline(state)
+        return
+
+    if ch == " " or ch == "\t":
+        advance(state)
+        return
+
+    if ch == "#":
+        skip_comment(state)
+        return
+
+    if ch == "\r":
+        advance(state)
+        return
+
+    if ch == "\"" or ch == "'":
+        if peek(state) == ch and peek2(state) == ch:
+            read_triple_string(state, ch)
+        else:
+            read_string(state, ch)
+        return
+
+    if is_digit(ch):
+        read_number(state)
+        return
+
+    if is_alpha(ch) or ch == "_":
+        read_identifier(state)
+        return
+
+    read_symbol(state)
+
+# ── Entry point ───────────────────────────────────────────────
+
+task tokenize(source):
+    state = new_lexer_state(source)
+
+    while not at_end(state):
+        scan_token(state)
+
+    # Close any remaining indentation blocks
+    while len(state["indent_stack"]) > 1:
+        state["indent_stack"].pop()
+        add_token(state, "DEDENT", "DEDENT")
+
+    add_token(state, "EOF", "EOF")
+    return state["tokens"]
