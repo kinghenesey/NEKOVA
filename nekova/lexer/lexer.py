@@ -39,6 +39,15 @@ class Lexer:
         self.column  = 1          # current column number
         self.tokens  = []         # collected tokens
         self.indent_stack = [0]   # tracks indentation levels
+        self.bracket_depth = 0    # tracks nesting inside (), [], {}
+        # While bracket_depth > 0 we are inside an unfinished
+        # (), [], or {} group. Python-style "implicit line joining":
+        # newlines in that state are pure whitespace — no NEWLINE,
+        # INDENT, or DEDENT tokens are emitted, and indentation is
+        # not tracked, no matter how the contents are laid out
+        # across lines. This lets dict/list/call literals span
+        # multiple indented lines without confusing the block
+        # (task/if/while/etc.) indentation tracker.
 
     # ----------------------------------------------------------
     # Public interface
@@ -128,6 +137,15 @@ class Lexer:
         blank lines inside task/if/for/while bodies without
         getting spurious INDENT/DEDENT errors.
         """
+        # ── Inside brackets: newline is just whitespace ───────
+        # Suspend NEWLINE/INDENT/DEDENT emission entirely while
+        # depth > 0, so multi-line dict/list/call literals never
+        # touch the block indentation tracker (see bracket_depth
+        # note in __init__).
+        if self.bracket_depth > 0:
+            self._advance()  # consume the \n
+            return
+
         self._add_token(TokenType.NEWLINE, "\\n")
         self._advance()  # consume the \n
 
@@ -515,6 +533,10 @@ class Lexer:
         if char in single:
             self._add_token(single[char], char)
             self._advance()
+            if char in ("(", "[", "{"):
+                self.bracket_depth += 1
+            elif char in (")", "]", "}"):
+                self.bracket_depth = max(0, self.bracket_depth - 1)
             return
 
         # ── Unknown character ─────────────────────────────────
