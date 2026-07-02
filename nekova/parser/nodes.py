@@ -1150,7 +1150,77 @@ class TypedTaskStatement(Node):
                  return_type: str = None, line: int = 0):
         self.name        = name
         self.params      = params
-        self.body        = body
+        self.body         = body
         self.return_type = return_type
         self.line        = line
     def __repr__(self): return f"TypedTask({self.name})"
+
+
+# ── Phase 21: Prompt Blocks + Retry/Fallback ───────────────────
+
+class PromptStatement(Node):
+    """
+    Defines a reusable, interpolated prompt template — a task whose
+    body is (typically) a single triple-quoted string with {var}
+    placeholders, filled in from the task's own parameters. Calling
+    a prompt like a task returns the interpolated string; the
+    result is usually fed straight into `think`:
+
+        prompt summarize(text, style="professional"):
+            \"\"\"Summarize the following in a {style} tone: {text}\"\"\"
+
+        let result = think summarize(document) as json
+
+    params: list of (name, type_hint_or_None, default_or_None, is_vararg)
+      — same shape as TypedTaskStatement.params, so prompts can be
+      typed exactly like tasks.
+    body: list of statements. Any bare StringLiteral statement in
+      the body is parsed as if it were an f-string (interpolated
+      against the prompt's own parameter scope) even without an
+      `f` prefix — that's what makes a prompt block a *template*
+      rather than an ordinary task. The value of the last statement
+      in the body is the prompt's implicit return value; an
+      explicit `return` also works if present.
+    """
+    def __init__(self, name: str, params: list, body: list, line: int = 0):
+        self.name   = name
+        self.params = params
+        self.body   = body
+        self.line   = line
+
+    def __repr__(self):
+        return f"Prompt({self.name}, params={self.params})"
+
+
+class RetryStatement(Node):
+    """
+    Retries a block up to `times` times on error, with an optional
+    backoff delay between attempts, falling back to `fallback_body`
+    (if given) once attempts are exhausted — otherwise the last
+    error is re-raised.
+
+        retry 3 times with exponential backoff:
+            let result = think "analyse this" as json
+        fallback:
+            let result = {error: "unavailable"}
+
+        retry 5 times:               # no backoff clause -> immediate retry
+            connect_to_service()
+
+    times: expression evaluating to a positive integer
+    backoff: None | "exponential" | "linear" — delay strategy
+      between attempts (no delay when None)
+    body: the block to retry
+    fallback_body: list of statements to run if every attempt
+      fails, or None to re-raise the final error instead
+    """
+    def __init__(self, times, backoff, body: list,
+                 fallback_body: list = None, line: int = 0):
+        self.times         = times
+        self.backoff       = backoff
+        self.body           = body
+        self.fallback_body = fallback_body
+        self.line          = line
+
+    def __repr__(self):
+        return f"Retry({self.times}, backoff={self.backoff})"
