@@ -1,5 +1,5 @@
 ﻿// =============================================================
-// NEKOVA Language — VS Code Extension  (v1.3.0)
+// NEKOVA Language — VS Code Extension  (v1.9.5)
 // =============================================================
 // Commands:
 //   nekova.runFile     F5          Run the active .nk file
@@ -7,6 +7,8 @@
 //   nekova.openRepl                Open NEKOVA REPL
 //   nekova.fmtFile     Shift+Alt+F Format active file
 //   nekova.checkFile               Lint active file
+//   nekova.testFile                Run active file (executes test/expect blocks)
+//   nekova.debugFile                Debug active file
 //   nekova.newProject              Scaffold a new project
 
 const vscode = require('vscode');
@@ -97,6 +99,26 @@ function cmdCheckFile() {
     terminal.sendText(`${py} -m nekova check ${quoteArg(filepath)}`);
 }
 
+function cmdTestFile() {
+    // NEKOVA has no separate "test a single file" CLI mode — test/expect
+    // blocks inside a .nk file execute automatically as part of normal
+    // interpretation, so this runs the file the same way runFile does.
+    // It's a distinct command for discoverability on test-oriented files.
+    const filepath = getActiveNkFile();
+    if (!filepath) return;
+    const py = getPython();
+    const terminal = getOrCreateTerminal('NEKOVA Test');
+    terminal.sendText(`${py} -m nekova run ${quoteArg(filepath)}`);
+}
+
+function cmdDebugFile() {
+    const filepath = getActiveNkFile();
+    if (!filepath) return;
+    const py = getPython();
+    const terminal = getOrCreateTerminal('NEKOVA Debug');
+    terminal.sendText(`${py} -m nekova debug ${quoteArg(filepath)}`);
+}
+
 async function cmdNewProject() {
     const name = await vscode.window.showInputBox({
         prompt: 'Project name',
@@ -153,7 +175,7 @@ function createStatusBar(context) {
         vscode.StatusBarAlignment.Left, 100
     );
     statusBar.text = '$(zap) NEKOVA';
-    statusBar.tooltip = 'NEKOVA v1.3.0 — Connected Forge by SYNEKCOT Tech\nClick to run file';
+    statusBar.tooltip = 'NEKOVA v1.9.5 — Connected Forge by SYNEKCOT Tech\nClick to run file';
     statusBar.command = 'nekova.runFile';
 
     vscode.window.onDidChangeActiveTextEditor(editor => {
@@ -175,7 +197,7 @@ function createStatusBar(context) {
 // ── Activate ───────────────────────────────────────────────────────────────
 
 function activate(context) {
-    console.log('NEKOVA Language extension v1.3.0 activated');
+    console.log('NEKOVA Language extension v1.9.5 activated');
 
     // Register commands
     const commands = [
@@ -184,6 +206,8 @@ function activate(context) {
         vscode.commands.registerCommand('nekova.openRepl',   cmdOpenRepl),
         vscode.commands.registerCommand('nekova.fmtFile',    cmdFmtFile),
         vscode.commands.registerCommand('nekova.checkFile',  cmdCheckFile),
+        vscode.commands.registerCommand('nekova.testFile',   cmdTestFile),
+        vscode.commands.registerCommand('nekova.debugFile',  cmdDebugFile),
         vscode.commands.registerCommand('nekova.newProject', cmdNewProject),
     ];
 
@@ -204,16 +228,16 @@ function activate(context) {
     context.subscriptions.push(...commands);
 
     // Welcome message on first activation
-    const shown = context.globalState.get('nekova.welcomeShown_1.3.0');
+    const shown = context.globalState.get('nekova.welcomeShown_1.9.5');
     if (!shown) {
         vscode.window.showInformationMessage(
-            'NEKOVA v1.3.0 — Connected Forge. Press F5 to run any .nk file.',
+            'NEKOVA v1.9.5 — now with prompt blocks and retry/fallback. Press F5 to run any .nk file.',
             'Open REPL', 'New Project'
         ).then(choice => {
             if (choice === 'Open REPL')    cmdOpenRepl();
             if (choice === 'New Project')  cmdNewProject();
         });
-        context.globalState.update('nekova.welcomeShown_1.3.0', true);
+        context.globalState.update('nekova.welcomeShown_1.9.5', true);
     }
 }
 
