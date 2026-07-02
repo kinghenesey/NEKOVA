@@ -74,7 +74,8 @@ KEYWORDS = {
     "error": "ERROR_TYPE", "class": "CLASS", "speak": "SPEAK",
     "listen": "LISTEN", "every": "EVERY", "test": "TEST",
     "expect": "EXPECT", "imagine": "IMAGINE", "shape": "SHAPE",
-    "watch": "WATCH"
+    "watch": "WATCH",
+    "retry": "RETRY", "fallback": "FALLBACK"
 }
 
 # ── Lexer state ───────────────────────────────────────────────
