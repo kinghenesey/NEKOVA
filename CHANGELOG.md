@@ -5,6 +5,62 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.9.5] — 2026-07-02 · Phase 21 "Prompt Blocks + Retry/Fallback"
+
+### Added
+
+- **`prompt` blocks** — first-class named, composable prompt engineering
+  at the language level. No other language or framework has this as syntax.
+  ```nekova
+  prompt summarize(text, style="professional", max_sentences=3):
+      """
+      Summarize the following in a {style} tone.
+      Use at most {max_sentences} sentences.
+      Text: {text}
+      """
+  let summary = think summarize(article, style="casual")
+  ```
+  Prompts are called via `think`, accept typed parameters with defaults,
+  support triple-quoted multi-line templates with `{var}` interpolation,
+  and are treated as soft keywords — `prompt` remains usable as a variable
+  name for backward compatibility with existing programs.
+
+- **`retry N times [with exponential|linear backoff]:` + `fallback:`** —
+  first-class resilience for AI and network calls. Retries the body up to N
+  times on any error. Control-flow signals (`return`, `break`, `continue`)
+  are never treated as retry-triggering errors — they propagate immediately.
+  On exhaustion, runs `fallback:` body if present, otherwise re-raises.
+  ```nekova
+  retry 3 times with exponential backoff:
+      let result = think "analyse this" as json
+  fallback:
+      let result = {error: "unavailable", raw: text}
+  ```
+
+- **`tests/test_phase20.py`** — 4 test classes, 286 lines verifying the
+  self-hosted lexer produces byte-for-byte identical token streams to the
+  Python reference lexer on all stdlib `.nk` files
+
+- **`tests/test_phase21.py`** — 9 test classes, 355 lines covering prompt
+  basics, soft-keyword compatibility, typed params, retry success/exhaustion,
+  backoff modes, control-flow propagation through retry, and edge cases
+
+- **`tools/diff_lexers.py`** + **`tools/nk_tokenize.nk`** — token-stream
+  diff harness. Verified 3,666 tokens exact match when `lexer.nk` tokenises
+  itself using both the Python reference and self-hosted lexers
+
+### Phase Milestones
+
+- **Phase 20 complete** — `nekova/stdlib/nk/lexer.nk` ships: a 572-line
+  NEKOVA lexer written in NEKOVA, verified token-for-token against the
+  Python reference. NEKOVA has now written its own lexer.
+
+- **Phase 21 complete** — `prompt` blocks and `retry`/`fallback` are both
+  live. NEKOVA is now the only programming language with named, versioned,
+  composable prompts as a built-in language construct.
+
+---
+
 ## [1.9.4] — 2026-07-02 · Phase 20 "Self-Hosting: The Lexer"
 
 ### Added

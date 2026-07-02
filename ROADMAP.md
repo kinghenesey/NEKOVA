@@ -1,8 +1,8 @@
 # NEKOVA Language — Official Roadmap
 
-**Version:** 1.9.4 · Genesis  
-**Tests:** 1,177 passing · 188 test classes · 22 test phases  
-**Status:** Active development · Phase 20 complete, Phase 21 in progress  
+**Version:** 1.9.5 · Genesis  
+**Tests:** 1,203 passing · 197 test classes · 24 test phases  
+**Status:** Active development · Phase 21 complete · Phase 22 next  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
 ---
@@ -29,11 +29,11 @@ No imports. No boilerplate. No setup. Just the idea.
 | Version | Phase | What Ships |
 |---------|-------|-----------|
 | 1.9.2 | 19b | Self-hosting blockers fixed, 38 security bugs resolved |
-| **1.9.4** | 20 | Current — lexer in NEKOVA, verified token-for-token against the Python reference lexer |
-| **1.9.4** | 21 | Prompt blocks, retry/fallback, enforced types |
-| **1.9.5** | 22 | Observe, mock think, pipe operator |
-| **1.9.6** | 23 | Polish — inline errors, destructuring, docstrings |
-| **1.9.7** | 23b | Documentation website + language reference |
+| 1.9.4 | 20 | ✅ Lexer in NEKOVA, verified token-for-token against Python reference |
+| **1.9.5** | 21 | ✅ `prompt` blocks, `retry`/`fallback` — Phase 21 complete |
+| **1.9.6** | 22 | `observe` blocks, `mock think`, `|>` pipe operator |
+| **1.9.7** | 23 | Polish — inline errors, destructuring, docstrings, async rewrite |
+| **1.9.8** | 23b | Documentation website + language reference |
 | **2.0** | 24 | Parser in NEKOVA — self-hosting milestone 2 |
 | **2.5** | 25 | Agent system, unified schema |
 | **3.0** | 27 | Full self-hosting — interpreter in NEKOVA |
@@ -191,5 +191,5 @@ Sandbox as a deployable commercial API. `nekova teach` — AI-powered interactiv
 
 ---
 
-*Last updated: June 2026 · SYNEKCOT Tech · Nigeria 🇳🇬*  
+*Last updated: July 2026 · SYNEKCOT Tech · Nigeria 🇳🇬*  
 *Built with NEKOVA · Documented with intent*
