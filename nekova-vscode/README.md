@@ -1,6 +1,6 @@
-﻿# NEKOVA VS Code Extension — v1.9.4
+﻿# NEKOVA VS Code Extension — v1.9.5
 
-Syntax highlighting, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
+Syntax highlighting, a branded color theme, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
 Built by [SYNEKCOT Tech](https://github.com/kinghenesey/NEKOVA) 🇳🇬
 
@@ -8,12 +8,17 @@ Built by [SYNEKCOT Tech](https://github.com/kinghenesey/NEKOVA) 🇳🇬
 
 ## Features
 
-- **Syntax highlighting** for all NEKOVA keywords — `think`, `remember`, `recall`, `route`, `serve`, `connect`, `object`, `class`, `match`, `yield`, `error`, `shape`, `every`, `test`, `expect`, `imagine`, `speak`, `listen`, `watch`, `sandbox`, and more
-- **59 snippets** — type `think`, `task`, `route`, `obj`, `class`, `match`, `pipeline`, `parallel`, `sandbox`, `taskgen`, `decorator`, `shape`, `every`, `test`, and more
+- **Syntax highlighting** for all NEKOVA keywords — `think`, `remember`, `recall`, `route`, `serve`, `connect`, `object`, `class`, `match`, `yield`, `error`, `shape`, `every`, `test`, `expect`, `imagine`, `speak`, `listen`, `watch`, `sandbox`, `prompt`, `retry`, `fallback`, and more
+- **NEKOVA Dark color theme** — built from NEKOVA's own pepper-red and gold brand palette. AI-native keywords (`think`, `speak`, `listen`, `imagine`, `watch`, `every`) are highlighted in the brightest gold, since that's the language's whole identity — select it via `Preferences: Color Theme → NEKOVA Dark`
+- **Branded `.nk` file icon** in the file explorer, matching the same red/gold palette
+- **`prompt` blocks** highlighted as a declaration (like `task`/`class`) only when genuinely defining a prompt — `prompt name(...):` — while still working correctly as an ordinary variable name elsewhere, matching NEKOVA's own soft-keyword design
+- **62 snippets** — type `think`, `task`, `route`, `obj`, `class`, `match`, `pipeline`, `parallel`, `sandbox`, `taskgen`, `decorator`, `shape`, `every`, `test`, `prompt`, `retry`, and more
 - **Run file** — press `F5` to run the active `.nk` file
 - **Watch mode** — press `Ctrl+F5` to run with `--watch` (auto-reruns on save)
 - **Format file** — press `Shift+Alt+F` to run `nekova fmt`
 - **Lint file** — right-click → NEKOVA: Check File
+- **Test file** — right-click → NEKOVA: Test File (runs the active file, including any `test`/`expect` blocks it contains)
+- **Debug file** — right-click → NEKOVA: Debug File
 - **New project** — Command Palette → NEKOVA: New Project (choose template)
 - **Open REPL** — Command Palette → NEKOVA: Open REPL
 - **Status bar** — shows active AI provider, click to run
@@ -39,6 +44,8 @@ pip install nekova-lang
 | NEKOVA: Open REPL | — | Interactive shell |
 | NEKOVA: Format File | `Shift+Alt+F` | Run `nekova fmt` |
 | NEKOVA: Check File | — | Run `nekova check` |
+| NEKOVA: Test File | — | Run active file (executes `test`/`expect` blocks) |
+| NEKOVA: Debug File | — | Run `nekova debug` on the active file |
 | NEKOVA: New Project | — | Scaffold project from template |
 
 ---
@@ -99,6 +106,9 @@ pip install nekova-lang
 | `usemath` / `usestring` / `usefile` / `usedate` | Import NEKOVA stdlib modules |
 | `sandboxs` / `sandboxr` | Strict / relaxed sandbox block |
 | `sandboxrun` | Run NEKOVA code in a sandbox programmatically |
+| `prompt` / `promptdef` | Named prompt block definition |
+| `retry` | Retry block with backoff and `fallback:` clause |
+| `retrys` | Retry block with no backoff or fallback |
 
 ---
 
@@ -122,6 +132,22 @@ think "What should I build today?" as text
 # Speak and listen — built in
 speak "Hello, world!"
 let answer = listen "What city are you in?"
+
+# Named, composable prompts
+prompt summarize(text, style="professional", max_sentences=3):
+    """
+    Summarize the following in a {style} tone.
+    Use at most {max_sentences} sentences.
+    Text: {text}
+    """
+
+let summary = think summarize(article, style="casual")
+
+# Resilience for AI and network calls
+retry 3 times with exponential backoff:
+    let result = think "analyse this" as json
+fallback:
+    let result = {error: "unavailable"}
 
 # Classes with inheritance
 class Animal:
@@ -169,6 +195,23 @@ match status:
 
 ## Release Notes
 
+### 1.9.5
+- Added the **NEKOVA Dark** color theme — pepper-red and gold throughout,
+  with AI-native keywords highlighted brightest
+- Added **`prompt` block** highlighting as a declaration keyword, but only
+  when genuinely defining a prompt (`prompt name(...):`) — everywhere else
+  `prompt` still highlights as a plain identifier, matching its status as a
+  soft keyword at the language level
+- Added **NEKOVA: Test File** and **NEKOVA: Debug File** commands
+- Added `prompt`, `retry`, and `retrys` snippets
+- Added `retry`, `fallback`, `every`, `watch`, and `prompt` to auto-indent
+  rules after a trailing `:`; added `fallback` to the auto-dedent rules
+  alongside `catch`/`finally`, since it's a sibling clause of `retry`
+- Fixed extension packaging — the file icon and color theme referenced
+  paths (`icons/nk-file.svg`, `themes/nekova-color-theme.json`) that didn't
+  match where those files actually lived in the packaged extension. Fixed
+  and verified by unzipping the built `.vsix` directly
+
 ### 1.9.4
 - Fixed the file-icon theme (`nekova-icons`) — `.nk` files were falling back
   to the generic text-file icon because the theme pointed at an `icons/`
@@ -201,4 +244,4 @@ match status:
 
 [GitHub](https://github.com/kinghenesey/NEKOVA) · [PyPI](https://pypi.org/project/nekova-lang/) · [License](https://github.com/kinghenesey/NEKOVA/blob/main/LICENSE) · Built by SYNEKCOT Tech
 
-Licensed under the [Business Source License 1.1](https://github.com/kinghenesey/NEKOVA/blob/main/LICENSE) — free for personal use, learning, internal tools, and any product *written in* NEKOVA, with no revenue cap. See the [Licensing FAQ](https://github.com/kinghenesey/NEKOVA/blob/main/LICENSE-FAQ.md) for details.
+Licensed under the [Business Source License 1.1](https://github.com/kinghenesey/NEKOVA/blob/main/LICENSE) — free for personal use, learning, internal tools, and any product *written in* NEKOVA, with no revenue cap. See the [Licensing FAQ](https://github.com/kinghenesey/NEKOVA/blob/main/LICENSING_FAQ.md) for details.
