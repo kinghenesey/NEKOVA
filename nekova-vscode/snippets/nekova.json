@@ -231,6 +231,35 @@
     ],
     "description": "Parallel AI execution"
   },
+  "Prompt block": {
+    "prefix": ["prompt", "promptdef"],
+    "body": [
+      "prompt ${1:name}(${2:text}, ${3:style}=\"${4:professional}\"):",
+      "    \"\"\"",
+      "    ${5:Summarize the following in a {${3:style}} tone.}",
+      "    ${6:Text: {${2:text}}}",
+      "    \"\"\""
+    ],
+    "description": "Named, composable prompt definition (Phase 21)"
+  },
+  "Retry with fallback": {
+    "prefix": "retry",
+    "body": [
+      "retry ${1:3} times with ${2|exponential,linear|} backoff:",
+      "    ${3:let result = think \"${4:analyse this}\" as json}",
+      "fallback:",
+      "    ${5:let result = {error: \"unavailable\"}}"
+    ],
+    "description": "Retry block with backoff and fallback clause"
+  },
+  "Retry simple": {
+    "prefix": "retrys",
+    "body": [
+      "retry ${1:3} times:",
+      "    ${2:pass}"
+    ],
+    "description": "Retry block with no backoff or fallback"
+  },
   "Sandbox": {
     "prefix": "sandbox",
     "body": [
