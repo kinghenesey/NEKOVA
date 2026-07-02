@@ -96,6 +96,11 @@ class TokenType(Enum):
     SHAPE       = auto()   # shape User: name str
     WATCH       = auto()   # watch "file.txt": ...
 
+    # ── Phase 21: Prompt Blocks + Retry/Fallback ─────────────
+    PROMPT      = auto()   # prompt name(args): """template {var}"""
+    RETRY       = auto()   # retry 3 times [with exponential backoff]: ...
+    FALLBACK    = auto()   # fallback: ...  (sibling clause of retry)
+
     # ── Operators ─────────────────────────────────────────────
     PLUS        = auto()
 
@@ -214,4 +219,12 @@ KEYWORDS = {
     "imagine":    TokenType.IMAGINE,
     "shape":      TokenType.SHAPE,
     "watch":      TokenType.WATCH,
+    # Phase 21
+    # NOTE: "prompt" is intentionally NOT a hard keyword — existing
+    # NEKOVA code (e.g. examples/mood_tracker.nk) already uses
+    # `prompt` as an ordinary variable name. It's handled as a soft
+    # keyword in the parser instead (see _looks_like_prompt_def),
+    # same treatment as "pass"/"assert"/"raise".
+    "retry":      TokenType.RETRY,
+    "fallback":   TokenType.FALLBACK,
 }
