@@ -25,6 +25,8 @@ from nekova.parser.nodes import (
     ShapeDefinition, WatchStatement,
     # Phase 17
     YieldStatement, DecoratorStatement, ErrorDefinition, TypedTaskStatement,
+    # Phase 21
+    PromptStatement, RetryStatement,
 )
 from nekova.parser.async_nodes import (
     AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
@@ -157,6 +159,9 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         if token.type == TokenType.TASK:
             return self._parse_task()
 
+        if token.type == TokenType.RETRY:
+            return self._parse_retry()
+
         if token.type == TokenType.RETURN:
             return self._parse_return()
 
@@ -250,6 +255,8 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                 return self._parse_assert()
             if token.value == "raise":
                 return self._parse_raise()
+            if token.value == "prompt" and self._looks_like_prompt_def():
+                return self._parse_prompt()
 
             # Tuple unpacking: a, b, c = expr
             # Peek ahead — if after the first IDENTIFIER there's a COMMA,
@@ -1110,17 +1117,18 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
         return self._stamp(ForStatement(variable, iterable, body), line)
 
-    def _parse_task(self):
+    def _parse_task_param_list(self):
         """
-        Parse:
-            task <name>(<params>):
-            task <name>(a: int, b: int) -> int:
-        params: (name, type_hint_or_None, default_or_None, is_vararg)
+        Parse a parenthesized parameter list shared by task/prompt:
+            (a, b=1, c: int, d: int = 2, *args)
+        Returns list of (name, type_hint_or_None, default_or_None, is_vararg).
+        Assumes the opening '(' has NOT yet been consumed.
+        NOTE: named _parse_task_param_list (not _parse_param_list) to
+        avoid colliding with ClassParserMixin._parse_param_list, which
+        has a different contract (LPAREN already consumed, returns
+        (name, hint) pairs only) and is used by object/init/async
+        parsing.
         """
-        line = self._current().line
-        self._consume(TokenType.TASK)
-        name = self._advance().value  # allow keyword names
-
         self._consume(TokenType.LPAREN)
         params = []
         while self._current().type != TokenType.RPAREN:
@@ -1143,6 +1151,20 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             if self._current().type == TokenType.COMMA:
                 self._advance()
         self._consume(TokenType.RPAREN)
+        return params
+
+    def _parse_task(self):
+        """
+        Parse:
+            task <name>(<params>):
+            task <name>(a: int, b: int) -> int:
+        params: (name, type_hint_or_None, default_or_None, is_vararg)
+        """
+        line = self._current().line
+        self._consume(TokenType.TASK)
+        name = self._advance().value  # allow keyword names
+
+        params = self._parse_task_param_list()
 
         # Optional return type hint:  -> type
         return_type = None
@@ -1160,6 +1182,134 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         # Back-compat: strip type hints to old (name, default, is_vararg) tuple
         simple = [(p[0], p[2], p[3]) for p in params]
         return self._stamp(TaskStatement(name, simple, body), line)
+
+    def _looks_like_prompt_def(self) -> bool:
+        """
+        Disambiguates `prompt name(...):` (a prompt block definition)
+        from `prompt` used as an ordinary variable, e.g. `prompt = "x"`
+        or `show prompt`. 'prompt' is a soft keyword — not reserved —
+        specifically so existing code that uses it as a variable name
+        keeps working. Only treat it as a definition when it's
+        immediately followed by `IDENTIFIER (`.
+        """
+        nxt = self.tokens[self.pos + 1] if self.pos + 1 < len(self.tokens) else None
+        nxt2 = self.tokens[self.pos + 2] if self.pos + 2 < len(self.tokens) else None
+        return (nxt is not None and nxt.type == TokenType.IDENTIFIER
+                and nxt2 is not None and nxt2.type == TokenType.LPAREN)
+
+    def _parse_prompt(self):
+        """
+        Parse:
+            prompt summarize(text, style="professional"):
+                \"\"\"Summarize the following in a {style} tone: {text}\"\"\"
+
+        The body is parsed with a dedicated loop (not the shared
+        _parse_block) because a bare string literal isn't normally
+        allowed as a standalone statement anywhere else in NEKOVA —
+        it's special-cased here so a prompt's docstring template
+        doesn't need an `f` prefix to interpolate {var} placeholders.
+        """
+        line = self._current().line
+        self._advance()  # consume the 'prompt' identifier token
+        name = self._advance().value  # allow keyword names
+
+        params = self._parse_task_param_list()
+
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        body = self._parse_prompt_body()
+
+        return self._stamp(PromptStatement(name, params, body, line=line), line)
+
+    def _parse_prompt_body(self) -> list:
+        """
+        Like _parse_block, but a bare STRING/F_STRING statement is
+        allowed and is parsed as an interpolation template (reusing
+        _parse_fstring so {var} placeholders resolve against the
+        prompt's own parameters, even without an `f` prefix).
+        """
+        statements = []
+
+        self._skip_newlines()
+
+        if self._current().type != TokenType.INDENT:
+            raise ParseError(
+                "Expected an indented block here. "
+                "Did you forget to indent?",
+                self._current().line
+            )
+
+        self._consume(TokenType.INDENT)
+        self._skip_newlines()
+
+        while (not self._at_end() and
+               self._current().type != TokenType.DEDENT):
+            if self._current().type == TokenType.STRING:
+                tok = self._advance()
+                self._expect_newline_or_eof()
+                statements.append(self._parse_fstring(tok.value))
+            else:
+                stmt = self._parse_statement()
+                if stmt is not None:
+                    statements.append(stmt)
+            self._skip_newlines()
+
+        if self._current().type == TokenType.DEDENT:
+            self._consume(TokenType.DEDENT)
+
+        return statements
+
+    def _parse_retry(self):
+        """
+        Parse:
+            retry 3 times with exponential backoff:
+                let result = think "analyse this" as json
+            fallback:
+                let result = {error: "unavailable"}
+
+            retry 5 times:              # no backoff -> immediate retry
+                connect_to_service()
+        """
+        line = self._current().line
+        self._consume(TokenType.RETRY)
+
+        times = self._parse_expression()
+
+        # optional "times"
+        if (self._current().type == TokenType.IDENTIFIER
+                and self._current().value == "times"):
+            self._advance()
+
+        # optional "with <exponential|linear> backoff"
+        backoff = None
+        if self._current().type == TokenType.WITH:
+            self._advance()
+            if self._current().type == TokenType.IDENTIFIER:
+                strategy = self._advance().value.lower()
+                if (self._current().type == TokenType.IDENTIFIER
+                        and self._current().value == "backoff"):
+                    self._advance()
+                backoff = strategy
+
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+        body = self._parse_block()
+
+        self._skip_newlines()
+
+        fallback_body = None
+        if (not self._at_end()
+                and self._current().type == TokenType.FALLBACK):
+            self._consume(TokenType.FALLBACK)
+            self._consume(TokenType.COLON)
+            self._expect_newline_or_eof()
+            self._skip_newlines()
+            fallback_body = self._parse_block()
+
+        return self._stamp(
+            RetryStatement(times, backoff, body, fallback_body, line=line), line
+        )
 
     def _parse_return(self):
         """Parse:  return <expression>"""
