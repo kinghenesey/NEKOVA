@@ -1,8 +1,4 @@
-﻿<<<<<<< HEAD
 ﻿# NEKOVA Programming Language
-=======
-# NEKOVA Programming Language
->>>>>>> 3a2735c3b9411ed30379a256c69a30efe81d2b92
 
 ### The AI-Native Programming Language by SYNEKCOT Tech
 
@@ -494,7 +490,7 @@ NEKOVA is licensed under the **Business Source License 1.1**: free to use, modif
 
 ## Built By
 
-**Emmanuel King Christopher** — Founder, SYNEKCOT Tech. 21 years old, Nigeria. Built from scratch in Python 3.11, starting October 2025.
+**Emmanuel King Christopher** — Founder, SYNEKCOT Tech, Nigeria. Built from scratch in Python 3.11, starting October 2025.
 
 > *"Because every other language makes you import AI as a library, and I believe if AI is the future of how we build software, it should be a keyword — not an afterthought."*
 
@@ -502,8 +498,4 @@ NEKOVA is licensed under the **Business Source License 1.1**: free to use, modif
 
 **Star ⭐ this repo if NEKOVA inspired you!**
 
-<<<<<<< HEAD
 [github.com/kinghenesey/NEKOVA](https://github.com/kinghenesey/NEKOVA) · [PyPI](https://pypi.org/project/nekova-lang/) · Built by SYNEKCOT Tech 🇳🇬
-=======
-[github.com/kinghenesey/NEKOVA](https://github.com/kinghenesey/NEKOVA) · [PyPI](https://pypi.org/project/nekova-lang/) · Built by SYNEKCOT Tech 🇳🇬
->>>>>>> 3a2735c3b9411ed30379a256c69a30efe81d2b92

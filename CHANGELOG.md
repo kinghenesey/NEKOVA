@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.9.3] — 2026-07-02 · Phase 20 "Self-Hosting: The Lexer"
+## [1.9.4] — 2026-07-02 · Phase 20 "Self-Hosting: The Lexer"
 
 ### Added
 - **`nekova/stdlib/nk/lexer.nk`** — the NEKOVA lexer, written in NEKOVA. A
