@@ -2,7 +2,7 @@
   "name": "nekova-lang",
   "displayName": "NEKOVA - AI Native Programming Language",
   "description": "NEKOVA: AI-native syntax highlighting, snippets, sandbox, and tooling for the NEKOVA programming language — where think is a keyword",
-  "version": "1.9.4",
+  "version": "1.9.5",
   "publisher": "SYNEKCOTTech",
   "engines": {
     "vscode": "^1.75.0"
@@ -22,7 +22,8 @@
     "llm",
     "sandbox",
     "generators",
-    "decorators"
+    "decorators",
+    "prompt-engineering"
   ],
   "repository": {
     "type": "git",
@@ -88,6 +89,16 @@
         "title": "NEKOVA: Check File (Lint)"
       },
       {
+        "command": "nekova.testFile",
+        "title": "NEKOVA: Test File",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "nekova.debugFile",
+        "title": "NEKOVA: Debug File",
+        "icon": "$(debug)"
+      },
+      {
         "command": "nekova.newProject",
         "title": "NEKOVA: New Project"
       }
@@ -123,6 +134,16 @@
         },
         {
           "command": "nekova.checkFile",
+          "when": "resourceExtname == .nk",
+          "group": "nekova"
+        },
+        {
+          "command": "nekova.testFile",
+          "when": "resourceExtname == .nk",
+          "group": "nekova"
+        },
+        {
+          "command": "nekova.debugFile",
           "when": "resourceExtname == .nk",
           "group": "nekova"
         }
