@@ -1,8 +1,8 @@
 # NEKOVA Language — Official Roadmap
 
-**Version:** 1.9.2 · Genesis  
-**Tests:** 1,130 passing · 181 test classes · 22 test phases  
-**Status:** Active development · Phase 20 in progress  
+**Version:** 1.9.3 · Genesis  
+**Tests:** 1,177 passing · 188 test classes · 22 test phases  
+**Status:** Active development · Phase 20 complete, Phase 21 in progress  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
 ---
@@ -28,12 +28,12 @@ No imports. No boilerplate. No setup. Just the idea.
 
 | Version | Phase | What Ships |
 |---------|-------|-----------|
-| 1.9.2 | 19b | Current — self-hosting blockers fixed, 38 security bugs resolved |
-| **1.4** | 20 | Lexer in NEKOVA — self-hosting begins |
-| **1.5** | 21 | Prompt blocks, retry/fallback, enforced types |
-| **1.6** | 22 | Observe, mock think, pipe operator |
-| **1.7** | 23 | Polish — inline errors, destructuring, docstrings |
-| **1.8** | 23b | Documentation website + language reference |
+| 1.9.2 | 19b | Self-hosting blockers fixed, 38 security bugs resolved |
+| **1.9.3** | 20 | Current — lexer in NEKOVA, verified token-for-token against the Python reference lexer |
+| **1.9.4** | 21 | Prompt blocks, retry/fallback, enforced types |
+| **1.9.5** | 22 | Observe, mock think, pipe operator |
+| **1.9.6** | 23 | Polish — inline errors, destructuring, docstrings |
+| **1.9.7** | 23b | Documentation website + language reference |
 | **2.0** | 24 | Parser in NEKOVA — self-hosting milestone 2 |
 | **2.5** | 25 | Agent system, unified schema |
 | **3.0** | 27 | Full self-hosting — interpreter in NEKOVA |
@@ -179,13 +179,13 @@ Sandbox as a deployable commercial API. `nekova teach` — AI-powered interactiv
 | Metric | Value |
 |--------|-------|
 | Test phases | 22 |
-| Test classes | 181 |
-| Tests passing | 1,130 / 1,130 |
-| Version | 1.9.2 |
+| Test classes | 188 |
+| Tests passing | 1,177 / 1,177 |
+| Version | 1.9.3 |
 | PyPI package | `nekova-lang` |
 | VS Code extension | ✅ Published |
 | Self-hosting blockers | 0 remaining |
-| Self-hosting status | Phase 20 — in progress |
+| Self-hosting status | Phase 20 complete (lexer) — Phase 21 next |
 | Commercial story | Phase 19 Sandbox — live |
 | Critical bugs fixed | 38 of 38 |
 

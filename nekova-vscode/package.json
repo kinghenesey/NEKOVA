@@ -2,7 +2,7 @@
   "name": "nekova-lang",
   "displayName": "NEKOVA - AI Native Programming Language",
   "description": "NEKOVA: AI-native syntax highlighting, snippets, sandbox, and tooling for the NEKOVA programming language — where think is a keyword",
-  "version": "1.9.2",
+  "version": "1.9.3",
   "publisher": "SYNEKCOTTech",
   "engines": {
     "vscode": "^1.75.0"
@@ -48,6 +48,13 @@
         "language": "nekova",
         "scopeName": "source.nekova",
         "path": "./syntaxes/nekova.tmLanguage.json"
+      }
+    ],
+    "themes": [
+      {
+        "label": "NEKOVA Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/nekova-color-theme.json"
       }
     ],
     "snippets": [

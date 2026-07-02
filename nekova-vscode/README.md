@@ -1,4 +1,4 @@
-﻿# NEKOVA VS Code Extension — v1.9.2
+﻿# NEKOVA VS Code Extension — v1.9.3
 
 Syntax highlighting, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
@@ -168,6 +168,12 @@ match status:
 ---
 
 ## Release Notes
+
+### 1.9.3
+- Fixed the file-icon theme (`nekova-icons`) — `.nk` files were falling back
+  to the generic text-file icon because the theme pointed at an `icons/`
+  folder that didn't exist in the packaged extension. The custom `.nk` file
+  icon now actually renders in the file explorer
 
 ### 1.9.2
 - Grammar updated for Phases 15–19: `yield`, `class`, `error`, `shape`, `every`, `test`/`expect`, `imagine`, `speak`/`listen`, `watch`, `sandbox`/`strict`/`relaxed`

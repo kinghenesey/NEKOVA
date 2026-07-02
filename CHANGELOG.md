@@ -5,6 +5,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.9.3] — 2026-07-02 · Phase 20 "Self-Hosting: The Lexer"
+
+### Added
+- **`nekova/stdlib/nk/lexer.nk`** — the NEKOVA lexer, written in NEKOVA. A
+  line-for-line port of `nekova/lexer/lexer.py`, matching Python `TokenType`
+  names 1:1 so its output can be diffed directly against the reference lexer
+- **`tools/diff_lexers.py`** + **`tools/nk_tokenize.nk`** — a token-stream
+  diff harness that runs the Python reference lexer and the self-hosted
+  NEKOVA lexer on the same source file and reports any mismatch, token by
+  token. Verified byte-for-byte identical token streams on `math.nk`,
+  `string.nk`, `date.nk`, `file.nk`, and `lexer.nk` tokenizing itself
+  (3,666 tokens, exact match) — the strongest validation Phase 20 has had
+  so far, beyond unit tests alone
+
+### Fixed
+- VS Code extension file-icon theme (`nekova-icon-theme.json`) referenced
+  `./icons/nk-file.svg`, but the `icons/` folder never existed in the
+  extension — `.nk` files silently fell back to the generic text-file icon
+  in the file explorer. `nk-file.svg` now lives at the path the theme
+  actually expects
+- `tests/test_phase12.py::test_version_is_current` hardcoded an exact
+  version-string assertion (`== "1.9.2"`) that required manual updates on
+  every bump, defeating the point of the dynamic semver-shape check already
+  sitting right above it. Removed the redundant literal check — this test
+  now never needs manual updates again
+
+---
+
 ## [1.9.2] — 2026-06-30 · Patch
 
 ### Fixed
