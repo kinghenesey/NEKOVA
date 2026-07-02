@@ -22,6 +22,8 @@ from nekova.parser.nodes import (
     ShapeDefinition, WatchStatement,
     # Phase 17
     YieldStatement, DecoratorStatement, ErrorDefinition, TypedTaskStatement,
+    # Phase 21
+    PromptStatement, RetryStatement,
 )
 from nekova.interpreter.environment import Environment
 from nekova.runtime import ReturnSignal, BreakSignal, ContinueSignal
@@ -1030,6 +1032,15 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         else:
             self.env.set(node.name, node)
 
+    def _exec_PromptStatement(self, node: PromptStatement):
+        """
+        Execute:  prompt summarize(text, style="professional"): ...
+        Registers the prompt like a task — calling it later returns
+        the interpolated template string (see _call_prompt).
+        """
+        node.closure_env = self.env
+        self.env.set(node.name, node)
+
     def _exec_ReturnStatement(self, node: ReturnStatement):
         """
         Execute:  return <value>
@@ -1187,6 +1198,10 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # NEKOVA typed task (Phase 17)
         if isinstance(callee, TypedTaskStatement):
             return self._call_typed_task(callee, args)
+
+        # NEKOVA prompt block (Phase 21)
+        if isinstance(callee, PromptStatement):
+            return self._call_prompt(callee, args)
 
         # NEKOVA task
         if isinstance(callee, TaskStatement):
@@ -1675,6 +1690,124 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         finally:
             self.env = previous_env
             self._global_names = previous_globals
+
+    def _call_prompt(self, prompt: PromptStatement, args: list):
+        """
+        Call a prompt block. Binds parameters exactly like a typed
+        task (name, type_hint, default, is_vararg) — including type
+        enforcement — but the return value is implicit: it's the
+        value of the last statement in the body (typically the
+        interpolated template string), not something you need an
+        explicit `return` for. An explicit `return` still works if
+        the prompt body has one.
+        """
+        TYPE_VALIDATORS = {
+            "int":   (int,   "an integer"),
+            "float": (float, "a float"),
+            "str":   (str,   "a string"),
+            "bool":  (bool,  "a boolean"),
+            "list":  (list,  "a list"),
+            "dict":  (dict,  "a dict"),
+        }
+
+        closure   = getattr(prompt, "closure_env", self.globals)
+        local_env = Environment(parent=closure)
+        prev_env  = self.env
+        prev_globals = self._global_names
+        self._global_names = set()
+
+        params = prompt.params  # (name, type_hint, default, is_vararg)
+
+        vararg_idx = next((i for i, p in enumerate(params) if p[3]), None)
+
+        if vararg_idx is not None:
+            positional = params[:vararg_idx]
+            vararg_name = params[vararg_idx][0]
+            if len(args) < len(positional):
+                raise NEKOVARuntimeError(
+                    f"Prompt '{prompt.name}' expects at least "
+                    f"{len(positional)} argument(s) but got {len(args)}."
+                )
+            for (pname, phint, _, _), val in zip(positional, args):
+                self._check_type(pname, val, phint, TYPE_VALIDATORS, prompt.name, kind="Prompt")
+                local_env.set(pname, val)
+            local_env.set(vararg_name, list(args[len(positional):]))
+        else:
+            required = sum(1 for (_, _, d, _) in params if d is None)
+            if len(args) < required or len(args) > len(params):
+                raise NEKOVARuntimeError(
+                    f"Prompt '{prompt.name}' expects "
+                    f"{required}\u2013{len(params)} argument(s) but got {len(args)}."
+                )
+            for i, (pname, phint, default, _) in enumerate(params):
+                val = args[i] if i < len(args) else self._execute_node(default)
+                self._check_type(pname, val, phint, TYPE_VALIDATORS, prompt.name, kind="Prompt")
+                local_env.set(pname, val)
+
+        self.env = local_env
+        last_value = None
+        try:
+            for stmt in prompt.body:
+                last_value = self._execute_node(stmt)
+            return last_value
+        except ReturnSignal as r:
+            return r.value
+        finally:
+            self.env = prev_env
+            self._global_names = prev_globals
+
+    def _exec_RetryStatement(self, node: RetryStatement):
+        """
+        Execute:
+            retry 3 times with exponential backoff:
+                <body>
+            fallback:
+                <body>
+
+        Retries `body` up to `times` times whenever it raises an
+        error. Control-flow signals (return/break/continue) are
+        never treated as retry-triggering errors — they propagate
+        immediately, exactly like they would outside a retry block.
+        On exhausting all attempts: runs `fallback_body` if given,
+        otherwise re-raises the last error.
+        """
+        import time
+
+        times = self._execute_node(node.times)
+        try:
+            times = int(times)
+        except (TypeError, ValueError):
+            raise NEKOVARuntimeError(
+                f"'retry' expects a number of attempts, got "
+                f"{type(times).__name__}."
+            )
+        if times < 1:
+            raise NEKOVARuntimeError(
+                "'retry' needs at least 1 attempt — got "
+                f"{times}."
+            )
+
+        last_error = None
+        for attempt in range(1, times + 1):
+            try:
+                self._execute_block(node.body)
+                return
+            except (ReturnSignal, BreakSignal, ContinueSignal):
+                raise
+            except (NEKOVARaiseError, Exception) as e:
+                last_error = e
+                if attempt < times:
+                    if node.backoff == "exponential":
+                        time.sleep(min(2 ** (attempt - 1), 30))
+                    elif node.backoff == "linear":
+                        time.sleep(attempt)
+                    # no backoff clause -> immediate retry, no delay
+
+        if node.fallback_body is not None:
+            self._execute_block(node.fallback_body)
+            return
+
+        raise last_error
 
     def _is_truthy(self, value) -> bool:
         """
@@ -2383,7 +2516,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                     )
         return result
 
-    def _check_type(self, pname, val, phint, validators, task_name):
+    def _check_type(self, pname, val, phint, validators, task_name, kind="Task"):
         """Enforce a type hint on a parameter value."""
         if not phint or phint == "any":
             return
@@ -2395,7 +2528,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                     return py_type(val)
                 except (ValueError, TypeError):
                     raise NEKOVARuntimeError(
-                        f"Task '{task_name}': parameter '{pname}' "
+                        f"{kind} '{task_name}': parameter '{pname}' "
                         f"expects {label}, got {type(val).__name__}."
                     )
 
