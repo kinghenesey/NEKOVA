@@ -1,9 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-  <defs>
-    <linearGradient id="nk-mark" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF"/>
-      <stop offset="100%" stop-color="#3DDC84"/>
-    </linearGradient>
-  </defs>
-  <text x="8" y="11.5" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="url(#nk-mark)">nk</text>
+  <rect x="0.5" y="0.5" width="15" height="15" rx="3.5" fill="#16191A"/>
+  <path d="M4.2 12.2 V4.4 L8.6 9.4 V4.4" fill="none" stroke="#3DDC84" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="11.6" cy="5.4" r="1.15" fill="#FFFFFF"/>
+  <path d="M9.6 11.8 L13.6 7.4" stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round"/>
 </svg>
