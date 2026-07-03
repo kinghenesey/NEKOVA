@@ -5,6 +5,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.9.6] — 2026-07-03 · Phase 22 "Observability + Testing + Pipe Operator"
+
+### Added
+
+- **`observe "label" with tags {...}:` blocks** — structured telemetry
+  around any code block, tagging runs for later inspection
+- **`mock think as "response"`** inside `test` blocks — lets tests assert
+  against deterministic AI output instead of hitting a real provider,
+  directly fixing the "is this a real AI response" ambiguity real users
+  ran into with the unlabeled Mock provider (tracked properly in 1.9.7)
+- **`|>` pipe operator** — `data |> parse() |> filter() |> sort() |> take(10)`,
+  pairs naturally with `think` chains as intended
+
+### Process note
+
+This phase shipped (1,226 tests passing, up from 1,203) without a version
+bump at the time — `nekova/config.py`, `pyproject.toml`, and the VS Code
+extension's `package.json` all stayed at `1.9.5` despite new keywords
+landing. This entry and the version bump to `1.9.6` are a retroactive
+correction, and this exact gap — no consistent rule for when a version
+number changes — is what Phase 23 formally fixes with a documented semver
+policy (see `ROADMAP.md`).
+
+---
+
 ## [1.9.5] — 2026-07-02 · Phase 21 "Prompt Blocks + Retry/Fallback"
 
 ### Added
