@@ -2,69 +2,82 @@
   "name": "NEKOVA Dark",
   "type": "dark",
   "colors": {
-    "editor.background": "#141110",
-    "editor.foreground": "#E8DCC8",
-    "editorCursor.foreground": "#E8B84B",
-    "editor.lineHighlightBackground": "#1C1815",
-    "editor.selectionBackground": "#8C1C1C55",
-    "editorLineNumber.foreground": "#5A5049",
-    "editorLineNumber.activeForeground": "#E8B84B",
-    "editorIndentGuide.background": "#242019",
-    "editorIndentGuide.activeBackground": "#3A322A",
-    "editorWhitespace.foreground": "#2A241E",
+    "editor.background": "#16191A",
+    "editor.foreground": "#E8ECE9",
+    "editorCursor.foreground": "#3DDC84",
+    "editor.lineHighlightBackground": "#1E2222",
+    "editor.selectionBackground": "#2ECC7133",
+    "editorLineNumber.foreground": "#5C635F",
+    "editorLineNumber.activeForeground": "#3DDC84",
+    "editorIndentGuide.background": "#22262566",
+    "editorIndentGuide.activeBackground": "#3A403E",
+    "editorWhitespace.foreground": "#22262533",
 
-    "activityBar.background": "#0D0B0A",
-    "activityBar.foreground": "#E8B84B",
-    "activityBarBadge.background": "#D4213A",
-    "activityBarBadge.foreground": "#F5EFE4",
+    "editorError.foreground": "#FF5C5C",
+    "editorError.border": "#FF5C5C",
+    "editorWarning.foreground": "#E8B84B",
+    "editorInfo.foreground": "#5CB8E8",
+    "problemsErrorIcon.foreground": "#FF5C5C",
+    "problemsWarningIcon.foreground": "#E8B84B",
+    "list.errorForeground": "#FF5C5C",
+    "list.warningForeground": "#E8B84B",
+    "editorGutter.modifiedBackground": "#5CB8E8",
+    "editorGutter.addedBackground": "#3DDC84",
+    "editorGutter.deletedBackground": "#FF5C5C",
 
-    "sideBar.background": "#181513",
-    "sideBar.foreground": "#C9BCA6",
-    "sideBarTitle.foreground": "#E8B84B",
-    "sideBarSectionHeader.background": "#1C1815",
+    "activityBar.background": "#0E1110",
+    "activityBar.foreground": "#E8ECE9",
+    "activityBarBadge.background": "#2ECC71",
+    "activityBarBadge.foreground": "#0E1110",
 
-    "statusBar.background": "#D4213A",
-    "statusBar.foreground": "#F5EFE4",
-    "statusBar.noFolderBackground": "#8C1C1C",
-    "statusBar.debuggingBackground": "#8C1C1C",
+    "sideBar.background": "#191D1C",
+    "sideBar.foreground": "#C7CBC7",
+    "sideBarTitle.foreground": "#E8ECE9",
+    "sideBarSectionHeader.background": "#1E2222",
 
-    "titleBar.activeBackground": "#0D0B0A",
-    "titleBar.activeForeground": "#E8B84B",
-    "titleBar.inactiveBackground": "#0D0B0A",
-    "titleBar.inactiveForeground": "#7A6F60",
+    "statusBar.background": "#1F7A4C",
+    "statusBar.foreground": "#F5F7F5",
+    "statusBar.noFolderBackground": "#3A403E",
+    "statusBar.debuggingBackground": "#E8B84B",
+    "statusBar.debuggingForeground": "#16191A",
 
-    "tab.activeBackground": "#141110",
-    "tab.activeForeground": "#F0C24B",
-    "tab.inactiveBackground": "#0D0B0A",
-    "tab.inactiveForeground": "#7A6F60",
-    "tab.activeBorderTop": "#D4213A",
-    "tab.border": "#0D0B0A",
+    "titleBar.activeBackground": "#0E1110",
+    "titleBar.activeForeground": "#E8ECE9",
+    "titleBar.inactiveBackground": "#0E1110",
+    "titleBar.inactiveForeground": "#6E766E",
 
-    "panel.background": "#141110",
-    "panel.border": "#2A241E",
+    "tab.activeBackground": "#16191A",
+    "tab.activeForeground": "#E8ECE9",
+    "tab.inactiveBackground": "#0E1110",
+    "tab.inactiveForeground": "#6E766E",
+    "tab.activeBorderTop": "#2ECC71",
+    "tab.border": "#0E1110",
 
-    "terminal.background": "#141110",
-    "terminal.foreground": "#E8DCC8",
-    "terminal.ansiRed": "#E8433A",
+    "panel.background": "#16191A",
+    "panel.border": "#22262A",
+
+    "terminal.background": "#16191A",
+    "terminal.foreground": "#E8ECE9",
+    "terminal.ansiRed": "#FF5C5C",
     "terminal.ansiYellow": "#E8B84B",
-    "terminal.ansiGreen": "#C9A227",
-    "terminal.ansiBlue": "#C97A6D",
-    "terminal.ansiMagenta": "#D4213A",
-    "terminal.ansiCyan": "#E8CD8A",
+    "terminal.ansiGreen": "#3DDC84",
+    "terminal.ansiBlue": "#5CB8E8",
+    "terminal.ansiMagenta": "#C7CBC7",
+    "terminal.ansiCyan": "#A8D8B9",
 
-    "button.background": "#D4213A",
-    "button.foreground": "#F5EFE4",
-    "button.hoverBackground": "#E8433A",
+    "button.background": "#2ECC71",
+    "button.foreground": "#0E1110",
+    "button.hoverBackground": "#3DDC84",
 
-    "focusBorder": "#E8B84B",
-    "badge.background": "#D4213A",
-    "badge.foreground": "#F5EFE4"
+    "focusBorder": "#2ECC71",
+    "badge.background": "#2ECC71",
+    "badge.foreground": "#0E1110"
   },
   "tokenColors": [
     {
       "name": "Comments",
       "scope": ["comment.line.number-sign.nekova"],
-      "settings": { "fontStyle": "italic", "foreground": "#7A6F60" }
+      "settings": { "fontStyle": "italic", "foreground": "#6E766E" }
     },
     {
       "name": "Strings",
@@ -74,7 +87,7 @@
         "string.quoted.triple.double.nekova",
         "string.quoted.triple.single.nekova"
       ],
-      "settings": { "foreground": "#F0C24B" }
+      "settings": { "foreground": "#A8D8B9" }
     },
     {
       "name": "String interpolation punctuation",
@@ -83,7 +96,7 @@
         "punctuation.section.interpolation.end.nekova",
         "meta.interpolation.nekova"
       ],
-      "settings": { "foreground": "#E8433A" }
+      "settings": { "foreground": "#3DDC84" }
     },
     {
       "name": "Numbers and language constants",
@@ -93,54 +106,54 @@
         "constant.numeric.hex.nekova",
         "constant.numeric.scientific.nekova"
       ],
-      "settings": { "foreground": "#E8B84B" }
+      "settings": { "foreground": "#C7CBC7" }
     },
     {
       "name": "true / false / null",
       "scope": ["constant.language.nekova"],
-      "settings": { "fontStyle": "bold", "foreground": "#E8433A" }
+      "settings": { "fontStyle": "bold", "foreground": "#5CB8E8" }
     },
 
     {
       "name": "AI-native keywords — think, speak, listen, imagine, watch, every",
       "scope": ["keyword.other.ai.nekova"],
-      "settings": { "fontStyle": "bold", "foreground": "#FFD86B" }
+      "settings": { "fontStyle": "bold", "foreground": "#3DDC84" }
     },
 
     {
       "name": "Control flow keywords",
       "scope": ["keyword.control.nekova"],
-      "settings": { "fontStyle": "bold", "foreground": "#E8433A" }
+      "settings": { "fontStyle": "bold", "foreground": "#E8ECE9" }
     },
     {
       "name": "Declaration keywords",
       "scope": ["keyword.declaration.nekova"],
-      "settings": { "foreground": "#D4A72C" }
+      "settings": { "foreground": "#2ECC71" }
     },
     {
       "name": "Class keywords",
       "scope": ["keyword.other.class.nekova"],
-      "settings": { "foreground": "#D4213A" }
+      "settings": { "foreground": "#C7CBC7" }
     },
     {
       "name": "Sandbox / security keywords",
       "scope": ["keyword.other.sandbox.nekova"],
-      "settings": { "fontStyle": "bold", "foreground": "#8C1C1C" }
+      "settings": { "fontStyle": "bold", "foreground": "#5CB8E8" }
     },
     {
       "name": "Memory keywords — remember, recall, forget",
       "scope": ["keyword.other.memory.nekova"],
-      "settings": { "fontStyle": "italic", "foreground": "#E8CD8A" }
+      "settings": { "fontStyle": "italic", "foreground": "#A8D8B9" }
     },
     {
       "name": "Test keywords",
       "scope": ["keyword.other.test.nekova"],
-      "settings": { "foreground": "#E8CD8A" }
+      "settings": { "foreground": "#A8D8B9" }
     },
     {
       "name": "Web / DB keywords",
       "scope": ["keyword.other.web.nekova", "keyword.other.db.nekova"],
-      "settings": { "foreground": "#C97A6D" }
+      "settings": { "foreground": "#8A8F8A" }
     },
 
     {
@@ -156,56 +169,56 @@
         "keyword.operator.power.nekova",
         "keyword.operator.range.nekova"
       ],
-      "settings": { "foreground": "#E8DCC8" }
+      "settings": { "foreground": "#8A8F8A" }
     },
     {
       "name": "Pipe and AI-pipeline operators — |> and ->",
       "scope": ["keyword.operator.pipe.nekova", "keyword.operator.pipeline.ai.nekova"],
-      "settings": { "fontStyle": "bold", "foreground": "#F0C24B" }
+      "settings": { "fontStyle": "bold", "foreground": "#3DDC84" }
     },
 
     {
       "name": "Function / task names",
       "scope": ["entity.name.function.nekova"],
-      "settings": { "fontStyle": "bold", "foreground": "#F0C24B" }
+      "settings": { "fontStyle": "bold", "foreground": "#FFFFFF" }
     },
     {
       "name": "Decorators",
       "scope": ["entity.name.function.decorator.nekova"],
-      "settings": { "fontStyle": "italic", "foreground": "#D4213A" }
+      "settings": { "fontStyle": "italic", "foreground": "#2ECC71" }
     },
     {
       "name": "Namespaces / modules",
       "scope": ["entity.name.namespace.nekova"],
-      "settings": { "foreground": "#D4A72C" }
+      "settings": { "foreground": "#A8D8B9" }
     },
 
     {
       "name": "self",
       "scope": ["variable.language.self.nekova"],
-      "settings": { "fontStyle": "italic", "foreground": "#C97A6D" }
+      "settings": { "fontStyle": "italic", "foreground": "#8A8F8A" }
     },
     {
       "name": "Variables",
       "scope": ["variable.other.nekova"],
-      "settings": { "foreground": "#E8DCC8" }
+      "settings": { "foreground": "#E8ECE9" }
     },
 
     {
       "name": "Built-in functions",
       "scope": ["support.function.builtin.nekova"],
-      "settings": { "foreground": "#E8B84B" }
+      "settings": { "foreground": "#5CB8E8" }
     },
     {
       "name": "Types / shapes",
       "scope": ["support.type.nekova"],
-      "settings": { "fontStyle": "bold", "foreground": "#A67C2E" }
+      "settings": { "fontStyle": "bold", "foreground": "#2ECC71" }
     },
 
     {
       "name": "Escape sequences",
       "scope": ["constant.character.escape.nekova"],
-      "settings": { "foreground": "#E8433A" }
+      "settings": { "foreground": "#3DDC84" }
     },
     {
       "name": "String delimiters",
@@ -213,7 +226,7 @@
         "punctuation.definition.string.begin.nekova",
         "punctuation.definition.string.end.nekova"
       ],
-      "settings": { "foreground": "#A67C2E" }
+      "settings": { "foreground": "#6E9C7C" }
     }
   ]
 }

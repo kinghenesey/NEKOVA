@@ -1,22 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
   <defs>
-    <linearGradient id="nk-fold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#D4213A"/>
-      <stop offset="100%" stop-color="#E8B84B"/>
-    </linearGradient>
-    <linearGradient id="nk-text" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#E8433A"/>
-      <stop offset="100%" stop-color="#F0C24B"/>
+    <linearGradient id="nk-mark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#3DDC84"/>
     </linearGradient>
   </defs>
-
-  <!-- File body -->
-  <rect x="2" y="1" width="10" height="13" rx="1.5" fill="#141110"/>
-  <rect x="2" y="1" width="10" height="13" rx="1.5" fill="none" stroke="#E8B84B" stroke-width="0.35" opacity="0.5"/>
-
-  <!-- Folded corner (full-opacity gradient triangle, no redundant redraw) -->
-  <path d="M9 1 L12 4 L9 4 Z" fill="url(#nk-fold)"/>
-
-  <!-- NK text -->
-  <text x="4" y="11" font-family="monospace" font-size="5.5" font-weight="bold" fill="url(#nk-text)">.nk</text>
+  <text x="8" y="11.5" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="url(#nk-mark)">nk</text>
 </svg>
