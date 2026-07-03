@@ -25,6 +25,14 @@ class AsyncParserMixin:
         async func <name>(<params>):   -- or --
         async task <name>(<params>):
             <body>
+
+        Params are parsed with _parse_task_param_list — the same parser
+        regular and typed tasks use — so async tasks get default values,
+        *varargs, and type hints for free. (Previously this called
+        self._parse_param_list(), which due to Python MRO actually
+        resolved to ClassParserMixin's simpler param parser and silently
+        dropped default values and varargs support — e.g.
+        `async task add(a, b=5):` failed to parse at all.)
         """
         self.expect("ASYNC")
         # Bug 25 fix: accept both 'func' and 'task' after 'async'
@@ -36,9 +44,9 @@ class AsyncParserMixin:
             self.expect("FUNC")  # trigger the normal error
         name = self.advance().value  # allow keyword names (uses mixin's advance)
 
-        self.expect("LPAREN")
-        params = self._parse_param_list()
-        self.expect("RPAREN")
+        # _parse_task_param_list consumes the '(' ... ')' itself and
+        # returns (name, type_hint, default, is_vararg) tuples.
+        params = self._parse_task_param_list()
 
         return_type = None
         if self.current_token_is("ARROW"):          # -> text
@@ -46,9 +54,10 @@ class AsyncParserMixin:
             return_type = self.expect("IDENTIFIER").value
 
         self.expect("COLON")
-        body = self.parse_block()
+        docstring, body = self._parse_block_with_docstring()
 
-        return AsyncFunctionNode(name, params, body, return_type)
+        return AsyncFunctionNode(name, params, body, return_type,
+                                 docstring=docstring)
 
     # ── await ─────────────────────────────────────────────────────────────────
     def parse_await_expr(self):
