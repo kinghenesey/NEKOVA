@@ -5,10 +5,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.9.6] — 2026-07-03 · Phase 22 "Observability + Testing + Pipe Operator"
+## [1.9.7] — 2026-07-03 · Phase 22 "Observability + Testing + Pipe Operator"
 
 ### Added
-
+- **'light and dark mode'
 - **`observe "label" with tags {...}:` blocks** — structured telemetry
   around any code block, tagging runs for later inspection
 - **`mock think as "response"`** inside `test` blocks — lets tests assert

@@ -7,21 +7,21 @@
     "body": [
       "think \"${1:prompt}\" as text"
     ],
-    "description": "AI think \u2014 text response"
+    "description": "AI think — text response"
   },
   "Think as json": {
     "prefix": "thinkj",
     "body": [
       "think \"${1:prompt}\" as json"
     ],
-    "description": "AI think \u2014 JSON response"
+    "description": "AI think — JSON response"
   },
   "Think as list": {
     "prefix": "thinkl",
     "body": [
       "think \"${1:prompt}\" as list"
     ],
-    "description": "AI think \u2014 list response"
+    "description": "AI think — list response"
   },
   "Think captured": {
     "prefix": "thinkcap",
@@ -328,7 +328,7 @@
   "NEKOVA file header": {
     "prefix": "header",
     "body": [
-      "# ${1:Project Name} \u2014 NEKOVA v1.3.0",
+      "# ${1:Project Name} — built with NEKOVA",
       "# Built by ${2:SYNEKCOT Tech}",
       "",
       "${3:show \"Hello, NEKOVA!\"}"
@@ -427,7 +427,7 @@
       "watch \"${1:config.toml}\":",
       "\t${2:show \"file changed\"}"
     ],
-    "description": "File watcher \u2014 runs body when file changes"
+    "description": "File watcher — runs body when file changes"
   },
   "Generator task": {
     "prefix": "taskgen",
@@ -522,7 +522,7 @@
       "\t${1:# safe code only}",
       "show sandbox_result[\"safe\"]"
     ],
-    "description": "Strict sandbox block \u2014 blocks all file/system access"
+    "description": "Strict sandbox block — blocks all file/system access"
   },
   "Sandbox relaxed": {
     "prefix": "sandboxr",
@@ -530,7 +530,7 @@
       "sandbox relaxed:",
       "\t${1:# read-only file access allowed}"
     ],
-    "description": "Relaxed sandbox \u2014 allows read-only file operations"
+    "description": "Relaxed sandbox — allows read-only file operations"
   },
   "Sandbox run": {
     "prefix": "sandboxrun",

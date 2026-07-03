@@ -1,0 +1,232 @@
+{
+  "name": "NEKOVA Light",
+  "type": "light",
+  "colors": {
+    "editor.background": "#FFFFFF",
+    "editor.foreground": "#0D2818",
+    "editorCursor.foreground": "#15803D",
+    "editor.lineHighlightBackground": "#EEFBF3",
+    "editor.selectionBackground": "#16A34A33",
+    "editorLineNumber.foreground": "#8FCBA8",
+    "editorLineNumber.activeForeground": "#15803D",
+    "editorIndentGuide.background": "#E3F5EA",
+    "editorIndentGuide.activeBackground": "#A8E0BE",
+    "editorWhitespace.foreground": "#E3F5EA",
+
+    "editorError.foreground": "#DC2626",
+    "editorError.border": "#DC2626",
+    "editorWarning.foreground": "#D97706",
+    "editorInfo.foreground": "#15803D",
+    "problemsErrorIcon.foreground": "#DC2626",
+    "problemsWarningIcon.foreground": "#D97706",
+    "list.errorForeground": "#DC2626",
+    "list.warningForeground": "#D97706",
+    "editorGutter.modifiedBackground": "#15803D",
+    "editorGutter.addedBackground": "#15803D",
+    "editorGutter.deletedBackground": "#DC2626",
+
+    "activityBar.background": "#FFFFFF",
+    "activityBar.foreground": "#0D2818",
+    "activityBarBadge.background": "#16A34A",
+    "activityBarBadge.foreground": "#FFFFFF",
+
+    "sideBar.background": "#FBFFFC",
+    "sideBar.foreground": "#0D2818",
+    "sideBarTitle.foreground": "#15803D",
+    "sideBarSectionHeader.background": "#EEFBF3",
+
+    "statusBar.background": "#15803D",
+    "statusBar.foreground": "#FFFFFF",
+    "statusBar.noFolderBackground": "#0D2818",
+    "statusBar.debuggingBackground": "#D97706",
+    "statusBar.debuggingForeground": "#FFFFFF",
+
+    "titleBar.activeBackground": "#FFFFFF",
+    "titleBar.activeForeground": "#0D2818",
+    "titleBar.inactiveBackground": "#FBFFFC",
+    "titleBar.inactiveForeground": "#15803DAA",
+
+    "tab.activeBackground": "#FFFFFF",
+    "tab.activeForeground": "#0D2818",
+    "tab.inactiveBackground": "#EEFBF3",
+    "tab.inactiveForeground": "#15803DAA",
+    "tab.activeBorderTop": "#16A34A",
+    "tab.border": "#EEFBF3",
+
+    "panel.background": "#FFFFFF",
+    "panel.border": "#E3F5EA",
+
+    "terminal.background": "#FFFFFF",
+    "terminal.foreground": "#0D2818",
+    "terminal.ansiRed": "#DC2626",
+    "terminal.ansiYellow": "#D97706",
+    "terminal.ansiGreen": "#15803D",
+    "terminal.ansiBlue": "#15803D",
+    "terminal.ansiMagenta": "#0D2818",
+    "terminal.ansiCyan": "#0F9D66",
+
+    "button.background": "#16A34A",
+    "button.foreground": "#FFFFFF",
+    "button.hoverBackground": "#15803D",
+
+    "focusBorder": "#16A34A",
+    "badge.background": "#16A34A",
+    "badge.foreground": "#FFFFFF"
+  },
+  "tokenColors": [
+    {
+      "name": "Comments",
+      "scope": ["comment.line.number-sign.nekova"],
+      "settings": { "fontStyle": "italic", "foreground": "#4C9A6A" }
+    },
+    {
+      "name": "Strings",
+      "scope": [
+        "string.quoted.double.nekova",
+        "string.quoted.single.nekova",
+        "string.quoted.triple.double.nekova",
+        "string.quoted.triple.single.nekova"
+      ],
+      "settings": { "foreground": "#0F9D66" }
+    },
+    {
+      "name": "String interpolation punctuation",
+      "scope": [
+        "punctuation.section.interpolation.begin.nekova",
+        "punctuation.section.interpolation.end.nekova",
+        "meta.interpolation.nekova"
+      ],
+      "settings": { "foreground": "#15803D" }
+    },
+    {
+      "name": "Numbers and language constants",
+      "scope": [
+        "constant.numeric.integer.nekova",
+        "constant.numeric.float.nekova",
+        "constant.numeric.hex.nekova",
+        "constant.numeric.scientific.nekova"
+      ],
+      "settings": { "foreground": "#0D2818" }
+    },
+    {
+      "name": "true / false / null",
+      "scope": ["constant.language.nekova"],
+      "settings": { "fontStyle": "bold", "foreground": "#15803D" }
+    },
+
+    {
+      "name": "AI-native keywords — think, speak, listen, imagine, watch, every",
+      "scope": ["keyword.other.ai.nekova"],
+      "settings": { "fontStyle": "bold", "foreground": "#0F7A3D" }
+    },
+
+    {
+      "name": "Control flow keywords",
+      "scope": ["keyword.control.nekova"],
+      "settings": { "fontStyle": "bold", "foreground": "#0D2818" }
+    },
+    {
+      "name": "Declaration keywords",
+      "scope": ["keyword.declaration.nekova"],
+      "settings": { "foreground": "#16A34A" }
+    },
+    {
+      "name": "Class keywords",
+      "scope": ["keyword.other.class.nekova"],
+      "settings": { "foreground": "#0D2818" }
+    },
+    {
+      "name": "Sandbox / security keywords",
+      "scope": ["keyword.other.sandbox.nekova"],
+      "settings": { "fontStyle": "bold", "foreground": "#0F7A3D" }
+    },
+    {
+      "name": "Memory keywords — remember, recall, forget",
+      "scope": ["keyword.other.memory.nekova"],
+      "settings": { "fontStyle": "italic", "foreground": "#0F9D66" }
+    },
+    {
+      "name": "Test keywords",
+      "scope": ["keyword.other.test.nekova"],
+      "settings": { "foreground": "#0F9D66" }
+    },
+    {
+      "name": "Web / DB keywords",
+      "scope": ["keyword.other.web.nekova", "keyword.other.db.nekova"],
+      "settings": { "foreground": "#0D2818" }
+    },
+
+    {
+      "name": "Operators",
+      "scope": [
+        "keyword.operator.nekova",
+        "keyword.operator.arithmetic.nekova",
+        "keyword.operator.assignment.nekova",
+        "keyword.operator.augmented-assignment.nekova",
+        "keyword.operator.comparison.nekova",
+        "keyword.operator.logical.nekova",
+        "keyword.operator.floor-division.nekova",
+        "keyword.operator.power.nekova",
+        "keyword.operator.range.nekova"
+      ],
+      "settings": { "foreground": "#0D2818" }
+    },
+    {
+      "name": "Pipe and AI-pipeline operators — |> and ->",
+      "scope": ["keyword.operator.pipe.nekova", "keyword.operator.pipeline.ai.nekova"],
+      "settings": { "fontStyle": "bold", "foreground": "#15803D" }
+    },
+
+    {
+      "name": "Function / task names",
+      "scope": ["entity.name.function.nekova"],
+      "settings": { "fontStyle": "bold", "foreground": "#0D2818" }
+    },
+    {
+      "name": "Decorators",
+      "scope": ["entity.name.function.decorator.nekova"],
+      "settings": { "fontStyle": "italic", "foreground": "#16A34A" }
+    },
+    {
+      "name": "Namespaces / modules",
+      "scope": ["entity.name.namespace.nekova"],
+      "settings": { "foreground": "#0F9D66" }
+    },
+
+    {
+      "name": "self",
+      "scope": ["variable.language.self.nekova"],
+      "settings": { "fontStyle": "italic", "foreground": "#0F9D66" }
+    },
+    {
+      "name": "Variables",
+      "scope": ["variable.other.nekova"],
+      "settings": { "foreground": "#0D2818" }
+    },
+
+    {
+      "name": "Built-in functions",
+      "scope": ["support.function.builtin.nekova"],
+      "settings": { "foreground": "#15803D" }
+    },
+    {
+      "name": "Types / shapes",
+      "scope": ["support.type.nekova"],
+      "settings": { "fontStyle": "bold", "foreground": "#16A34A" }
+    },
+
+    {
+      "name": "Escape sequences",
+      "scope": ["constant.character.escape.nekova"],
+      "settings": { "foreground": "#15803D" }
+    },
+    {
+      "name": "String delimiters",
+      "scope": [
+        "punctuation.definition.string.begin.nekova",
+        "punctuation.definition.string.end.nekova"
+      ],
+      "settings": { "foreground": "#15803D" }
+    }
+  ]
+}

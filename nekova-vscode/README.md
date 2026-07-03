@@ -1,4 +1,4 @@
-﻿# NEKOVA VS Code Extension — v1.9.6
+﻿# NEKOVA VS Code Extension — v1.9.7
 
 Syntax highlighting, a branded color theme, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
@@ -210,6 +210,9 @@ match status:
 ---
 
 ## Release Notes
+
+### 1.9.7
+- Added **'the light and dark theme to the vscode extension"
 
 ### 1.9.6
 - Added **`observe "label" with tags {...}:`** highlighting and correct
