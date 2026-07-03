@@ -111,28 +111,31 @@ class MockProvider(BaseProvider):
 
         prompt_lower = prompt.lower()
 
-        # Some realistic mock responses
+        # Some realistic mock responses — always self-identify as [MOCK]
+        # so a mock response can never be mistaken for a real model
+        # reply. (A beginner's first `think "hello" as text` should
+        # never look indistinguishable from a real API response.)
         if "capital" in prompt_lower and "nigeria" in prompt_lower:
-            return "The capital of Nigeria is Abuja."
+            return "[MOCK] The capital of Nigeria is Abuja."
 
         if "capital" in prompt_lower:
-            return "I can answer questions about world capitals."
+            return "[MOCK] I can answer questions about world capitals."
 
         if "hello" in prompt_lower or "hi" in prompt_lower:
-            return "Hello! I am NEKOVA's built-in AI assistant."
+            return "[MOCK] Hello! I am NEKOVA's built-in AI assistant."
 
-        if "what is NEKOVA" in prompt_lower:
-            return ("NEKOVA is an AI-native programming language "
+        if "what is nekova" in prompt_lower:
+            return ("[MOCK] NEKOVA is an AI-native programming language "
                     "built with Python. It combines simplicity "
                     "with native AI capabilities.")
 
         if "who are you" in prompt_lower:
-            return ("I am NEKOVA's AI runtime — currently running "
+            return ("[MOCK] I am NEKOVA's AI runtime — currently running "
                     "in mock mode. Connect an API key to unlock "
                     "full AI capabilities.")
 
         if "weather" in prompt_lower:
-            return "I cannot check live weather in mock mode."
+            return "[MOCK] I cannot check live weather in mock mode."
 
         if "?" in prompt:
             return (f"[MOCK AI] You asked: '{prompt}' — "
