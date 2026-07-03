@@ -24,6 +24,8 @@ from nekova.parser.nodes import (
     YieldStatement, DecoratorStatement, ErrorDefinition, TypedTaskStatement,
     # Phase 21
     PromptStatement, RetryStatement,
+    # Phase 22
+    ObserveStatement, MockStatement,
 )
 from nekova.interpreter.environment import Environment
 from nekova.runtime import ReturnSignal, BreakSignal, ContinueSignal
@@ -36,6 +38,10 @@ from nekova.interpreter.exceptions import (
 )
 from nekova.interpreter.async_interpreter import AsyncInterpreterMixin
 from nekova.interpreter.class_interpreter import ClassInterpreterMixin
+
+# Phase 22: sentinel meaning "no mock active" — distinct from None,
+# since `mock think as null` should be a legitimate mocked value.
+_NO_MOCK = object()
 
 
 class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
@@ -287,6 +293,16 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # Step 1: Evaluate the prompt
         prompt = self._execute_node(node.prompt)
         prompt = str(prompt)
+
+        # Phase 22: `mock think as <value>` short-circuits the real
+        # AI call for the rest of the enclosing test block.
+        mock = getattr(self, "_think_mock", _NO_MOCK)
+        if mock is not _NO_MOCK:
+            response = mock
+            print(f"{Fore.CYAN}🧠 {response}{Style.RESET_ALL}")
+            if node.variable:
+                self.env.set(node.variable, response)
+            return response
 
         # Step 2: Call the AI provider (with timeout)
         try:
@@ -1790,7 +1806,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         last_error = None
         for attempt in range(1, times + 1):
             try:
-                self._execute_block(node.body)
+                self._execute_block(node.body, new_scope=False)
                 return
             except (ReturnSignal, BreakSignal, ContinueSignal):
                 raise
@@ -1804,10 +1820,54 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                     # no backoff clause -> immediate retry, no delay
 
         if node.fallback_body is not None:
-            self._execute_block(node.fallback_body)
+            self._execute_block(node.fallback_body, new_scope=False)
             return
 
         raise last_error
+
+    def _exec_ObserveStatement(self, node: ObserveStatement):
+        """
+        Execute:
+            observe "pipeline run" with tags {user: user_id}:
+                let summary = think summarize(document)
+
+        Traces the block: prints a start line (label + tags), runs
+        the body, then prints a completed/failed line with elapsed
+        time. Errors are logged and re-raised — observe never
+        swallows exceptions, it just makes them visible.
+        """
+        import time
+        from colorama import Fore, Style, init
+        init(autoreset=True)
+
+        label = self._to_string(self._execute_node(node.label))
+
+        tags = None
+        if node.tags is not None:
+            tags = self._execute_node(node.tags)
+
+        tag_suffix = ""
+        if isinstance(tags, dict) and tags:
+            pairs = ", ".join(f"{k}: {self._to_string(v)}" for k, v in tags.items())
+            tag_suffix = f"  {{{pairs}}}"
+
+        print(f"{Fore.BLUE}👁  {label}{tag_suffix}{Style.RESET_ALL}")
+
+        start = time.time()
+        try:
+            result = self._execute_block(node.body, new_scope=False)
+        except (ReturnSignal, BreakSignal, ContinueSignal):
+            elapsed_ms = (time.time() - start) * 1000
+            print(f"{Fore.BLUE}   └─ exited early ({elapsed_ms:.1f}ms){Style.RESET_ALL}")
+            raise
+        except Exception as e:
+            elapsed_ms = (time.time() - start) * 1000
+            print(f"{Fore.RED}   └─ failed after {elapsed_ms:.1f}ms: {e}{Style.RESET_ALL}")
+            raise
+
+        elapsed_ms = (time.time() - start) * 1000
+        print(f"{Fore.BLUE}   └─ completed in {elapsed_ms:.1f}ms{Style.RESET_ALL}")
+        return result
 
     def _is_truthy(self, value) -> bool:
         """
@@ -2193,6 +2253,16 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         prompt = str(self._execute_node(node.prompt))
         fmt    = node.as_format
+
+        # Phase 22: `mock think as <value>` short-circuits the real
+        # AI call — the mock value is returned as-is, no coercion
+        # to the requested `as` format, since the person mocking it
+        # controls exactly what comes back.
+        mock = getattr(self, "_think_mock", _NO_MOCK)
+        if mock is not _NO_MOCK:
+            if node.variable:
+                self.env.set(node.variable, mock)
+            return mock
 
         # Evaluate schema if present
         schema = None
@@ -2700,6 +2770,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # Push test context so expect knows its label
         prev_test = getattr(self, "_current_test", None)
         self._current_test = node.label
+        prev_mock = getattr(self, "_think_mock", _NO_MOCK)
 
         for stmt in node.body:
             try:
@@ -2715,6 +2786,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 errors.append(f"Error: {e}")
 
         self._current_test = prev_test
+        self._think_mock = prev_mock
 
         # Print result
         status = "✓ PASS" if failed == 0 else "✗ FAIL"
@@ -2739,6 +2811,22 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 f"expect failed: {expr_repr} → got {self._to_string(result)!r}"
             )
         return result
+
+    def _exec_MockStatement(self, node: MockStatement):
+        """
+        Execute:  mock think as "sports"
+        Stubs `think`/`think ... as ...` for the rest of the
+        enclosing test block — see _exec_ThinkStatement /
+        _exec_ThinkAsStatement, and the save/restore in
+        _exec_TestBlock that scopes this to just that test.
+        """
+        if node.target != "think":
+            raise NEKOVARuntimeError(
+                f"'mock' doesn't know how to mock '{node.target}' — "
+                "only 'think' is supported right now."
+            )
+        self._think_mock = self._execute_node(node.value)
+        return None
 
     # ── imagine ───────────────────────────────────────────────
 
