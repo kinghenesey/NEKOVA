@@ -260,6 +260,28 @@
     ],
     "description": "Retry block with no backoff or fallback"
   },
+  "Observe block": {
+    "prefix": "observe",
+    "body": [
+      "observe \"${1:label}\" with tags {${2:user}: ${3:user_id}}:",
+      "    ${4:pass}"
+    ],
+    "description": "Tag and trace a block of execution (Phase 22)"
+  },
+  "Mock think": {
+    "prefix": "mock",
+    "body": [
+      "mock think as \"${1:response}\""
+    ],
+    "description": "Stub think inside a test block — no real AI call (Phase 22)"
+  },
+  "Pipe chain": {
+    "prefix": "pipe",
+    "body": [
+      "let ${1:result} = ${2:data} |> ${3:parse()} |> ${4:filter()} |> ${5:sort()}"
+    ],
+    "description": "Chain transformations left to right with |> (Phase 22)"
+  },
   "Sandbox": {
     "prefix": "sandbox",
     "body": [

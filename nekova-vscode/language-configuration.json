@@ -61,12 +61,12 @@
         ]
     ],
     "indentationRules": {
-        "increaseIndentPattern": "^\\s*(if|else|elif|repeat|while|for|task|try|catch|finally|object|route|pipeline|sandbox|autonomous|memory|match|when|async|retry|fallback|every|watch|prompt)\\b.*:\\s*$",
+        "increaseIndentPattern": "^\\s*(if|else|elif|repeat|while|for|task|try|catch|finally|object|route|pipeline|sandbox|autonomous|memory|match|when|async|retry|fallback|every|watch|prompt|observe)\\b.*:\\s*$",
         "decreaseIndentPattern": "^\\s*(else|elif|catch|finally|fallback)\\b"
     },
     "onEnterRules": [
         {
-            "beforeText": "^\\s*(if|else|elif|repeat|while|for|task|try|catch|object|route|pipeline|sandbox|autonomous|match|when|async)\\b.*:\\s*$",
+            "beforeText": "^\\s*(if|else|elif|repeat|while|for|task|try|catch|finally|object|route|pipeline|sandbox|autonomous|memory|match|when|async|retry|fallback|every|watch|prompt|observe)\\b.*:\\s*$",
             "action": {
                 "indent": "indent"
             }

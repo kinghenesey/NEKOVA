@@ -1,4 +1,4 @@
-﻿# NEKOVA VS Code Extension — v1.9.5
+﻿# NEKOVA VS Code Extension — v1.9.6
 
 Syntax highlighting, a branded color theme, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
@@ -8,11 +8,12 @@ Built by [SYNEKCOT Tech](https://github.com/kinghenesey/NEKOVA) 🇳🇬
 
 ## Features
 
-- **Syntax highlighting** for all NEKOVA keywords — `think`, `remember`, `recall`, `route`, `serve`, `connect`, `object`, `class`, `match`, `yield`, `error`, `shape`, `every`, `test`, `expect`, `imagine`, `speak`, `listen`, `watch`, `sandbox`, `prompt`, `retry`, `fallback`, and more
-- **NEKOVA Dark color theme** — built from NEKOVA's own pepper-red and gold brand palette. AI-native keywords (`think`, `speak`, `listen`, `imagine`, `watch`, `every`) are highlighted in the brightest gold, since that's the language's whole identity — select it via `Preferences: Color Theme → NEKOVA Dark`
-- **Branded `.nk` file icon** in the file explorer, matching the same red/gold palette
+- **Syntax highlighting** for all NEKOVA keywords — `think`, `remember`, `recall`, `route`, `serve`, `connect`, `object`, `class`, `match`, `yield`, `error`, `shape`, `every`, `test`, `expect`, `imagine`, `speak`, `listen`, `watch`, `sandbox`, `prompt`, `retry`, `fallback`, `observe`, `mock`, and more
+- **`observe` blocks** and **`mock think`** highlighted and auto-indented correctly, plus the **`|>` pipe operator**
+- **NEKOVA Dark color theme** — built from NEKOVA's brand palette of green, white, and grey. AI-native keywords (`think`, `speak`, `listen`, `imagine`, `watch`, `every`) are highlighted in the brightest green, since that's the language's whole identity — true red is reserved exclusively for actual errors/warnings, so diagnostics stay visually distinct from ordinary syntax. Select the theme via `Preferences: Color Theme → NEKOVA Dark`
+- **Branded `.nk` file icon** — a simplified "nk" mark on a small dark backing, designed to stay legible at actual file-icon size (16px), not just at logo size
 - **`prompt` blocks** highlighted as a declaration (like `task`/`class`) only when genuinely defining a prompt — `prompt name(...):` — while still working correctly as an ordinary variable name elsewhere, matching NEKOVA's own soft-keyword design
-- **62 snippets** — type `think`, `task`, `route`, `obj`, `class`, `match`, `pipeline`, `parallel`, `sandbox`, `taskgen`, `decorator`, `shape`, `every`, `test`, `prompt`, `retry`, and more
+- **65 snippets** — type `think`, `task`, `route`, `obj`, `class`, `match`, `pipeline`, `parallel`, `sandbox`, `taskgen`, `decorator`, `shape`, `every`, `test`, `prompt`, `retry`, `observe`, `mock`, `pipe`, and more
 - **Run file** — press `F5` to run the active `.nk` file
 - **Watch mode** — press `Ctrl+F5` to run with `--watch` (auto-reruns on save)
 - **Format file** — press `Shift+Alt+F` to run `nekova fmt`
@@ -109,6 +110,9 @@ pip install nekova-lang
 | `prompt` / `promptdef` | Named prompt block definition |
 | `retry` | Retry block with backoff and `fallback:` clause |
 | `retrys` | Retry block with no backoff or fallback |
+| `observe` | Tag and trace a block of execution |
+| `mock` | Stub `think` inside a test block |
+| `pipe` | Chain transformations with `\|>` |
 
 ---
 
@@ -148,6 +152,18 @@ retry 3 times with exponential backoff:
     let result = think "analyse this" as json
 fallback:
     let result = {error: "unavailable"}
+
+# Tag and trace a block of execution
+observe "pipeline run" with tags {user: user_id}:
+    let summary = think summarize(document)
+
+# Deterministic AI output in tests
+test "classifier":
+    mock think as "sports"
+    expect classify(text) == "sports"
+
+# Pipe operator — chain transformations left to right
+let result = data |> parse() |> filter() |> sort() |> take(10)
 
 # Classes with inheritance
 class Animal:
@@ -194,6 +210,23 @@ match status:
 ---
 
 ## Release Notes
+
+### 1.9.6
+- Added **`observe "label" with tags {...}:`** highlighting and correct
+  auto-indent (block-opening, like `sandbox`/`retry`)
+- Added **`mock think as "..."`** highlighting — a single-line statement,
+  not a block, so it's intentionally absent from the indent rules
+- Added the **`\|>` pipe operator**
+- Added `observe`, `mock`, and `pipe` snippets (65 snippets total, up from 62)
+- Fixed `language-configuration.json`'s `onEnterRules` — it's a separate
+  list from `indentationRules` for a different VS Code mechanism (Enter-key
+  behavior vs. paste/reindent), and had silently fallen out of sync since
+  1.9.5: missing `finally`, `memory`, `retry`, `fallback`, `every`, `watch`,
+  and `prompt` even though `indentationRules` already had them
+- Corrected the theme description in this README — NEKOVA's brand palette
+  is green/white/grey, not the original pepper-red/gold; true red is now
+  reserved exclusively for error/warning UI so diagnostics stay visually
+  distinct from ordinary syntax
 
 ### 1.9.5
 - Added the **NEKOVA Dark** color theme — pepper-red and gold throughout,
