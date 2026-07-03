@@ -5,43 +5,67 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.9.8] — 2026-07-03 · Phase 23 "Correctness & Trust"
+## [1.9.8] — 2026-07-03 · Phase 23a "Correctness & Trust — Part 1"
 
 ### Fixed
 
-- **Recursion error accuracy** — `RecursionError` no longer maps blindly to
-  "Infinite Recursion." NEKOVA now tracks its own call depth (`NEKOVARecursionError`,
-  separate from Python's built-in `RecursionError`) and raises
-  `sys.setrecursionlimit()` at startup so the message reflects what actually
-  happened, not just "Python ran out of stack frames"
-- **Mock AI responses now self-identify everywhere** — every branch of the
-  mock provider, including the `hello`/`hi` and capital-city responses that
-  previously returned clean, unlabeled text, now prefixes `[MOCK]`. A
-  beginner's first `think "hello" as text` can no longer be mistaken for a
-  real model response
-- **Type-mismatch error for `+` between incompatible types** — `"5" + 3`
-  now raises a clear error instead of silently coercing to `"53"`. Bools
-  are deliberately excluded from this check (`isinstance(True, int)` is
-  `True` in Python) so patterns like `"caught: " + error_obj` still work
-  as string-building, unaffected
-- **Near-miss suggestions for undefined variables** — the "Variable Not
-  Found" error now checks actual in-scope names with `difflib` and prints
-  a real "💡 Did you mean: `<existing_var>`" suggestion when a close match
-  exists, instead of only echoing the same typo back as a fresh `let`
-  statement
+- **Recursion error accuracy** — NEKOVA now tracks its own call depth
+  independently of Python's frame limit. Unbounded recursion raises
+  `NEKOVARuntimeError` with message `"Task 'X' exceeded the maximum call
+  depth (500 nested calls)."` rather than the previous misleading
+  "Infinite Recursion" label which fired at ~198 calls due to Python's own
+  frame overhead. Legitimate deep recursion under the limit succeeds cleanly.
+  Call depth resets correctly between independent task calls.
 
-### Fixed (release process)
+- **Mock AI responses now self-identify everywhere** — every response branch
+  in `MockProvider` now prefixes `[MOCK]`. Previously the `hello`/`hi` and
+  capital-city branches returned clean, confident text indistinguishable from
+  a real model response — a beginner's first `think` call could silently look
+  like real AI output. Fixed.
 
-- **`nekova/config.py` had a literally broken version string** (`"1.9."`,
-  missing the patch number) after the 1.9.7 release — this was already
-  failing 3 tests (`test_version_format`, `test_version_is_current`,
-  `test_pyproject_version_matches_config`) before this fix landed
-- **CHANGELOG.md's `[1.9.7]` entry was a mislabeled duplicate of 1.9.6's
-  content**, with a garbled, incomplete bullet (`- **'light and dark
-  mode'`) inserted mid-list — the genuine 1.9.6 entry was missing from the
-  file entirely as a result. Restored below
+- **`"5" + 3` raises a type error instead of coercing silently** — adding
+  `text` to `number` (or vice versa) now raises:
+  `Cannot use '+' between 'text' and 'number'. Convert one side explicitly,
+  e.g. str(value) or int(value).`
+  Numeric addition and string-to-string concatenation are unaffected.
 
----
+### Added
+
+- **`doc(task_name)`** — built-in function that returns the docstring of any
+  task defined with a triple-quoted string as its first statement.
+  `doc(greet)` returns the stripped docstring. `doc(task_without_doc)`
+  returns `"No docstring for 'X'."` rather than crashing.
+
+- **List destructuring** — `let [first, second, ...rest] = some_list`
+  unpacks a list into named bindings. `...rest` captures remaining elements
+  as a list. Works with any iterable.
+
+- **Dict destructuring** — `let {name, age} = some_dict` binds dict values
+  to local variable names matching the keys.
+
+- **Async task improvements** — loops, conditionals, nested `await` calls,
+  and type-hinted signatures all work correctly inside `async task` bodies.
+  Default parameters and varargs supported.
+
+- **`think "..." when error: <fallback>`** — inline error handling for `think`
+  calls. If the AI call fails, the fallback expression is evaluated instead of
+  propagating the error.
+
+- **NEKOVA Light theme** for VS Code — alongside the revised NEKOVA Dark
+  theme (greys removed, contrast improved).
+
+### Metrics
+
+- Tests passing: **1,276** (up from 1,226)
+- Test classes: **208** (up from 200)
+- Test phases: **26** (up from 25)
+
+### Still in progress (Phase 23b)
+
+- Near-miss variable suggestions ("did you mean X?" on undefined names)
+- Indentation error specificity (show expected vs. actual indent level)
+- Python exception audit (raw `TypeError`/`KeyError` messages still leak in edge cases)
+
 
 ## [1.9.7] — 2026-07-03 · NEKOVA Dark and Light Themes
 

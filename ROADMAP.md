@@ -1,8 +1,8 @@
 # NEKOVA Language — Official Roadmap
 
 **Version:** 1.9.8 · Genesis  
-**Tests:** 1,226 passing · 200 test classes · 25 test phases  
-**Status:** Active development · Phase 23 complete · Phase 24 next  
+**Tests:** 1,276 passing · 208 test classes · 26 test phases  
+**Status:** Active development · Phase 23a complete · Phase 23b in progress  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
 ---
@@ -44,7 +44,8 @@ consistent meaning. Going forward:
 | 1.9.5 | 21 | ✅ `prompt` blocks, `retry`/`fallback` |
 | 1.9.6 | 22 | ✅ `observe` blocks, `mock think`, `\|>` pipe operator |
 | 1.9.7 | — | ✅ NEKOVA Dark theme revised (grey removed), new NEKOVA Light theme, simplified `.nk` file icon |
-| **1.9.8** | 23 | ✅ Correctness & Trust: recursion error accuracy, mock-AI labeling, type-mismatch errors, near-miss variable suggestions, semver policy (this document) — **current** |
+| **1.9.8** | 23a | ✅ Correctness & Trust Part 1 — recursion errors, mock labeling, type mismatch, docstrings, destructuring — **current** |
+| **1.9.9** | 23b | 🔄 **Next** — near-miss variable suggestions, indentation specificity, exception audit |
 | **1.10.0** | 24 | Language completeness II — destructuring, optional/nullable types, enums, `const`, spread syntax, named arguments, `null` semantics, sets, opt-in strict type checking |
 | **1.10.1** | 24b | Documentation website + language reference |
 | **1.11.0** | 25 | AI-native differentiators II — cost/token tracking, `think ... as <shape>`, multi-turn `converse` blocks, explicit model selection, `--debug-ai`, prompt-injection guard for sandboxed `think` |
