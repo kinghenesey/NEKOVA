@@ -29,23 +29,42 @@ class FetchResponse:
         return f"<FetchResponse status={self.status} len={len(self.text)}>"
 
 
-# ── Coroutine wrapper stored in the environment for async functions ───────────
+# ── Async function value stored in the environment ─────────────────────────────
 class AsyncFunction:
-    def __init__(self, name: str, params: list, body: list, closure, interpreter):
-        self.name = name
-        self.params = params
-        self.body = body
-        self.closure = closure          # environment snapshot at definition time
-        self.interpreter = interpreter
+    """
+    A defined 'async task'. Calling it is synchronous under the hood —
+    NEKOVA's interpreter is single-threaded, so there's no actual
+    concurrency to schedule. This is the core of the Phase 23 async
+    rewrite: execution is delegated to Interpreter._call_typed_task,
+    the same proven code path regular typed tasks use, rather than a
+    hand-rolled coroutine walker that manipulated raw Python dicts
+    instead of real Environment objects and only knew how to handle
+    three narrow statement shapes (bare await / assign-await /
+    return-await) — breaking on anything else, including a plain
+    `for` loop inside an async task body.
 
-    async def call_async(self, args: list):
-        env = self.closure.copy() if hasattr(self.closure, "copy") else dict(self.closure)
-        for (param_name, _type_hint), value in zip(self.params, args):
-            env[param_name] = value
-        return await self.interpreter.execute_block_async(self.body, env)
+    Reusing _call_typed_task also means async tasks get full parity
+    with regular tasks for free: default parameter values, *varargs,
+    type-hint enforcement, and arbitrary control flow (if/for/while/
+    try/match/etc.) all just work.
+    """
+    def __init__(self, name: str, params: list, body: list,
+                 closure_env, interpreter,
+                 return_type=None, docstring=None):
+        self.name        = name
+        self.params      = params        # (name, type_hint, default, is_vararg)
+        self.body         = body
+        self.closure_env = closure_env   # real Environment, not a dict
+        self.interpreter = interpreter
+        self.return_type = return_type
+        self.docstring   = docstring
+
+    def call(self, args: list):
+        """Run the task body synchronously and return its result."""
+        return self.interpreter._call_typed_task(self, args)
 
     def __repr__(self):
-        return f"<async func {self.name}>"
+        return f"<async task {self.name}>"
 
 
 # ── Mixin ─────────────────────────────────────────────────────────────────────
@@ -90,65 +109,35 @@ class AsyncInterpreterMixin:
 
     # ── async func definition ─────────────────────────────────────────────────
     def visit_async_function(self, node: AsyncFunctionNode):
-        """Define an async function and store it in env."""
+        """Define an async task and store it in env — mirrors how a
+        plain TaskStatement or TypedTaskStatement is registered."""
         fn = AsyncFunction(
             name=node.name,
             params=node.params,
             body=node.body,
-            closure=self.env.snapshot() if hasattr(self.env, "snapshot") else dict(self.env),
+            closure_env=self.env,
             interpreter=self,
+            return_type=getattr(node, "return_type", None),
+            docstring=getattr(node, "docstring", None),
         )
-        self.env[node.name] = fn
+        self.env.set(node.name, fn)
         return fn
 
     # ── await ─────────────────────────────────────────────────────────────────
-    async def visit_await(self, node: AwaitNode):
-        """Evaluate the inner expression; if it's a coroutine, await it."""
-        value = self.visit(node.expr)
+    def visit_await(self, node: AwaitNode):
+        """
+        Evaluate the awaited expression. AsyncFunction.call() and
+        fetch() (visit_fetch) already run synchronously under the
+        hood, so this is almost always just evaluating a plain
+        expression — 'await' exists mainly for readability, matching
+        the async/await syntax people already know. If a genuine
+        Python coroutine somehow reaches here, it's driven to
+        completion as a defensive fallback.
+        """
+        value = self._execute_node(node.expr)
         if asyncio.iscoroutine(value):
-            return await value
-        if isinstance(value, AsyncFunction):
-            # bare  await greet()  — call with no args (shouldn't normally happen)
-            return await value.call_async([])
-        # Already a plain value (e.g. await "hello") — just return it
+            return self._run_sync(value)
         return value
-
-    # ── execute_block_async ───────────────────────────────────────────────────
-    async def execute_block_async(self, body: list, env: dict):
-        """
-        Async version of execute_block.  Needed so that await inside an async
-        function body propagates the coroutine chain properly.
-        """
-        from nekova.runtime import ReturnSignal
-        from nekova.parser.async_nodes import AwaitNode as _AW
-        from nekova.parser.nodes import AssignStatement as _AS
-        from nekova.parser.nodes import ReturnStatement as _RS
-        old_env = self.env
-        self.env = env
-        result = None
-        try:
-            for stmt in body:
-                # top-level:  await task()
-                if isinstance(stmt, _AW):
-                    result = await self.visit_await(stmt)
-                # assignment:  x = await task()
-                elif isinstance(stmt, _AS) and isinstance(stmt.value, _AW):
-                    value = await self.visit_await(stmt.value)
-                    self.env[stmt.name] = value
-                    result = value
-                # return:  return await task()
-                elif isinstance(stmt, _RS) and isinstance(stmt.value, _AW):
-                    value = await self.visit_await(stmt.value)
-                    raise ReturnSignal(value)
-                else:
-                    result = self.visit(stmt)
-                    if asyncio.iscoroutine(result):
-                        result = await result
-        except ReturnSignal as ret:
-            result = ret.value
-        finally:
-            self.env = old_env
-        return result
 
     # ── stream think ──────────────────────────────────────────────────────────
     async def _stream_think_async(self, node: StreamThinkNode):
