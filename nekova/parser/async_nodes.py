@@ -3,12 +3,20 @@ from nekova.parser.nodes import Node  # adjust import if your base is elsewhere
 
 # ── Async function definition ─────────────────────────────────────────────────
 class AsyncFunctionNode(Node):
-    """async func greet(name): ..."""
-    def __init__(self, name: str, params: list, body: list, return_type=None):
-        self.name = name
-        self.params = params          # list of (param_name, type_hint|None)
-        self.body = body
+    """
+    async task greet(name): ...
+
+    params: list of (name, type_hint_or_None, default_or_None, is_vararg) —
+    same shape as TypedTaskStatement.params, giving async tasks full
+    parity with regular tasks (defaults, *varargs, type hints).
+    """
+    def __init__(self, name: str, params: list, body: list,
+                 return_type=None, docstring: str = None):
+        self.name        = name
+        self.params      = params
+        self.body         = body
         self.return_type = return_type
+        self.docstring   = docstring
 
     def __repr__(self):
         return f"AsyncFunctionNode({self.name}, params={self.params})"
