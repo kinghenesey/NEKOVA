@@ -1,8 +1,8 @@
 # NEKOVA Language — Official Roadmap
 
-**Version:** 1.9.5 · Genesis  
-**Tests:** 1,203 passing · 197 test classes · 24 test phases  
-**Status:** Active development · Phase 21 complete · Phase 22 next  
+**Version:** 1.9.6 · Genesis  
+**Tests:** 1,226 passing · 200 test classes · 25 test phases  
+**Status:** Active development · Phase 22 complete · Phase 23 next  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
 ---
@@ -24,21 +24,43 @@ No imports. No boilerplate. No setup. Just the idea.
 
 ---
 
+## Versioning Policy
+
+Adopted 2026-07 in response to external feedback that version bumps had no
+consistent meaning. Going forward:
+
+- **Patch** (`1.9.x`) — bug fixes only, no new syntax or keywords
+- **Minor** (`1.x.0`) — new keyword, feature, or stdlib surface
+- **Major** (`x.0.0`) — reserved for self-hosting milestones (parser-in-NEKOVA,
+  interpreter-in-NEKOVA) — points where the language commits to a new level
+  of backward-compatibility guarantee
+
 ## Version Map
 
 | Version | Phase | What Ships |
 |---------|-------|-----------|
 | 1.9.2 | 19b | Self-hosting blockers fixed, 38 security bugs resolved |
 | 1.9.4 | 20 | ✅ Lexer in NEKOVA, verified token-for-token against Python reference |
-| **1.9.5** | 21 | ✅ `prompt` blocks, `retry`/`fallback` — Phase 21 complete |
-| **1.9.6** | 22 | `observe` blocks, `mock think`, `|>` pipe operator |
-| **1.9.7** | 23 | Polish — inline errors, destructuring, docstrings, async rewrite |
-| **1.9.8** | 23b | Documentation website + language reference |
-| **2.0** | 24 | Parser in NEKOVA — self-hosting milestone 2 |
-| **2.5** | 25 | Agent system, unified schema |
-| **3.0** | 27 | Full self-hosting — interpreter in NEKOVA |
+| 1.9.5 | 21 | ✅ `prompt` blocks, `retry`/`fallback` |
+| **1.9.6** | 22 | ✅ `observe` blocks, `mock think`, `\|>` pipe operator — **current** |
+| **1.9.7** | 23 | 🔄 **Next** — Correctness & Trust: recursion error accuracy, mock-AI labeling, type-mismatch errors, near-miss variable suggestions, semver policy (this document) |
+| **1.10.0** | 24 | Language completeness II — destructuring, optional/nullable types, enums, `const`, spread syntax, named arguments, `null` semantics, sets, opt-in strict type checking |
+| **1.10.1** | 24b | Documentation website + language reference |
+| **1.11.0** | 25 | AI-native differentiators II — cost/token tracking, `think ... as <shape>`, multi-turn `converse` blocks, explicit model selection, `--debug-ai`, prompt-injection guard for sandboxed `think` |
+| **1.12.0** | 26 | Developer experience — Language Server Protocol (real autocomplete, inline errors, hover docs), `nekova fmt --diff`, multi-error parser recovery |
+| **1.13.0** | 26b | Education layer — `nekova learn`, `nekova explain`, classroom/instructor mode, `--simple-errors` |
+| **2.0.0** | 27 | Parser in NEKOVA — self-hosting milestone 2. Includes a published formal grammar (EBNF) and a parser/lexer fuzz-testing harness in CI, both prerequisites for this phase, not just nice-to-haves |
+| **2.1.0** | 28 | Agent system, unified schema |
+| **2.2.0** | 29 | Sandbox commercial API, `nekova teach`, deployment targets, WebSocket + middleware support in the web router |
+| **2.3.0** | 30 | Safety & performance hardening — resource-limited sandbox quotas (CPU/memory, not just time), bytecode caching, public test-coverage dashboard |
+| **3.0.0** | 31 | Full self-hosting — interpreter in NEKOVA |
 
-Version 2.0 is a language milestone, not just a version bump. When the parser is written in NEKOVA, the language is stable enough to commit to backward compatibility. Everything before 2.0 is formative. Everything from 2.0 onward is a platform.
+Phases 27 onward are directional, not fully scoped — near-term phases (23–26b)
+are committed; long-term phases are subject to reordering as the language
+matures. See `NEKOVA-feature-analysis-2026-07.md` for the full source list
+this roadmap draws from, including items not yet assigned a phase.
+
+Version 2.0 remains a language milestone, not just a version bump. When the parser is written in NEKOVA, the language is stable enough to commit to backward compatibility. Everything before 2.0 is formative. Everything from 2.0 onward is a platform.
 
 ---
 
@@ -86,35 +108,17 @@ Generators (`yield`), decorators (`@decorator`), typed task signatures, custom e
 
 ---
 
-## Active Phase
+## Completed Phases (continued)
 
-### Phase 20 · Self-Hosting Begins 🔄 IN PROGRESS — v1.4
+### Phase 20 · Self-Hosting Begins ✅ — v1.9.4
 
 **Goal:** Write NEKOVA's lexer in NEKOVA. Ship it as `nekova/stdlib/nk/lexer.nk`.
 
-**All prerequisites now available:**
-- ✅ String character access `s[i]`
-- ✅ String iteration `for c in s:`
-- ✅ `.is_alpha()`, `.is_digit()` on strings
-- ✅ `ord()` / `chr()`
-- ✅ `dict[key] = value` mutable lookup tables
-- ✅ `key in dict` membership
-- ✅ While loops with index counters
-- ✅ Recursive tasks
-- ✅ Error raising and catching
-- ✅ Multi-line strings
-- ✅ `match` with character ranges `when "a".."z":`
-- ✅ `raise` inside tasks
-
-**Deliverable:** `nekova/stdlib/nk/lexer.nk` — a real, tested NEKOVA lexer that tokenises NEKOVA source code, written entirely in `.nk`.
+**Deliverable:** `nekova/stdlib/nk/lexer.nk` — a real, tested NEKOVA lexer that tokenises NEKOVA source code, written entirely in `.nk`. Verified token-for-token identical to the Python reference lexer, including tokenizing its own source.
 
 **Why this matters:** When a language can write its own lexer, it proves the language is expressive enough to handle real complexity. Python did this. Rust did this. Go did this. NEKOVA is next.
 
----
-
-## Planned Phases
-
-### Phase 21 · Prompt Blocks + Retry + Enforced Types — v1.5 📋
+### Phase 21 · Prompt Blocks + Retry/Fallback ✅ — v1.9.5
 
 ```nekova
 prompt summarize(text, style="professional"):
@@ -126,7 +130,7 @@ fallback:
     let result = {error: "unavailable"}
 ```
 
-### Phase 22 · Observability + Testing + Pipe Operator — v1.6 📋
+### Phase 22 · Observability + Testing + Pipe Operator ✅ — v1.9.6
 
 ```nekova
 observe "pipeline run" with tags {user: user_id}:
@@ -139,19 +143,135 @@ test "classifier":
 let result = data |> parse() |> filter() |> sort() |> take(10)
 ```
 
-### Phase 23 · Polish + Inline Error Handling — v1.7 📋
+---
+
+## Active Phase
+
+### Phase 23 · Correctness & Trust 🔄 IN PROGRESS — v1.9.7
+
+Scoped directly from external feedback on v1.9.5 in live use. Prioritized
+first because these fix things that actively mislead learners — which cuts
+against NEKOVA's own stated mission — rather than adding new surface area.
+
+1. **Fix the mislabeled recursion error.** `RecursionError` currently maps
+   straight to "Infinite Recursion," but it actually fires around 196–198
+   NEKOVA-level calls because of Python's own default frame limit combined
+   with the interpreter's per-call overhead — not necessarily a missing
+   base case. Raise `sys.setrecursionlimit()` at startup and/or track
+   NEKOVA's own call depth so the message is accurate, and split "stack
+   limit exceeded" from "no base case detected" as distinct diagnoses.
+2. **Label every mock AI response.** `MockProvider`'s `"hello"`/`"hi"` and
+   capital-city branches currently return clean text with no `[MOCK]` tag,
+   unlike every other branch — a beginner's first `think "hello" as text`
+   should never be indistinguishable from a real model response.
+3. **Add a type-mismatch error for `+` between incompatible types**,
+   instead of silently coercing `"5" + 3` → `"53"`. One of the most
+   notorious beginner confusion sources in JS-like languages — exactly the
+   kind of gotcha NEKOVA shouldn't be reproducing.
+4. **Fix "Define it first" echoing typos.** The undefined-variable hint
+   currently proposes `let <same_typo> = "value"` — add a near-miss check
+   (Levenshtein distance) against existing names and suggest "did you mean
+   `<existing_var>`?" the way Python/Rust do.
+5. **Document a real semver policy.** Done as part of this update — see
+   *Versioning Policy* above.
+
+Also in scope: a specific bad-indentation hint (expected vs. actual depth,
+already computable from the token stream), and an audit of the remaining
+raw Python exceptions (`TypeError`, `KeyError`, etc.) passed through for
+similarly generic or misleading messages.
+
+---
+
+## Planned Phases
+
+### Phase 24 · Language Completeness II — v1.10.0 📋
 
 ```nekova
-let summary = think "summarize: {doc}" when error: "unavailable"
-let [first, ...rest] = my_list
-let {name, age} = my_dict
+let (a, b) = pair
+let {name, age} = user
+enum Status: PENDING, ACTIVE, DONE
+const MAX_RETRIES = 5
+let combined = [...list_a, ...list_b]
+greet(name="Sam", greeting="Hi")
 ```
 
-### Phase 24 · NEKOVA Parser in NEKOVA — v2.0 📋
+Destructuring assignment, optional/nullable types with safe-navigation
+(`user?.email`), multiple return values, enums as a first-class construct
+distinct from `shape`/`error`, `const` bindings alongside `let`, spread/rest
+syntax for lists and dicts, named/keyword arguments at call sites, a real
+`null` literal with documented comparison/arithmetic/truthiness semantics,
+a `set` type with union/intersection/difference, and an opt-in
+`nekova check --strict` that treats type hints as real constraints.
 
-Self-hosting milestone 2. The parser is recursive descent — more complex than the lexer. When it ships, v2.0 commits to backward compatibility.
+### Phase 24b · Documentation Website — v1.10.1 📋
 
-### Phase 25 · Agent System + Unified Schema — v2.5 📋
+Full language reference site, generated from the same source examples used
+in tests where possible, so docs and behavior can't silently drift apart.
+
+### Phase 25 · AI-Native Differentiators II — v1.11.0 📋
+
+```nekova
+think "..." as text with budget: 500
+show ai_usage()
+
+let user = think "extract from: {text}" as User
+
+converse:
+    think "ask a clarifying question about {topic}"
+    listen
+    think "respond based on what they said"
+
+think "..." as text using "claude-sonnet"
+```
+
+Cost/token tracking built into `think`, `think ... as <custom-shape>` with
+schema-guided prompting, a structured `converse` block for multi-turn
+dialogue, explicit model selection per call, confidence/uncertainty
+surfacing for structured extraction, `--debug-ai` extending `observe` to
+show the exact prompt sent under the hood (doubles as a teaching tool),
+a first-class prompt-injection guard for `sandbox` + `think` combinations,
+local caching for `imagine ... as file`, and a visible (not silent)
+default backoff for `think` retries.
+
+### Phase 26 · Developer Experience — v1.12.0 📋
+
+A real Language Server Protocol implementation — real autocomplete, inline
+errors, and hover docs, replacing syntax-highlighting-only support in the
+VS Code extension. Also: `nekova fmt --diff`, multi-error parser recovery
+(report several syntax errors per pass instead of halting at the first),
+an interactive `nekova new` wizard, a `nekova.lock` dependency lockfile,
+a `--why` flag explaining which grammar rule or interpreter check fired,
+snapshot testing (`expect_snapshot(...)`) for AI-output tests, and
+`.env.example` scaffolding in `nekova new`.
+
+### Phase 26b · Education Layer — v1.13.0 📋
+
+```
+$ nekova explain err.nk
+$ nekova learn
+```
+
+This is NEKOVA's actual differentiator versus every other "AI-native
+language" claim — the project's own origin story is helping classmates who
+were tripped up learning Python. `nekova explain` walks through why an
+error happened in plain language (itself using `think` — on-brand).
+`nekova learn` is a guided, interactive tutorial mode in the terminal. Also:
+a companion visualization for step-through execution (even simple ASCII
+call-stack rendering), proactive common-mistake detection in `nekova check`,
+a `nekova translate script.py` mode producing idiomatic `.nk`, an in-REPL
+`nekova help think`-style glossary, a `--simple-errors` verbosity flag that
+strips jargon entirely, and classroom/instructor batch-grading mode.
+
+### Phase 27 · NEKOVA Parser in NEKOVA — v2.0.0 📋
+
+Self-hosting milestone 2. The parser is recursive descent — more complex
+than the lexer. Two prerequisites, not afterthoughts: a **published formal
+grammar (EBNF)** as the stable reference this phase implements against, and
+a **fuzz-testing harness** feeding malformed input through the lexer/parser
+in CI, so this phase surfaces crashes on bad input before it ships rather
+than after. When Phase 27 ships, v2.0 commits to backward compatibility.
+
+### Phase 28 · Agent System + Unified Schema — v2.1.0 📋
 
 ```nekova
 let researcher = agent "Research Assistant":
@@ -164,11 +284,27 @@ schema Person:
 # Works as AI parser, DB table, and object type simultaneously
 ```
 
-### Phase 26 · Sandbox API + `nekova teach` — v2.5 📋
+### Phase 29 · Sandbox API + Ecosystem — v2.2.0 📋
 
-Sandbox as a deployable commercial API. `nekova teach` — AI-powered interactive tutorials built into the CLI.
+Sandbox as a deployable commercial API. `nekova teach` — AI-powered
+interactive tutorials built into the CLI. Also: middleware support in the
+web router (`route GET "/x" with auth, logging:`), WebSocket support
+alongside HTTP `route`/`serve`, built-in static file serving, database
+migrations as a language feature rather than raw `db_connect`/`query`,
+concrete one-command deploy targets (`nekova deploy --target render`), and
+marketplace package signing/verification as the package ecosystem grows.
 
-### Phase 27 · Full Self-Hosting — v3.0 🎯
+### Phase 30 · Safety & Performance Hardening — v2.3.0 📋
+
+Resource-limited sandbox quotas beyond time (CPU/memory ceilings for
+`sandbox strict`, not just execution duration — untrusted-code execution is
+an explicit stated feature and deserves real limits). Bytecode caching
+(`.nkc`) persisting compiled bytecode between runs, the way Python's
+`__pycache__` speeds up repeated execution. A public test-suite dashboard —
+"1,226 tests passing" becomes an actual trust signal, not just a number,
+once anyone can see which phases and features it actually covers.
+
+### Phase 31 · Full Self-Hosting — v3.0.0 🎯
 
 `lexer.nk` → `parser.nk` → `interpreter.nk`. NEKOVA interprets itself. This is the proof.
 
@@ -178,14 +314,14 @@ Sandbox as a deployable commercial API. `nekova teach` — AI-powered interactiv
 
 | Metric | Value |
 |--------|-------|
-| Test phases | 22 |
-| Test classes | 188 |
-| Tests passing | 1,177 / 1,177 |
-| Version | 1.9.4 |
+| Test phases | 25 |
+| Test classes | 200 |
+| Tests passing | 1,226 / 1,226 |
+| Version | 1.9.6 |
 | PyPI package | `nekova-lang` |
 | VS Code extension | ✅ Published |
 | Self-hosting blockers | 0 remaining |
-| Self-hosting status | Phase 20 complete (lexer) — Phase 21 next |
+| Self-hosting status | Phase 20 complete (lexer) — Phase 27 next (parser) |
 | Commercial story | Phase 19 Sandbox — live |
 | Critical bugs fixed | 38 of 38 |
 

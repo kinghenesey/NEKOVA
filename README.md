@@ -2,11 +2,11 @@
 
 ### The AI-Native Programming Language by SYNEKCOT Tech
 
-![Version](https://img.shields.io/badge/version-1.9.5-C41E0E?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.9.6-C41E0E?style=flat-square)
 ![PyPI](https://img.shields.io/pypi/v/nekova-lang?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.10+-blue?style=flat-square)
 ![License](https://img.shields.io/badge/license-BUSL--1.1-blue?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-1203%20passing-success?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-1226%20passing-success?style=flat-square)
 
 *"The first programming language where AI is syntax, not a library."*
 
@@ -47,7 +47,7 @@ show sandbox_result["safe"]
 > *"Because every other language makes you import AI as a library, and I believe if AI is the future of how we build software, it should be a keyword — not an afterthought."*
 > — Emmanuel King Christopher, Founder of SYNEKCOT Tech and Sole Author of NEKOVA
 
-NEKOVA was born in Nigeria to prove that world-class programming languages can come from anywhere. **1,203 tests. 24 development phases. One language.**
+NEKOVA was born in Nigeria to prove that world-class programming languages can come from anywhere. **1,226 tests. 25 development phases. One language.**
 
 ---
 
@@ -188,6 +188,53 @@ let name = recall "user"
 
 # Streaming
 stream think "Write a short story about Lagos" as text
+```
+
+### Prompt Blocks (Phase 21)
+
+Named, composable, reusable prompts — call them like any other function:
+
+```
+prompt summarize(text, style="professional", max_sentences=3):
+    """
+    Summarize the following in a {style} tone.
+    Use at most {max_sentences} sentences.
+    Text: {text}
+    """
+
+let summary = think summarize(article, style="casual")
+```
+
+`prompt` is intentionally **not** a reserved word — it's only treated as a
+definition when it looks like one (`prompt name(...):`), so existing code
+using `prompt` as a plain variable keeps working unchanged.
+
+### Retry and Fallback (Phase 21)
+
+First-class resilience for AI and network calls, with configurable backoff:
+
+```
+retry 3 times with exponential backoff:
+    let result = think "analyse this" as json
+fallback:
+    let result = {error: "unavailable"}
+```
+
+### Observability, Mock Testing, and Pipes (Phase 22)
+
+```
+# Tag and trace a block of execution
+observe "pipeline run" with tags {user: user_id}:
+    let summary = think summarize(document)
+
+# Deterministic AI output in tests — no real API call, no ambiguity
+# about whether a response is real or mocked
+test "classifier":
+    mock think as "sports"
+    expect classify(text) == "sports"
+
+# Pipe operator — chain transformations left to right
+let result = data |> parse() |> filter() |> sort() |> take(10)
 ```
 
 ### Speak, Listen, Imagine
@@ -415,13 +462,19 @@ nekova search "http client"
 | Declarations | `task` `let` `use` `import` `class` `object` `error` `shape`                              |
 | Exception    | `try` `catch` `finally` `raise` `assert` `pass`                                           |
 | AI           | `think` `remember` `recall` `forget` `imagine` `speak` `listen`                           |
+| Resilience   | `retry` `fallback` (Phase 21)                                                              |
 | Scheduling   | `every`                                                                                    |
-| Testing      | `test` `expect`                                                                            |
+| Testing      | `test` `expect` `mock` (Phase 22)                                                          |
+| Observability| `observe` (Phase 22)                                                                       |
 | Watching     | `watch`                                                                                    |
 | Sandbox      | `sandbox` `strict` `relaxed`                                                               |
 | OOP          | `init` `self` `new` `extends` `func`                                                      |
 | Async        | `async` `await` `stream`                                                                  |
 | Logic        | `and` `or` `not` `is` `in` `not in` `is not`                                               |
+
+`prompt` (Phase 21) is intentionally **not** a reserved word — it's recognized
+contextually only when it looks like a definition (`prompt name(...):`), so
+existing code using `prompt` as an ordinary variable name keeps working.
 
 ### Operators
 
@@ -436,6 +489,7 @@ nekova search "http client"
 | `and` `or` `not`              | Logic              |
 | `@`                            | Decorator          |
 | `->`                           | Return type hint   |
+| `\|>`                          | Pipe (Phase 22) — `data \|> parse() \|> sort()` |
 | `x if c else y`                | Ternary            |
 
 ---
@@ -447,7 +501,7 @@ NEKOVA/
 ├── nekova/              ← Core package: lexer, parser, interpreter, AI runtime, stdlib (.nk + .py)
 ├── nekova-vscode/        ← VS Code extension source (published on the marketplace)
 ├── myproject/            ← Example / scaffold project generated by `nekova new`
-├── tests/                ← Test suite (1,203 tests across 24 phases)
+├── tests/                ← Test suite (1,226 tests across 25 phases)
 ├── main.py                ← Entry point
 ├── runner.py              ← Pipeline orchestrator
 ├── nekova_cli.py          ← pip CLI entry point
@@ -472,12 +526,16 @@ NEKOVA/
 | 19    | ✅     | NEKOVA Sandbox — isolated execution, resource limits, violation tracking                    |
 | 19b   | ✅     | Security fixes — 38 bugs fixed, self-hosting blockers cleared                               |
 | 20    | ✅     | **Self-hosting begins** — NEKOVA lexer written in NEKOVA (`nekova/stdlib/nk/lexer.nk`), verified token-for-token identical to the Python reference lexer, including on its own source |
-| 21    | 🔄     | **Next** — `prompt` blocks, `retry`/`fallback`, enforced types                               |
-| 21    | ✅     | `prompt` blocks, `retry`/`fallback` with backoff — Phase 21 complete
-| 22    | 🔜     | `observe` telemetry, `mock think` in tests, `|>` pipe operator                              |
-| 23    | 🔜     | Polish — inline errors, destructuring, docstrings                                            |
-| 24    | 🔜     | NEKOVA parser in NEKOVA — v2.0 milestone                                                     |
-| 27    | 🎯     | Full self-hosting — interpreter in NEKOVA — v3.0                                             |
+| 21    | ✅     | `prompt` blocks, `retry`/`fallback` with backoff                                             |
+| 22    | ✅     | `observe` telemetry, `mock think` in tests, `\|>` pipe operator                              |
+| 23    | 🔄     | **Next** — Correctness & Trust: recursion error accuracy, mock-AI labeling, type-mismatch errors, near-miss suggestions, semver policy |
+| 24    | 🔜     | Language completeness II — destructuring, optional types, enums, `const`, spread, named args |
+| 24b   | 🔜     | Documentation website + language reference                                                   |
+| 25    | 🔜     | AI-native differentiators II — cost tracking, `think as <shape>`, `converse` blocks           |
+| 26    | 🔜     | Developer experience — Language Server Protocol, multi-error parser recovery                 |
+| 26b   | 🔜     | Education layer — `nekova learn`, `nekova explain`, classroom mode                            |
+| 27    | 🔜     | NEKOVA parser in NEKOVA — v2.0 milestone                                                     |
+| 31    | 🎯     | Full self-hosting — interpreter in NEKOVA — v3.0                                             |
 
 **Long term:** NEKOVA Game Engine, WASM compilation.
 
