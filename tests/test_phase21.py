@@ -231,6 +231,28 @@ class TestRetryExhaustion(unittest.TestCase):
             )
         self.assertEqual(out, "4")
 
+    def test_variable_set_in_retry_body_visible_after(self):
+        # This is the roadmap's canonical usage pattern — a `let`
+        # inside retry/fallback must be visible after the statement,
+        # exactly like if/while/for (not isolated like try/catch).
+        out = run(
+            'retry 3 times:\n'
+            '    let result = "success value"\n'
+            'show result\n'
+        )
+        self.assertEqual(out, "success value")
+
+    def test_variable_set_in_fallback_body_visible_after(self):
+        with NoSleep():
+            out = run(
+                'retry 2 times:\n'
+                '    raise "fail"\n'
+                'fallback:\n'
+                '    let result = {"error": "unavailable"}\n'
+                'show result["error"]\n'
+            )
+        self.assertEqual(out, "unavailable")
+
 
 class TestRetryBackoff(unittest.TestCase):
 
