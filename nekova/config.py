@@ -4,7 +4,7 @@
 # ── Single source of truth for the version ────────────────────
 # When bumping: change ONLY this line. Every other file reads
 # from here. Do NOT hardcode the version anywhere else.
-NEKOVA_VERSION   = "1.9.5"
+NEKOVA_VERSION   = "1.9.6"
 NEKOVA_CODENAME  = "Genesis"
 NEKOVA_EXTENSION = ".nk"
 class Color:
