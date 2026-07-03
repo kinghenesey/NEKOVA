@@ -490,6 +490,8 @@ class Lexer:
             self._add_token(TokenType.POWER,       "**"); self._advance(); self._advance(); return
         if two == "->":
             self._add_token(TokenType.ARROW,       "->"); self._advance(); self._advance(); return
+        if two == "|>":
+            self._add_token(TokenType.PIPE,        "|>"); self._advance(); self._advance(); return
         if two == "+=":
             self._add_token(TokenType.PLUS_EQUAL,  "+="); self._advance(); self._advance(); return
         if two == "-=":
