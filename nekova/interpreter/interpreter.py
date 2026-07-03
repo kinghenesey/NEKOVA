@@ -6,6 +6,7 @@ from nekova.parser.nodes import (
     MemoryStatement, SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UnpackStatement, UseStatement,
+    ListDestructureStatement, DictDestructureStatement,
     ImportStatement, CallExpression, IndexExpression, IndexAssignStatement,
     MethodCall,
     PropertyAccess,
@@ -34,7 +35,8 @@ from nekova.parser.async_nodes import (
 )
 from nekova.interpreter.exceptions import (
     NEKOVARuntimeError, NEKOVAImportError, NEKOVANameError,
-    NEKOVARaiseError, NEKOVAAssertionError, _ExpectFailed, _YieldSignal
+    NEKOVARaiseError, NEKOVAAssertionError, NEKOVARecursionError,
+    _ExpectFailed, _YieldSignal
 )
 from nekova.interpreter.async_interpreter import AsyncInterpreterMixin
 from nekova.interpreter.class_interpreter import ClassInterpreterMixin
@@ -53,10 +55,30 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         interpreter.execute(program)
     """
 
+    # NEKOVA-level call-depth safety limit (see _call_task). This is
+    # independent of Python's own recursion limit — it's the number of
+    # nested NEKOVA task calls we allow before raising a NEKOVARecursionError
+    # with an honest, accurate depth count instead of letting Python's
+    # RecursionError fire first with a misleading message.
+    MAX_CALL_DEPTH = 500
+
     def __init__(self, strict_types: bool = False):
         # Isolate this interpreter's memory from all other instances
         from nekova.ai.memory_store import init_interpreter_memory
         init_interpreter_memory()
+
+        # Raise Python's own recursion limit so it never fires before our
+        # own MAX_CALL_DEPTH check does. Each NEKOVA-level task call costs
+        # several Python stack frames (dispatch, _call_task, statement
+        # execution, expression evaluation), so we need real headroom.
+        import sys as _sys
+        needed = (self.MAX_CALL_DEPTH * 12) + 2000
+        if _sys.getrecursionlimit() < needed:
+            _sys.setrecursionlimit(needed)
+
+        # NEKOVA-level call depth counter, incremented/decremented in
+        # _call_task. This is what MAX_CALL_DEPTH is checked against.
+        self._call_depth = 0
 
         # Global environment — lives for the entire program
         self.globals      = Environment()
@@ -103,9 +125,9 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             try:
                 self._execute_node(statement)
             except (TypeError, ZeroDivisionError, IndexError,
-                    KeyError, RecursionError) as e:
+                    KeyError, RecursionError, NEKOVARecursionError) as e:
                 # Attach current line so runner's display_error can use it
-                if not hasattr(e, "line"):
+                if not hasattr(e, "line") or not e.line:
                     e.line = self._current_line
                 raise
 
@@ -126,7 +148,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         if isinstance(node, AsyncFunctionNode):
             return self.visit_async_function(node)
         if isinstance(node, AwaitNode):
-            return self._run_sync(self.visit_await(node))
+            return self.visit_await(node)
         if isinstance(node, StreamThinkNode):
             return self.visit_stream_think(node)
         if isinstance(node, FetchNode):
@@ -311,7 +333,14 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             provider.timeout = self._get_think_timeout()
             response = provider.ask(prompt)
         except Exception as e:
-            response = f"[think error: {e}]"
+            if node.on_error is not None:
+                # Inline error handling: evaluate the fallback
+                # expression instead of embedding an error string.
+                response = self._execute_node(node.on_error)
+            else:
+                # No fallback clause — preserve old behaviour so
+                # existing programs don't start crashing.
+                response = f"[think error: {e}]"
 
         # Step 3: Print with cyan formatting
         print(f"{Fore.CYAN}🧠 {response}{Style.RESET_ALL}")
@@ -833,6 +862,74 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             else:
                 self.env.set(name, val)
 
+    def _assign_destructured(self, name: str, value):
+        """Shared assignment helper for destructuring executors —
+        respects 'global' declarations the same way plain assignment
+        and tuple unpacking do."""
+        if name in self._global_names:
+            self.globals.set(name, value)
+        else:
+            self.env.set(name, value)
+
+    def _exec_ListDestructureStatement(self, node: ListDestructureStatement):
+        """
+        Execute:  let [first, second] = my_list
+                  let [first, ...rest] = my_list
+        """
+        value = self._execute_node(node.value)
+
+        if isinstance(value, range):
+            value = list(value)
+
+        if not isinstance(value, (list, tuple)):
+            raise NEKOVARuntimeError(
+                f"Cannot destructure '{self._to_string(value)}' as a "
+                f"list — it's a {type(value).__name__}.\n"
+                f"  Example:  let [first, ...rest] = [1, 2, 3]"
+            )
+
+        value = list(value)
+        needed = len(node.targets)
+
+        if len(value) < needed:
+            raise NEKOVARuntimeError(
+                f"Not enough values to destructure — "
+                f"expected at least {needed} but got {len(value)}.\n"
+                f"  Right side: {self._to_string(value)}\n"
+                f"  Variables:  {', '.join(node.targets)}"
+            )
+
+        for name, val in zip(node.targets, value[:needed]):
+            self._assign_destructured(name, val)
+
+        if node.rest is not None:
+            self._assign_destructured(node.rest, value[needed:])
+
+    def _exec_DictDestructureStatement(self, node: DictDestructureStatement):
+        """
+        Execute:  let {name, age} = user
+        Each key is read from the dict and bound to a variable of
+        the same name.
+        """
+        value = self._execute_node(node.value)
+
+        if not isinstance(value, dict):
+            raise NEKOVARuntimeError(
+                f"Cannot destructure '{self._to_string(value)}' as a "
+                f"dict — it's a {type(value).__name__}.\n"
+                f"  Example:  let {{name, age}} = "
+                f"{{\"name\": \"Sam\", \"age\": 30}}"
+            )
+
+        for key in node.keys:
+            if key not in value:
+                available = ", ".join(value.keys()) or "(none)"
+                raise NEKOVARuntimeError(
+                    f"Key '{key}' not found while destructuring dict.\n"
+                    f"  Available keys: {available}"
+                )
+            self._assign_destructured(key, value[key])
+
     def _exec_RepeatStatement(self, node: RepeatStatement):
         """
         Execute:
@@ -1223,15 +1320,17 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         if isinstance(callee, TaskStatement):
             return self._call_task(callee, args)
 
-        # NEKOVA async task
+        # NEKOVA async task — calling it is synchronous under the hood
+        # (see AsyncFunction.call in async_interpreter.py). No event-loop
+        # detection needed here anymore: the previous version tried to
+        # detect whether it was inside a running loop by catching
+        # NEKOVARuntimeError around asyncio.get_running_loop(), but that
+        # function actually raises the built-in RuntimeError — so the
+        # except clause never matched, and calling an async task without
+        # 'await' crashed with an unhandled RuntimeError.
         from nekova.interpreter.async_interpreter import AsyncFunction as _AsyncFn
         if isinstance(callee, _AsyncFn):
-            import asyncio
-            try:
-                asyncio.get_running_loop()
-                return callee.call_async(args)  # return coroutine to outer await
-            except NEKOVARuntimeError:
-                return self._run_sync(callee.call_async(args))
+            return callee.call(args)
 
         raise NEKOVARuntimeError(
             f"'{node.name}' is not a task you can call.\n"
@@ -1263,7 +1362,36 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         try:
             if op == "+":
-                # Support string concatenation
+                # String + string is concatenation.
+                if isinstance(left, str) and isinstance(right, str):
+                    return left + right
+                # Mixing a string with a number is a common beginner
+                # mistake ("5" + 3) that silently produces "53" in
+                # JS-like languages. NEKOVA raises instead of coercing,
+                # so the mistake is caught immediately.
+                # (Bools are intentionally excluded from this check since
+                # isinstance(True, int) is True in Python — a bool here
+                # falls through to string-building below, same as dicts
+                # and lists, which is the deliberate, useful pattern for
+                # things like "caught: " + error_object.)
+                str_num_mismatch = (
+                    (isinstance(left, str) and isinstance(right, (int, float))
+                     and not isinstance(right, bool))
+                    or
+                    (isinstance(right, str) and isinstance(left, (int, float))
+                     and not isinstance(left, bool))
+                )
+                if str_num_mismatch:
+                    raise NEKOVARuntimeError(
+                        f"Cannot use '+' between "
+                        f"'{type(left).__name__}' and "
+                        f"'{type(right).__name__}'.\n"
+                        f"  Convert one side explicitly, e.g. "
+                        f"str(value) or int(value)."
+                    )
+                # String + other (dict, list, bool, None, error object,
+                # etc.) still builds a string — this is the deliberate
+                # pattern used for messages like "caught: " + error_obj.
                 if isinstance(left, str) or isinstance(right, str):
                     return self._to_string(left) + self._to_string(right)
                 return left + right
@@ -1654,6 +1782,13 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         params is list of (name, default_or_None, is_vararg).
         Old-style params (plain strings) are supported for back-compat.
         """
+        self._call_depth += 1
+        if self._call_depth > self.MAX_CALL_DEPTH:
+            self._call_depth -= 1
+            raise NEKOVARecursionError(
+                task.name, self.MAX_CALL_DEPTH, line=self._current_line
+            )
+
         closure      = getattr(task, "closure_env", self.globals)
         local_env    = Environment(parent=closure)
         previous_env = self.env
@@ -1706,6 +1841,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         finally:
             self.env = previous_env
             self._global_names = previous_globals
+            self._call_depth -= 1
 
     def _call_prompt(self, prompt: PromptStatement, args: list):
         """
@@ -1943,6 +2079,25 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         self.globals.set("list",     lambda x: list(x))
         self.globals.set("dict",     lambda: {})
         self.globals.set("print",    print)
+
+        # ── Phase 23: task docstrings ───────────────────────────
+        def _doc(task_obj):
+            """
+            doc(some_task) — returns the docstring captured from a
+            task's leading triple-quoted string, or a helpful message
+            if the task has none. Pass the task itself (not a call):
+                doc(greet)     — correct
+                doc(greet())   — wrong, that calls greet first
+            """
+            text = getattr(task_obj, "docstring", None)
+            if text:
+                return text
+            name = getattr(task_obj, "name", None)
+            if name:
+                return f"No docstring for '{name}'."
+            return "No docstring available."
+        self.globals.set("doc", _doc)
+
 
         # ── Phase 19: Sandbox API ─────────────────────────────
         from nekova.sandbox.runner import run_sandboxed as _run_sandboxed
@@ -2279,7 +2434,10 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 timeout=self._get_think_timeout(),
             )
         except Exception as e:
-            result = f"[think error: {e}]"
+            if node.on_error is not None:
+                result = self._execute_node(node.on_error)
+            else:
+                result = f"[think error: {e}]"
 
         if node.variable:
             self.env.set(node.variable, result)
