@@ -1,8 +1,8 @@
 # NEKOVA Language — Official Roadmap
 
-**Version:** 1.9.7 · Genesis  
+**Version:** 1.9.8 · Genesis  
 **Tests:** 1,226 passing · 200 test classes · 25 test phases  
-**Status:** Active development · Phase 22 complete · Phase 23 next  
+**Status:** Active development · Phase 23 complete · Phase 24 next  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
 ---
@@ -42,8 +42,9 @@ consistent meaning. Going forward:
 | 1.9.2 | 19b | Self-hosting blockers fixed, 38 security bugs resolved |
 | 1.9.4 | 20 | ✅ Lexer in NEKOVA, verified token-for-token against Python reference |
 | 1.9.5 | 21 | ✅ `prompt` blocks, `retry`/`fallback` |
-| **1.9.7** | 22 | ✅ `observe` blocks, `mock think`, `\|>` pipe operator — **current** |
-| **1.9.7** | 23 | 🔄 **Next** — Correctness & Trust: recursion error accuracy, mock-AI labeling, type-mismatch errors, near-miss variable suggestions, semver policy (this document) |
+| 1.9.6 | 22 | ✅ `observe` blocks, `mock think`, `\|>` pipe operator |
+| 1.9.7 | — | ✅ NEKOVA Dark theme revised (grey removed), new NEKOVA Light theme, simplified `.nk` file icon |
+| **1.9.8** | 23 | ✅ Correctness & Trust: recursion error accuracy, mock-AI labeling, type-mismatch errors, near-miss variable suggestions, semver policy (this document) — **current** |
 | **1.10.0** | 24 | Language completeness II — destructuring, optional/nullable types, enums, `const`, spread syntax, named arguments, `null` semantics, sets, opt-in strict type checking |
 | **1.10.1** | 24b | Documentation website + language reference |
 | **1.11.0** | 25 | AI-native differentiators II — cost/token tracking, `think ... as <shape>`, multi-turn `converse` blocks, explicit model selection, `--debug-ai`, prompt-injection guard for sandboxed `think` |
@@ -55,7 +56,7 @@ consistent meaning. Going forward:
 | **2.3.0** | 30 | Safety & performance hardening — resource-limited sandbox quotas (CPU/memory, not just time), bytecode caching, public test-coverage dashboard |
 | **3.0.0** | 31 | Full self-hosting — interpreter in NEKOVA |
 
-Phases 27 onward are directional, not fully scoped — near-term phases (23–26b)
+Phases 24 onward are directional, not fully scoped — near-term phases (24–26b)
 are committed; long-term phases are subject to reordering as the language
 matures. See `NEKOVA-feature-analysis-2026-07.md` for the full source list
 this roadmap draws from, including items not yet assigned a phase.
@@ -130,7 +131,7 @@ fallback:
     let result = {error: "unavailable"}
 ```
 
-### Phase 22 · Observability + Testing + Pipe Operator ✅ — v1.9.7
+### Phase 22 · Observability + Testing + Pipe Operator ✅ — v1.9.6
 
 ```nekova
 observe "pipeline run" with tags {user: user_id}:
@@ -145,40 +146,36 @@ let result = data |> parse() |> filter() |> sort() |> take(10)
 
 ---
 
-## Active Phase
+---
 
-### Phase 23 · Correctness & Trust 🔄 IN PROGRESS — v1.9.7
+## Completed Phases (continued)
+
+### Phase 23 · Correctness & Trust ✅ — v1.9.8
 
 Scoped directly from external feedback on v1.9.5 in live use. Prioritized
 first because these fix things that actively mislead learners — which cuts
 against NEKOVA's own stated mission — rather than adding new surface area.
 
-1. **Fix the mislabeled recursion error.** `RecursionError` currently maps
-   straight to "Infinite Recursion," but it actually fires around 196–198
-   NEKOVA-level calls because of Python's own default frame limit combined
-   with the interpreter's per-call overhead — not necessarily a missing
-   base case. Raise `sys.setrecursionlimit()` at startup and/or track
-   NEKOVA's own call depth so the message is accurate, and split "stack
-   limit exceeded" from "no base case detected" as distinct diagnoses.
-2. **Label every mock AI response.** `MockProvider`'s `"hello"`/`"hi"` and
-   capital-city branches currently return clean text with no `[MOCK]` tag,
-   unlike every other branch — a beginner's first `think "hello" as text`
-   should never be indistinguishable from a real model response.
-3. **Add a type-mismatch error for `+` between incompatible types**,
-   instead of silently coercing `"5" + 3` → `"53"`. One of the most
-   notorious beginner confusion sources in JS-like languages — exactly the
-   kind of gotcha NEKOVA shouldn't be reproducing.
-4. **Fix "Define it first" echoing typos.** The undefined-variable hint
-   currently proposes `let <same_typo> = "value"` — add a near-miss check
-   (Levenshtein distance) against existing names and suggest "did you mean
-   `<existing_var>`?" the way Python/Rust do.
-5. **Document a real semver policy.** Done as part of this update — see
-   *Versioning Policy* above.
+1. ✅ **Recursion error accuracy.** `NEKOVARecursionError` now tracks
+   NEKOVA's own call depth, separate from Python's built-in
+   `RecursionError`, with `sys.setrecursionlimit()` raised at startup so
+   the message reflects what actually happened.
+2. ✅ **Every mock AI response now self-identifies.** All `MockProvider`
+   branches, including `hello`/`hi` and capital-city responses, prefix
+   `[MOCK]`.
+3. ✅ **Type-mismatch error for `+` between incompatible types.**
+   `"5" + 3` now raises instead of silently coercing to `"53"` — bools
+   deliberately excluded so `"caught: " + error_obj`-style string-building
+   still works.
+4. ✅ **Near-miss suggestions for undefined variables.** Real `difflib`
+   similarity check against in-scope names, printed as a separate
+   "💡 Did you mean" block.
+5. ✅ **Documented a real semver policy** — see *Versioning Policy* above.
 
-Also in scope: a specific bad-indentation hint (expected vs. actual depth,
-already computable from the token stream), and an audit of the remaining
-raw Python exceptions (`TypeError`, `KeyError`, etc.) passed through for
-similarly generic or misleading messages.
+**Carried forward, not yet done:** the bad-indentation-depth hint (expected
+vs. actual indent level) and the full audit of remaining raw Python
+exceptions passed through with generic messages. Neither blocks anything —
+folded into Phase 24 rather than held up as a reason to delay it.
 
 ---
 
@@ -317,7 +314,7 @@ once anyone can see which phases and features it actually covers.
 | Test phases | 25 |
 | Test classes | 200 |
 | Tests passing | 1,226 / 1,226 |
-| Version | 1.9.7 |
+| Version | 1.9.8 |
 | PyPI package | `nekova-lang` |
 | VS Code extension | ✅ Published |
 | Self-hosting blockers | 0 remaining |
