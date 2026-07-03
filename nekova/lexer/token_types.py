@@ -101,6 +101,11 @@ class TokenType(Enum):
     RETRY       = auto()   # retry 3 times [with exponential backoff]: ...
     FALLBACK    = auto()   # fallback: ...  (sibling clause of retry)
 
+    # ── Phase 22: Observability + Testing + Pipe Operator ────
+    OBSERVE     = auto()   # observe "label" with tags {...}: ...
+    MOCK        = auto()   # mock think as "response"
+    PIPE        = auto()   # |>  (pipe operator)
+
     # ── Operators ─────────────────────────────────────────────
     PLUS        = auto()
 
@@ -227,4 +232,7 @@ KEYWORDS = {
     # same treatment as "pass"/"assert"/"raise".
     "retry":      TokenType.RETRY,
     "fallback":   TokenType.FALLBACK,
+    # Phase 22
+    "observe":    TokenType.OBSERVE,
+    "mock":       TokenType.MOCK,
 }
