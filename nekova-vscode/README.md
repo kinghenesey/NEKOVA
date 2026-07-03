@@ -1,6 +1,6 @@
-﻿# NEKOVA VS Code Extension — v1.9.7
+﻿# NEKOVA VS Code Extension — v1.9.8
 
-Syntax highlighting, a branded color theme, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
+Syntax highlighting, two branded color themes, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
 Built by [SYNEKCOT Tech](https://github.com/kinghenesey/NEKOVA) 🇳🇬
 
@@ -10,7 +10,7 @@ Built by [SYNEKCOT Tech](https://github.com/kinghenesey/NEKOVA) 🇳🇬
 
 - **Syntax highlighting** for all NEKOVA keywords — `think`, `remember`, `recall`, `route`, `serve`, `connect`, `object`, `class`, `match`, `yield`, `error`, `shape`, `every`, `test`, `expect`, `imagine`, `speak`, `listen`, `watch`, `sandbox`, `prompt`, `retry`, `fallback`, `observe`, `mock`, and more
 - **`observe` blocks** and **`mock think`** highlighted and auto-indented correctly, plus the **`|>` pipe operator**
-- **NEKOVA Dark color theme** — built from NEKOVA's brand palette of green, white, and grey. AI-native keywords (`think`, `speak`, `listen`, `imagine`, `watch`, `every`) are highlighted in the brightest green, since that's the language's whole identity — true red is reserved exclusively for actual errors/warnings, so diagnostics stay visually distinct from ordinary syntax. Select the theme via `Preferences: Color Theme → NEKOVA Dark`
+- **Two color themes — NEKOVA Dark and NEKOVA Light** — both built from NEKOVA's brand palette of green and white only. AI-native keywords (`think`, `speak`, `listen`, `imagine`, `watch`, `every`) are highlighted in the brightest green in both themes, since that's the language's whole identity. True red/amber are reserved exclusively for actual errors and warnings, so diagnostics stay visually distinct from ordinary syntax in either theme. NEKOVA Light uses a genuine pure-white (`#FFFFFF`) background, not a lightened grey. Select either via `Preferences: Color Theme → NEKOVA Dark` / `NEKOVA Light`
 - **Branded `.nk` file icon** — a simplified "nk" mark on a small dark backing, designed to stay legible at actual file-icon size (16px), not just at logo size
 - **`prompt` blocks** highlighted as a declaration (like `task`/`class`) only when genuinely defining a prompt — `prompt name(...):` — while still working correctly as an ordinary variable name elsewhere, matching NEKOVA's own soft-keyword design
 - **65 snippets** — type `think`, `task`, `route`, `obj`, `class`, `match`, `pipeline`, `parallel`, `sandbox`, `taskgen`, `decorator`, `shape`, `every`, `test`, `prompt`, `retry`, `observe`, `mock`, `pipe`, and more
@@ -211,8 +211,31 @@ match status:
 
 ## Release Notes
 
+### 1.9.8
+- Welcome message and status bar now report `v1.9.8`, announcing Phase 23's
+  correctness fixes (accurate recursion errors, labeled mock AI responses,
+  type-mismatch errors, near-miss variable suggestions) — no extension-side
+  code changes required for these, since they're core-interpreter fixes,
+  but the version and in-editor messaging now reflect them
+- Fixed this file — the 1.9.7 entry below was previously garbled (an
+  unclosed bold marker and a stray quote, with no real content) and the
+  Features section's theme description was stale, still describing a
+  single grey-inclusive theme after 1.9.7 had already split it into two
+  grey-free themes
+
 ### 1.9.7
-- Added **'the light and dark theme to the vscode extension"
+- Added the **NEKOVA Light** color theme — a genuine second theme, not a
+  toggle: pure white (`#FFFFFF`) background, dark green-black body text
+  (the one necessary compromise, since literal white text is invisible on
+  white), saturated greens for keywords and accents
+- Revised **NEKOVA Dark** — removed every grey token color (comments,
+  operators, secondary keyword groups) in favor of white and green only.
+  True red/amber remain reserved exclusively for error/warning UI in both
+  themes
+- Replaced the `.nk` file icon with the current simplified "nk" mark —
+  an earlier direct trace of the full NEKOVA logo tested illegible at
+  actual 16px file-icon size, even though it read fine at logo size, so
+  it was rebuilt from simple strokes instead of fine detail like thin rings
 
 ### 1.9.6
 - Added **`observe "label" with tags {...}:`** highlighting and correct
@@ -226,10 +249,6 @@ match status:
   behavior vs. paste/reindent), and had silently fallen out of sync since
   1.9.5: missing `finally`, `memory`, `retry`, `fallback`, `every`, `watch`,
   and `prompt` even though `indentationRules` already had them
-- Corrected the theme description in this README — NEKOVA's brand palette
-  is green/white/grey, not the original pepper-red/gold; true red is now
-  reserved exclusively for error/warning UI so diagnostics stay visually
-  distinct from ordinary syntax
 
 ### 1.9.5
 - Added the **NEKOVA Dark** color theme — pepper-red and gold throughout,

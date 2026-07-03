@@ -1,5 +1,5 @@
 ﻿// =============================================================
-// NEKOVA Language — VS Code Extension  (v1.9.7)
+// NEKOVA Language — VS Code Extension  (v1.9.8)
 // =============================================================
 // Commands:
 //   nekova.runFile     F5          Run the active .nk file
@@ -175,7 +175,7 @@ function createStatusBar(context) {
         vscode.StatusBarAlignment.Left, 100
     );
     statusBar.text = '$(zap) NEKOVA';
-    statusBar.tooltip = 'NEKOVA v1.9.7 — Connected Forge by SYNEKCOT Tech\nClick to run file';
+    statusBar.tooltip = 'NEKOVA v1.9.8 — Connected Forge by SYNEKCOT Tech\nClick to run file';
     statusBar.command = 'nekova.runFile';
 
     vscode.window.onDidChangeActiveTextEditor(editor => {
@@ -197,7 +197,7 @@ function createStatusBar(context) {
 // ── Activate ───────────────────────────────────────────────────────────────
 
 function activate(context) {
-    console.log('NEKOVA Language extension v1.9.7 activated');
+    console.log('NEKOVA Language extension v1.9.8 activated');
 
     // Register commands
     const commands = [
@@ -228,16 +228,16 @@ function activate(context) {
     context.subscriptions.push(...commands);
 
     // Welcome message on first activation
-    const shown = context.globalState.get('nekova.welcomeShown_1.9.7');
+    const shown = context.globalState.get('nekova.welcomeShown_1.9.8');
     if (!shown) {
         vscode.window.showInformationMessage(
-            'NEKOVA v1.9.7 — now with NEKOVA Dark and NEKOVA Light color themes. Press F5 to run any .nk file.',
+            'NEKOVA v1.9.8 — now with Phase 23 correctness fixes — accurate recursion errors, labeled mock AI responses, type-mismatch errors, and near-miss suggestions. Press F5 to run any .nk file.',
             'Open REPL', 'New Project'
         ).then(choice => {
             if (choice === 'Open REPL')    cmdOpenRepl();
             if (choice === 'New Project')  cmdNewProject();
         });
-        context.globalState.update('nekova.welcomeShown_1.9.7', true);
+        context.globalState.update('nekova.welcomeShown_1.9.8', true);
     }
 }
 
