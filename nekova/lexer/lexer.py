@@ -525,6 +525,17 @@ class Lexer:
             ".": TokenType.DOT,
         }
 
+        # ── Rest/spread operator: ... (must check before '..') ────
+        if (char == "." and not self._at_end()
+                and self._peek() == "."
+                and self.pos + 2 < len(self.source)
+                and self.source[self.pos + 2] == "."):
+            self._add_token(TokenType.ELLIPSIS, "...")
+            self._advance()   # consume first  '.'
+            self._advance()   # consume second '.'
+            self._advance()   # consume third  '.'
+            return
+
         # ── Range operator: .. (must check before single-char '.') ─
         if char == "." and not self._at_end() and self._peek() == ".":
             self._add_token(TokenType.DOTDOT, "..")
