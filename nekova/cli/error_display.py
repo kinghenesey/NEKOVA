@@ -97,9 +97,12 @@ _CATALOGUE = {
     },
     "RecursionError": {
         "code":    "E010",
-        "title":   "Infinite Recursion",
-        "hint":    "A function kept calling itself without stopping.",
-        "example": "Make sure your recursive function has a base case.",
+        "title":   "Maximum Call Depth Exceeded",
+        "hint":    "A task called itself too many times. This is usually "
+                   "a missing or incorrect base case — but very deep, "
+                   "legitimate recursion can also hit this limit.",
+        "example": "Check your base case, or rewrite as a loop if the "
+                   "recursion is intentionally deep.",
     },
     "KeywordConflict": {
         "code":    "E011",
