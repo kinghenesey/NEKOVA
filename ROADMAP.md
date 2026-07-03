@@ -1,6 +1,6 @@
 # NEKOVA Language — Official Roadmap
 
-**Version:** 1.9.6 · Genesis  
+**Version:** 1.9.7 · Genesis  
 **Tests:** 1,226 passing · 200 test classes · 25 test phases  
 **Status:** Active development · Phase 22 complete · Phase 23 next  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
@@ -42,7 +42,7 @@ consistent meaning. Going forward:
 | 1.9.2 | 19b | Self-hosting blockers fixed, 38 security bugs resolved |
 | 1.9.4 | 20 | ✅ Lexer in NEKOVA, verified token-for-token against Python reference |
 | 1.9.5 | 21 | ✅ `prompt` blocks, `retry`/`fallback` |
-| **1.9.6** | 22 | ✅ `observe` blocks, `mock think`, `\|>` pipe operator — **current** |
+| **1.9.7** | 22 | ✅ `observe` blocks, `mock think`, `\|>` pipe operator — **current** |
 | **1.9.7** | 23 | 🔄 **Next** — Correctness & Trust: recursion error accuracy, mock-AI labeling, type-mismatch errors, near-miss variable suggestions, semver policy (this document) |
 | **1.10.0** | 24 | Language completeness II — destructuring, optional/nullable types, enums, `const`, spread syntax, named arguments, `null` semantics, sets, opt-in strict type checking |
 | **1.10.1** | 24b | Documentation website + language reference |
@@ -130,7 +130,7 @@ fallback:
     let result = {error: "unavailable"}
 ```
 
-### Phase 22 · Observability + Testing + Pipe Operator ✅ — v1.9.6
+### Phase 22 · Observability + Testing + Pipe Operator ✅ — v1.9.7
 
 ```nekova
 observe "pipeline run" with tags {user: user_id}:
@@ -317,7 +317,7 @@ once anyone can see which phases and features it actually covers.
 | Test phases | 25 |
 | Test classes | 200 |
 | Tests passing | 1,226 / 1,226 |
-| Version | 1.9.6 |
+| Version | 1.9.7 |
 | PyPI package | `nekova-lang` |
 | VS Code extension | ✅ Published |
 | Self-hosting blockers | 0 remaining |

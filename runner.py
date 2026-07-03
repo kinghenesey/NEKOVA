@@ -21,7 +21,8 @@ from nekova.lexer import Lexer, LexerError
 from nekova.parser.parser import Parser, ParseError
 from nekova.interpreter.interpreter import Interpreter
 from nekova.interpreter.exceptions import (
-    NEKOVARuntimeError, NEKOVAImportError, NEKOVANameError
+    NEKOVARuntimeError, NEKOVAImportError, NEKOVANameError,
+    NEKOVARecursionError
 )
 
 
@@ -254,10 +255,30 @@ class NEKOVARunner:
             )
             return 1
 
-        except RecursionError:
+        except NEKOVARecursionError as e:
+            # NEKOVA's own call-depth counter caught this — the depth
+            # figure is exact, not a guess derived from Python's stack.
             display_error(
                 error_type="RecursionError",
-                message="Maximum call depth exceeded.",
+                message=str(e),
+                source=self.source,
+                filepath=self.filepath,
+                line=getattr(e, "line", 0),
+            )
+            return 1
+
+        except RecursionError:
+            # Fallback: Python's own recursion limit fired before our
+            # MAX_CALL_DEPTH check did (e.g. recursion that doesn't go
+            # through _call_task). We don't know the exact NEKOVA-level
+            # depth here, so we say so rather than inventing a number.
+            display_error(
+                error_type="RecursionError",
+                message=(
+                    "Python's stack limit was reached before NEKOVA's "
+                    "own call-depth check could catch it. This usually "
+                    "means very deep or unbounded recursion."
+                ),
                 source=self.source,
                 filepath=self.filepath,
             )

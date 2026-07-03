@@ -23,7 +23,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This phase shipped (1,226 tests passing, up from 1,203) without a version
 bump at the time — `nekova/config.py`, `pyproject.toml`, and the VS Code
 extension's `package.json` all stayed at `1.9.5` despite new keywords
-landing. This entry and the version bump to `1.9.6` are a retroactive
+landing. This entry and the version bump to `1.9.7` are a retroactive
 correction, and this exact gap — no consistent rule for when a version
 number changes — is what Phase 23 formally fixes with a documented semver
 policy (see `ROADMAP.md`).
