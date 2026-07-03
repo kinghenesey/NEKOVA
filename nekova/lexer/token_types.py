@@ -137,6 +137,7 @@ class TokenType(Enum):
     COLON       = auto()
     DOT         = auto()
     DOTDOT      = auto()   # range operator: 'a'..'z'  or  0..9
+    ELLIPSIS    = auto()   # rest/spread marker: let [first, ...rest] = list
     COMMA       = auto()
     LPAREN      = auto()
     RPAREN      = auto()
