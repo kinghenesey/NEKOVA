@@ -27,6 +27,8 @@ from nekova.parser.nodes import (
     YieldStatement, DecoratorStatement, ErrorDefinition, TypedTaskStatement,
     # Phase 21
     PromptStatement, RetryStatement,
+    # Phase 22
+    ObserveStatement, MockStatement,
 )
 from nekova.parser.async_nodes import (
     AsyncFunctionNode, AwaitNode, StreamThinkNode, FetchNode
@@ -161,6 +163,12 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
         if token.type == TokenType.RETRY:
             return self._parse_retry()
+
+        if token.type == TokenType.OBSERVE:
+            return self._parse_observe()
+
+        if token.type == TokenType.MOCK:
+            return self._parse_mock()
 
         if token.type == TokenType.RETURN:
             return self._parse_return()
@@ -1311,6 +1319,49 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             RetryStatement(times, backoff, body, fallback_body, line=line), line
         )
 
+    def _parse_observe(self):
+        """
+        Parse:
+            observe "pipeline run" with tags {user: user_id}:
+                let summary = think summarize(document)
+
+            observe "quick check":
+                validate(input)
+        """
+        line = self._current().line
+        self._consume(TokenType.OBSERVE)
+
+        label = self._parse_expression()
+
+        tags = None
+        if self._current().type == TokenType.WITH:
+            self._advance()
+            if (self._current().type == TokenType.IDENTIFIER
+                    and self._current().value == "tags"):
+                self._advance()
+            tags = self._parse_expression()
+
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+        body = self._parse_block()
+
+        return self._stamp(ObserveStatement(label, tags, body, line=line), line)
+
+    def _parse_mock(self):
+        """
+        Parse:  mock think as "sports"
+        Only meaningful inside a `test` block — stubs `think` for
+        the rest of that test so it doesn't make a real AI call.
+        """
+        line = self._current().line
+        self._consume(TokenType.MOCK)
+        target = self._advance().value  # e.g. "think" — allow keyword names
+        self._consume(TokenType.AS)
+        value = self._parse_expression()
+        self._expect_newline_or_eof()
+        return self._stamp(MockStatement(target, value, line=line), line)
+
     def _parse_return(self):
         """Parse:  return <expression>"""
         line = self._current().line
@@ -1666,7 +1717,38 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
     # ----------------------------------------------------------
 
     def _parse_expression(self):
-        """Parse an expression — handles ternary (val if cond else other)."""
+        """
+        Parse an expression — handles the pipe operator (loosest
+        binding) wrapped around ternary (val if cond else other).
+        """
+        expr = self._parse_ternary()
+        while self._current().type == TokenType.PIPE:
+            line = self._current().line
+            self._advance()  # consume '|>'
+            rhs = self._parse_ternary()
+            expr = self._build_pipe_call(expr, rhs, line)
+        return expr
+
+    def _build_pipe_call(self, piped_value, rhs, line):
+        """
+        `a |> f(x, y)`  ->  f(a, x, y)   (a becomes the first arg)
+        `a |> f`        ->  f(a)         (bare name, no parens)
+        Anything else on the right of `|>` is a parse error — pipe
+        needs a task/function to call.
+        """
+        if isinstance(rhs, CallExpression):
+            rhs.args.insert(0, piped_value)
+            return rhs
+        if isinstance(rhs, Identifier):
+            return CallExpression(rhs.name, [piped_value])
+        raise ParseError(
+            "The right side of '|>' must be a task call or task name, "
+            f"e.g. `data |> filter()` — got {type(rhs).__name__}.",
+            line
+        )
+
+    def _parse_ternary(self):
+        """Parse ternary (val if cond else other)."""
         expr = self._parse_logical_or()
         # Ternary: <true_val> if <condition> else <false_val>
         if self._current().type == TokenType.IF:
