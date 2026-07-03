@@ -5,16 +5,79 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.9.7] — 2026-07-03 · Phase 22 "Observability + Testing + Pipe Operator"
+## [1.9.8] — 2026-07-03 · Phase 23 "Correctness & Trust"
+
+### Fixed
+
+- **Recursion error accuracy** — `RecursionError` no longer maps blindly to
+  "Infinite Recursion." NEKOVA now tracks its own call depth (`NEKOVARecursionError`,
+  separate from Python's built-in `RecursionError`) and raises
+  `sys.setrecursionlimit()` at startup so the message reflects what actually
+  happened, not just "Python ran out of stack frames"
+- **Mock AI responses now self-identify everywhere** — every branch of the
+  mock provider, including the `hello`/`hi` and capital-city responses that
+  previously returned clean, unlabeled text, now prefixes `[MOCK]`. A
+  beginner's first `think "hello" as text` can no longer be mistaken for a
+  real model response
+- **Type-mismatch error for `+` between incompatible types** — `"5" + 3`
+  now raises a clear error instead of silently coercing to `"53"`. Bools
+  are deliberately excluded from this check (`isinstance(True, int)` is
+  `True` in Python) so patterns like `"caught: " + error_obj` still work
+  as string-building, unaffected
+- **Near-miss suggestions for undefined variables** — the "Variable Not
+  Found" error now checks actual in-scope names with `difflib` and prints
+  a real "💡 Did you mean: `<existing_var>`" suggestion when a close match
+  exists, instead of only echoing the same typo back as a fresh `let`
+  statement
+
+### Fixed (release process)
+
+- **`nekova/config.py` had a literally broken version string** (`"1.9."`,
+  missing the patch number) after the 1.9.7 release — this was already
+  failing 3 tests (`test_version_format`, `test_version_is_current`,
+  `test_pyproject_version_matches_config`) before this fix landed
+- **CHANGELOG.md's `[1.9.7]` entry was a mislabeled duplicate of 1.9.6's
+  content**, with a garbled, incomplete bullet (`- **'light and dark
+  mode'`) inserted mid-list — the genuine 1.9.6 entry was missing from the
+  file entirely as a result. Restored below
+
+---
+
+## [1.9.7] — 2026-07-03 · NEKOVA Dark and Light Themes
 
 ### Added
-- **'light and dark mode'
+
+- **NEKOVA Light color theme** — a genuine second theme, not a variant
+  toggle: pure white (`#FFFFFF`) background, with a dark green-black
+  (`#0D2818`) for plain code text (the one necessary compromise, since
+  literal white text is invisible on white) and saturated greens for
+  keywords and accents
+- **NEKOVA Dark theme revised** — removed every grey token color (comments,
+  operators, secondary keyword groups) in favor of white and green only,
+  addressing feedback that the previous grey tones made the theme feel
+  muddy. True red/amber remain reserved exclusively for error/warning UI
+  in both themes, so diagnostics stay visually distinct from ordinary
+  syntax — verified by scanning rendered output for any surviving grey
+  pixels beyond expected antialiasing
+- **Simplified `.nk` file icon** — replaced the icon (in both the original
+  red/gold "file card" design and a later direct trace of the full NEKOVA
+  logo) with an original mark built from simple strokes rather than fine
+  detail like thin rings, specifically because the traced logo tested
+  illegible at actual 16px file-icon size, even though it read fine at
+  logo size
+
+---
+
+## [1.9.6] — 2026-07-03 · Phase 22 "Observability + Testing + Pipe Operator"
+
+### Added
+
 - **`observe "label" with tags {...}:` blocks** — structured telemetry
   around any code block, tagging runs for later inspection
 - **`mock think as "response"`** inside `test` blocks — lets tests assert
   against deterministic AI output instead of hitting a real provider,
   directly fixing the "is this a real AI response" ambiguity real users
-  ran into with the unlabeled Mock provider (tracked properly in 1.9.7)
+  ran into with the unlabeled Mock provider (fully resolved in 1.9.8)
 - **`|>` pipe operator** — `data |> parse() |> filter() |> sort() |> take(10)`,
   pairs naturally with `think` chains as intended
 
@@ -23,7 +86,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This phase shipped (1,226 tests passing, up from 1,203) without a version
 bump at the time — `nekova/config.py`, `pyproject.toml`, and the VS Code
 extension's `package.json` all stayed at `1.9.5` despite new keywords
-landing. This entry and the version bump to `1.9.7` are a retroactive
+landing. This entry and the version bump to `1.9.6` are a retroactive
 correction, and this exact gap — no consistent rule for when a version
 number changes — is what Phase 23 formally fixes with a documented semver
 policy (see `ROADMAP.md`).
