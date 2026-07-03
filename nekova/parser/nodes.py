@@ -259,13 +259,18 @@ class ThinkStatement(Node):
     
     Standalone:  think "What should I build?"
     Captured:    thought = think "Analyze this market"
+    Inline error handling:
+        think "..." when error: "fallback value"
     
     'variable' is None for standalone usage.
     'prompt' is any expression (string literal, variable, f-string, etc.)
+    'on_error' is an optional expression evaluated (and returned/assigned
+    instead of a "[think error: ...]" string) if the AI call fails.
     """
     prompt: any
     variable: str = None
     line: int = 0
+    on_error: any = None
 
 @dataclass
 class PipelineStatement(Node):
@@ -448,10 +453,11 @@ class TaskStatement(Node):
         task sum(*args):
             ...
     """
-    def __init__(self, name: str, params: list, body: list):
-        self.name   = name
-        self.params = params  # list of (name, default, is_vararg)
-        self.body   = body
+    def __init__(self, name: str, params: list, body: list, docstring: str = None):
+        self.name      = name
+        self.params    = params  # list of (name, default, is_vararg)
+        self.body      = body
+        self.docstring = docstring  # leading triple-quoted string, or None
 
     def __repr__(self):
         return f"Task({self.name}, params={self.params})"
@@ -521,6 +527,38 @@ class UnpackStatement(Node):
 
     def __repr__(self):
         return f"Unpack({self.names} = {self.value})"
+
+
+class ListDestructureStatement(Node):
+    """
+    Destructures a list into named variables, with an optional rest
+    capture for everything after the named targets.
+    Example:
+        let [first, second] = my_list
+        let [first, ...rest] = my_list
+    """
+    def __init__(self, targets: list, rest, value: "Node"):
+        self.targets = targets  # list of leading variable name strings
+        self.rest    = rest     # variable name for the remainder, or None
+        self.value   = value    # the right-hand side expression
+
+    def __repr__(self):
+        tail = f", ...{self.rest}" if self.rest else ""
+        return f"ListDestructure([{', '.join(self.targets)}{tail}] = {self.value})"
+
+
+class DictDestructureStatement(Node):
+    """
+    Destructures a dict into variables named after its keys.
+    Example:
+        let {name, age} = user
+    """
+    def __init__(self, keys: list, value: "Node"):
+        self.keys  = keys   # list of key names — also used as variable names
+        self.value = value  # the right-hand side expression
+
+    def __repr__(self):
+        return f"DictDestructure({{{', '.join(self.keys)}}} = {self.value})"
 
 
 class UseStatement(Node):
@@ -804,19 +842,24 @@ class ThinkAsStatement(Node):
         think "prompt" as list
         think "prompt" as bool
         think "prompt" as schema {"name": "text", "age": "number"}
+        think "prompt" as json when error: {"status": "unavailable"}
 
     prompt:     expression (string/f-string/variable)
     as_format:  "json" | "list" | "bool" | "schema" | "text"
     schema:     dict expression (only when as_format == "schema")
     variable:   optional assignment target
+    on_error:   optional expression evaluated instead of a
+                "[think error: ...]" string if the AI call fails
     """
     def __init__(self, prompt, as_format: str,
-                 schema=None, variable: str = None, line: int = 0):
+                 schema=None, variable: str = None, line: int = 0,
+                 on_error=None):
         self.prompt     = prompt
         self.as_format  = as_format
         self.schema     = schema
         self.variable   = variable
         self.line       = line
+        self.on_error   = on_error
 
     def __repr__(self):
         return f"ThinkAs({self.as_format})"
@@ -1147,12 +1190,13 @@ class TypedTaskStatement(Node):
     return_type: str or None
     """
     def __init__(self, name: str, params: list, body: list,
-                 return_type: str = None, line: int = 0):
+                 return_type: str = None, line: int = 0, docstring: str = None):
         self.name        = name
         self.params      = params
         self.body         = body
         self.return_type = return_type
         self.line        = line
+        self.docstring   = docstring  # leading triple-quoted string, or None
     def __repr__(self): return f"TypedTask({self.name})"
 
 
