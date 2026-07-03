@@ -8,6 +8,7 @@ from nekova.parser.nodes import (
     SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UnpackStatement, UseStatement,
+    ListDestructureStatement, DictDestructureStatement,
     ImportStatement, CallExpression, IndexExpression, IndexAssignStatement,
     MethodCall,
     PropertyAccess,
@@ -612,6 +613,32 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         self._expect_newline_or_eof()
         return self._stamp(ShowStatement(expr, extras), line)
 
+    def _parse_think_on_error(self):
+        """
+        Parse an optional inline error-handling clause on a think
+        statement:
+            think "..." when error: <fallback-expr>
+            think "..." as json when error: <fallback-expr>
+
+        'error' is a soft keyword here (just an identifier) so it
+        doesn't need to be reserved. Returns the fallback expression
+        Node, or None if the clause isn't present. Does not consume
+        the trailing newline — callers handle that themselves.
+        """
+        if self._current().type != TokenType.WHEN:
+            return None
+        self._advance()  # consume 'when'
+        err_tok = self._current()
+        if err_tok.value != "error":
+            raise ParseError(
+                f"Expected 'error' after 'when' in a think clause, "
+                f"got '{err_tok.value}'.\n"
+                f"  Example:  think \"...\" when error: \"fallback\""
+            )
+        self._advance()  # consume 'error' (lexes as ERROR_TYPE keyword)
+        self._consume(TokenType.COLON)
+        return self._parse_expression()
+
     def _parse_think(self):
         """
         Parse:
@@ -621,6 +648,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             think <prompt> as bool
             think <prompt> as text
             think <prompt> as schema {"key": "type", ...}
+            think <prompt> [as <format>] when error: <fallback>
         """
         line = self._current().line
         self._consume(TokenType.THINK)
@@ -637,29 +665,38 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                 self._advance()
 
                 if fmt in ("json", "list", "bool", "text", "number"):
+                    on_error = self._parse_think_on_error()
                     self._expect_newline_or_eof()
-                    return ThinkAsStatement(prompt, fmt, line=line)
+                    return ThinkAsStatement(prompt, fmt, line=line,
+                                            on_error=on_error)
 
                 # as schema {...}
                 if fmt == "schema":
                     schema = self._parse_expression()
+                    on_error = self._parse_think_on_error()
                     self._expect_newline_or_eof()
                     return ThinkAsStatement(prompt, "schema",
-                                           schema=schema, line=line)
+                                           schema=schema, line=line,
+                                           on_error=on_error)
 
                 # Unknown format — fall back
+                on_error = self._parse_think_on_error()
                 self._expect_newline_or_eof()
-                return ThinkAsStatement(prompt, fmt, line=line)
+                return ThinkAsStatement(prompt, fmt, line=line,
+                                        on_error=on_error)
 
             # as {...}  — treat as inline schema shorthand
             elif fmt_tok.type == TokenType.LBRACE:
                 schema = self._parse_expression()
+                on_error = self._parse_think_on_error()
                 self._expect_newline_or_eof()
                 return ThinkAsStatement(prompt, "schema",
-                                        schema=schema, line=line)
+                                        schema=schema, line=line,
+                                        on_error=on_error)
 
+        on_error = self._parse_think_on_error()
         self._expect_newline_or_eof()
-        return ThinkStatement(prompt, line=line)
+        return ThinkStatement(prompt, line=line, on_error=on_error)
 
     def _parse_remember(self):
         """
@@ -704,6 +741,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         Parse think used as an expression (inside return, let, show, etc.)
             return think "prompt" as json
             let x = think f"..." as list
+            let x = think "..." when error: "fallback"
         Delegates to _parse_think() which handles plain and 'as' variants.
         Does NOT call _expect_newline_or_eof — the caller handles line endings.
         """
@@ -721,16 +759,23 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
                 if fmt == "schema":
                     schema = self._parse_expression()
+                    on_error = self._parse_think_on_error()
                     return ThinkAsStatement(prompt, "schema",
-                                            schema=schema, line=line)
-                return ThinkAsStatement(prompt, fmt, line=line)
+                                            schema=schema, line=line,
+                                            on_error=on_error)
+                on_error = self._parse_think_on_error()
+                return ThinkAsStatement(prompt, fmt, line=line,
+                                        on_error=on_error)
 
             elif fmt_tok.type == TokenType.LBRACE:
                 schema = self._parse_expression()
+                on_error = self._parse_think_on_error()
                 return ThinkAsStatement(prompt, "schema",
-                                        schema=schema, line=line)
+                                        schema=schema, line=line,
+                                        on_error=on_error)
 
-        return ThinkStatement(prompt, line=line)
+        on_error = self._parse_think_on_error()
+        return ThinkStatement(prompt, line=line, on_error=on_error)
 
     def _parse_recall_expr(self):
         """
@@ -1183,13 +1228,14 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         self._consume(TokenType.COLON)
         self._expect_newline_or_eof()
         self._skip_newlines()
-        body = self._parse_block()
+        docstring, body = self._parse_block_with_docstring()
 
         if return_type or any(p[1] for p in params):
-            return self._stamp(TypedTaskStatement(name, params, body, return_type, line=line), line)
+            return self._stamp(TypedTaskStatement(name, params, body, return_type,
+                                                   line=line, docstring=docstring), line)
         # Back-compat: strip type hints to old (name, default, is_vararg) tuple
         simple = [(p[0], p[2], p[3]) for p in params]
-        return self._stamp(TaskStatement(name, simple, body), line)
+        return self._stamp(TaskStatement(name, simple, body, docstring=docstring), line)
 
     def _looks_like_prompt_def(self) -> bool:
         """
@@ -1470,6 +1516,15 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         """
         line  = self._current().line
         self._consume(TokenType.LET)
+
+        # Destructuring:  let [first, ...rest] = my_list
+        if self._current().type == TokenType.LBRACKET:
+            return self._parse_list_destructure(line)
+
+        # Destructuring:  let {name, age} = my_dict
+        if self._current().type == TokenType.LBRACE:
+            return self._parse_dict_destructure(line)
+
         name  = self._consume(TokenType.IDENTIFIER).value
 
         # Optional type hint:  name: type
@@ -1522,6 +1577,58 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
         self._expect_newline_or_eof()
         return self._stamp(AssignStatement(name, value, type_hint=type_hint), line)
+
+    def _parse_list_destructure(self, line):
+        """
+        Parse:  let [first, second] = my_list
+                let [first, ...rest] = my_list
+
+        '...rest' — if present — must be the last element and captures
+        every remaining item as a list. Without it, the source list may
+        have extra trailing items (they're simply ignored), but must
+        have at least as many items as there are named targets.
+        """
+        self._consume(TokenType.LBRACKET)
+        targets = []
+        rest = None
+        if self._current().type != TokenType.RBRACKET:
+            while True:
+                if self._current().type == TokenType.ELLIPSIS:
+                    self._consume(TokenType.ELLIPSIS)
+                    rest = self._consume(TokenType.IDENTIFIER).value
+                    break  # rest must be the last pattern element
+                targets.append(self._consume(TokenType.IDENTIFIER).value)
+                if self._current().type == TokenType.COMMA:
+                    self._advance()
+                    continue
+                break
+        self._consume(TokenType.RBRACKET)
+        self._consume(TokenType.ASSIGN)
+        value = self._parse_expression()
+        self._expect_newline_or_eof()
+        return self._stamp(
+            ListDestructureStatement(targets, rest, value), line
+        )
+
+    def _parse_dict_destructure(self, line):
+        """
+        Parse:  let {name, age} = my_dict
+
+        Each name inside {} is both the dict key to read and the
+        variable name it's bound to.
+        """
+        self._consume(TokenType.LBRACE)
+        keys = []
+        if self._current().type != TokenType.RBRACE:
+            keys.append(self._consume(TokenType.IDENTIFIER).value)
+            while self._current().type == TokenType.COMMA:
+                self._advance()
+                keys.append(self._consume(TokenType.IDENTIFIER).value)
+        self._consume(TokenType.RBRACE)
+        self._consume(TokenType.ASSIGN)
+        value = self._parse_expression()
+        self._expect_newline_or_eof()
+        return self._stamp(DictDestructureStatement(keys, value), line)
 
     def _parse_identifier_statement(self):
         """
@@ -1680,6 +1787,51 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
     # ----------------------------------------------------------
     # Block parser
     # ----------------------------------------------------------
+
+    def _parse_block_with_docstring(self):
+        """
+        Like _parse_block, but if the block opens with a bare string
+        literal (STRING or F_STRING) on its own line, that string is
+        treated as a docstring rather than causing a parse error.
+
+        Bare string statements aren't valid anywhere else in NEKOVA
+        (you'd normally use 'show "..."'), so this is unambiguous —
+        a leading bare string can only be documentation.
+
+        Returns (docstring_text_or_None, body_statements).
+        """
+        docstring = None
+        statements = []
+
+        self._skip_newlines()          # consume NEWLINE after ':'
+
+        if self._current().type != TokenType.INDENT:
+            raise ParseError(
+                "Expected an indented block here. "
+                "Did you forget to indent?",
+                self._current().line
+            )
+
+        self._consume(TokenType.INDENT)
+        self._skip_newlines()
+
+        if self._current().type in (TokenType.STRING, TokenType.F_STRING):
+            docstring = self._current().value
+            self._advance()
+            self._expect_newline_or_eof()
+            self._skip_newlines()
+
+        while (not self._at_end() and
+               self._current().type != TokenType.DEDENT):
+            stmt = self._parse_statement()
+            if stmt is not None:
+                statements.append(stmt)
+            self._skip_newlines()
+
+        if self._current().type == TokenType.DEDENT:
+            self._consume(TokenType.DEDENT)
+
+        return docstring, statements
 
     def _parse_block(self) -> list:
         """
@@ -1956,6 +2108,13 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         # think as expression: let x = think "prompt" as json
         if token.type == TokenType.THINK:
             return self._parse_think_expr()
+
+        # await as a general expression: show await greet(name),
+        # return await greet(name), x + await greet(name), etc. —
+        # not just the two narrow positions (standalone statement,
+        # 'let x = await ...') it was previously restricted to.
+        if token.type == TokenType.AWAIT:
+            return self.parse_await_expr()
 
         if token.type == TokenType.NEW:
             return self.parse_new_instance()
