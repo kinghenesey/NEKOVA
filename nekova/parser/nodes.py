@@ -1224,3 +1224,53 @@ class RetryStatement(Node):
 
     def __repr__(self):
         return f"Retry({self.times}, backoff={self.backoff})"
+
+
+# ── Phase 22: Observability + Testing + Pipe Operator ──────────
+
+class ObserveStatement(Node):
+    """
+    Traces a block's execution — prints a structured start/end log
+    with an optional tag dict and a measured duration:
+
+        observe "pipeline run" with tags {user: user_id}:
+            let summary = think summarize(document)
+
+        observe "quick check":
+            validate(input)
+
+    label: expression evaluating to the trace label (usually a string)
+    tags: expression evaluating to a dict, or None if no `with tags` clause
+    body: the traced block
+    """
+    def __init__(self, label, tags, body: list, line: int = 0):
+        self.label = label
+        self.tags  = tags
+        self.body  = body
+        self.line  = line
+
+    def __repr__(self):
+        return f"Observe({self.label!r})"
+
+
+class MockStatement(Node):
+    """
+    Stubs out `think`/`think ... as ...` for the rest of the
+    enclosing test block, so tests don't make real AI calls:
+
+        test "classifier":
+            mock think as "sports"
+            expect classify(text) == "sports"
+
+    target: the thing being mocked (currently only "think" is
+      supported, but the grammar is generic for future targets)
+    value: expression evaluating to the value `think` should
+      return while the mock is active
+    """
+    def __init__(self, target: str, value, line: int = 0):
+        self.target = target
+        self.value  = value
+        self.line   = line
+
+    def __repr__(self):
+        return f"Mock({self.target} as {self.value})"
