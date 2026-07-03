@@ -75,7 +75,8 @@ KEYWORDS = {
     "listen": "LISTEN", "every": "EVERY", "test": "TEST",
     "expect": "EXPECT", "imagine": "IMAGINE", "shape": "SHAPE",
     "watch": "WATCH",
-    "retry": "RETRY", "fallback": "FALLBACK"
+    "retry": "RETRY", "fallback": "FALLBACK",
+    "observe": "OBSERVE", "mock": "MOCK"
 }
 
 # ── Lexer state ───────────────────────────────────────────────
@@ -469,6 +470,11 @@ task read_symbol(state):
         return
     if two == "->":
         add_token(state, "ARROW", "->")
+        advance(state)
+        advance(state)
+        return
+    if two == "|>":
+        add_token(state, "PIPE", "|>")
         advance(state)
         advance(state)
         return
