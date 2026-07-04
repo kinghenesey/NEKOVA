@@ -8,7 +8,8 @@ from nekova.parser.nodes import (
     SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UnpackStatement, UseStatement,
-    ListDestructureStatement, DictDestructureStatement,
+    ListDestructureStatement, DictDestructureStatement, SpreadElement,
+    EnumDefinition, SetLiteral,
     ImportStatement, CallExpression, IndexExpression, IndexAssignStatement,
     MethodCall,
     PropertyAccess,
@@ -218,6 +219,12 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
         if token.type == TokenType.LET:
             return self._parse_let()
+
+        if token.type == TokenType.CONST:
+            return self._parse_const()
+
+        if token.type == TokenType.ENUM:
+            return self._parse_enum()
 
         if token.type == TokenType.YIELD:
             return self._parse_yield()
@@ -1506,6 +1513,55 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         self._expect_newline_or_eof()
         return ImportStatement(filepath, names=names)
 
+    def _parse_enum(self):
+        """
+        Parse:  enum Status: PENDING, ACTIVE, DONE
+
+        Single-line member list, comma-separated. Each member becomes
+        an attribute on the enum evaluating to its own name as a
+        string (Status.ACTIVE == "ACTIVE").
+        """
+        line = self._current().line
+        self._consume(TokenType.ENUM)
+        name = self._consume(TokenType.IDENTIFIER).value
+        self._consume(TokenType.COLON)
+
+        members = [self._consume(TokenType.IDENTIFIER).value]
+        while self._current().type == TokenType.COMMA:
+            self._advance()
+            members.append(self._consume(TokenType.IDENTIFIER).value)
+
+        self._expect_newline_or_eof()
+        return self._stamp(EnumDefinition(name, members, line=line), line)
+
+    def _parse_const(self):
+        """
+        Parse:  const NAME = value
+                const NAME: type = value
+
+        Deliberately simpler than 'let' — no destructuring, no captured
+        think/pipeline/autonomous forms. A const is meant to be a single
+        immutable named value; reassigning it later is a runtime error
+        (see Interpreter._exec_AssignStatement).
+        """
+        line = self._current().line
+        self._consume(TokenType.CONST)
+        name = self._consume(TokenType.IDENTIFIER).value
+
+        type_hint = None
+        if self._current().type == TokenType.COLON:
+            self._consume(TokenType.COLON)
+            if self._current().type == TokenType.IDENTIFIER:
+                type_hint = self._consume(TokenType.IDENTIFIER).value
+
+        self._consume(TokenType.ASSIGN)
+        value = self._parse_expression()
+        self._expect_newline_or_eof()
+        return self._stamp(
+            AssignStatement(name, value, type_hint=type_hint, is_const=True),
+            line
+        )
+
     def _parse_let(self):
         """
         Parse:  let name: type = value
@@ -1520,6 +1576,14 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         # Destructuring:  let [first, ...rest] = my_list
         if self._current().type == TokenType.LBRACKET:
             return self._parse_list_destructure(line)
+
+        # Destructuring (tuple-style):  let (first, second) = my_pair
+        # Same semantics as bracket destructuring — 'let (' can only
+        # mean this, since a plain declaration never starts with '('.
+        if self._current().type == TokenType.LPAREN:
+            return self._parse_list_destructure(
+                line, open_tok=TokenType.LPAREN, close_tok=TokenType.RPAREN
+            )
 
         # Destructuring:  let {name, age} = my_dict
         if self._current().type == TokenType.LBRACE:
@@ -1578,20 +1642,29 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         self._expect_newline_or_eof()
         return self._stamp(AssignStatement(name, value, type_hint=type_hint), line)
 
-    def _parse_list_destructure(self, line):
+    def _parse_list_destructure(self, line, open_tok=None, close_tok=None):
         """
         Parse:  let [first, second] = my_list
                 let [first, ...rest] = my_list
+                let (first, second) = my_pair       (tuple-style, same semantics)
+                let (first, ...rest) = my_list
 
         '...rest' — if present — must be the last element and captures
         every remaining item as a list. Without it, the source list may
         have extra trailing items (they're simply ignored), but must
         have at least as many items as there are named targets.
+
+        open_tok/close_tok let this same parser handle both the
+        bracket form ([...]) and the parenthesized tuple form ((...)) —
+        they're semantically identical, just different punctuation.
         """
-        self._consume(TokenType.LBRACKET)
+        open_tok  = open_tok  or TokenType.LBRACKET
+        close_tok = close_tok or TokenType.RBRACKET
+
+        self._consume(open_tok)
         targets = []
         rest = None
-        if self._current().type != TokenType.RBRACKET:
+        if self._current().type != close_tok:
             while True:
                 if self._current().type == TokenType.ELLIPSIS:
                     self._consume(TokenType.ELLIPSIS)
@@ -1602,7 +1675,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                     self._advance()
                     continue
                 break
-        self._consume(TokenType.RBRACKET)
+        self._consume(close_tok)
         self._consume(TokenType.ASSIGN)
         value = self._parse_expression()
         self._expect_newline_or_eof()
@@ -2084,13 +2157,56 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                         # Property access: obj.prop (no parentheses)
                         expr = PropertyAccess(expr, prop)
 
+                # Optional chaining: obj?.prop or obj?.method(args) —
+                # short-circuits to null if obj is null, instead of
+                # raising an error.
+                elif (self._current().type == TokenType.QUESTION_DOT):
+                    self._advance()  # consume ?.
+                    prop = self._advance().value
+                    if self._current().type == TokenType.LPAREN:
+                        self._consume(TokenType.LPAREN)
+                        call_args = []
+                        while self._current().type != TokenType.RPAREN:
+                            call_args.append(self._parse_expression())
+                            if self._current().type == TokenType.COMMA:
+                                self._advance()
+                        self._consume(TokenType.RPAREN)
+                        expr = MethodCall(expr, prop, call_args, optional=True)
+                    else:
+                        expr = PropertyAccess(expr, prop, optional=True)
+
                 else:
                     break
 
             return expr
         
         if token.type == TokenType.LBRACE:
-            return self._parse_dict()
+            # Disambiguate {} / {k: v} (dict) from {a, b, c} (set):
+            # a dict entry is always 'identifier-or-string COLON'; a
+            # set element never has that shape. Empty {} stays a dict,
+            # matching the existing convention. Skips whitespace-only
+            # tokens (NEWLINE/INDENT/DEDENT) so multi-line literals are
+            # disambiguated correctly too.
+            def _first_real_tokens(count):
+                skip = (TokenType.NEWLINE, TokenType.INDENT, TokenType.DEDENT)
+                found = []
+                i = self.pos + 1
+                while i < len(self.tokens) and len(found) < count:
+                    if self.tokens[i].type not in skip:
+                        found.append(self.tokens[i])
+                    i += 1
+                return found
+
+            lookahead = _first_real_tokens(2)
+            first  = lookahead[0] if len(lookahead) > 0 else None
+            second = lookahead[1] if len(lookahead) > 1 else None
+
+            if first is None or first.type in (TokenType.RBRACE, TokenType.ELLIPSIS):
+                return self._parse_dict()  # {} or {...spread} — dict
+            if (first.type in (TokenType.IDENTIFIER, TokenType.STRING)
+                    and second is not None and second.type == TokenType.COLON):
+                return self._parse_dict()  # {key: value, ...} — dict
+            return self._parse_set()       # {1, 2, 3} / {a, b} — set
         
         if token.type == TokenType.LBRACKET:
             return self._parse_list()
@@ -2226,7 +2342,11 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             return IndexExpression(obj, start)
 
     def _parse_list(self):
-        """Parse: [1, 2, 3]"""
+        """
+        Parse: [1, 2, 3]
+               [...list_a, ...list_b]        -- spread
+               [...list_a, extra, ...list_b] -- mixed
+        """
         self._consume(TokenType.LBRACKET)
         elements = []
 
@@ -2237,15 +2357,45 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                     "did you forget a ']'?",
                     self._current().line
                 )
-            elements.append(self._parse_expression())
+            if self._current().type == TokenType.ELLIPSIS:
+                self._consume(TokenType.ELLIPSIS)
+                elements.append(SpreadElement(self._parse_expression()))
+            else:
+                elements.append(self._parse_expression())
             if self._current().type == TokenType.COMMA:
                 self._advance()
 
         self._consume(TokenType.RBRACKET)
         return ListLiteral(elements)
     
+    def _parse_set(self):
+        """
+        Parse: {1, 2, 3}   -- a set literal
+        Disambiguated from a dict at the LBRACE dispatch point in
+        _parse_primary (a dict entry always has 'key: value' shape).
+        """
+        self._consume(TokenType.LBRACE)
+        elements = []
+        self._skip_newlines()
+
+        while self._current().type != TokenType.RBRACE:
+            if self._at_end():
+                raise ParseError(
+                    "Set was never closed — did you forget a '}'?",
+                    self._current().line
+                )
+            elements.append(self._parse_expression())
+            if self._current().type == TokenType.COMMA:
+                self._advance()
+            self._skip_newlines()
+
+        self._consume(TokenType.RBRACE)
+        return SetLiteral(elements)
+
     def _parse_dict(self):
-        """Parse: {name: "Emmanuel", age: 20}"""
+        """Parse: {name: "Emmanuel", age: 20}
+                  {...defaults, ...overrides}   -- spread
+        """
         self._consume(TokenType.LBRACE)
         pairs = []
 
@@ -2258,6 +2408,15 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                     "Dictionary was never closed.",
                     self._current().line
                 )
+
+            # Spread:  ...other_dict
+            if self._current().type == TokenType.ELLIPSIS:
+                self._consume(TokenType.ELLIPSIS)
+                pairs.append((SpreadElement(self._parse_expression()), None))
+                if self._current().type == TokenType.COMMA:
+                    self._advance()
+                self._skip_newlines()
+                continue
 
             # Parse key as string
             if self._current().type == TokenType.IDENTIFIER:
@@ -2295,15 +2454,30 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         return DictLiteral(pairs)
 
     def _finish_call(self, name: str) -> CallExpression:
-        """Parse the argument list of a function call."""
+        """
+        Parse the argument list of a function call.
+            greet("Sam")
+            greet(name="Sam", greeting="Hi")     -- keyword arguments
+            greet("Sam", greeting="Hi")          -- mixed (positional first)
+        A bare 'identifier = expr' inside the parens is a keyword
+        argument, not a positional one — this is unambiguous here since
+        a positional argument is never itself an assignment expression.
+        """
         self._consume(TokenType.LPAREN)
         args = []
+        kwargs = {}
         while self._current().type != TokenType.RPAREN:
-            args.append(self._parse_expression())
+            if (self._current().type == TokenType.IDENTIFIER
+                    and self._peek_is(TokenType.ASSIGN)):
+                kw_name = self._consume(TokenType.IDENTIFIER).value
+                self._consume(TokenType.ASSIGN)
+                kwargs[kw_name] = self._parse_expression()
+            else:
+                args.append(self._parse_expression())
             if self._current().type == TokenType.COMMA:
                 self._advance()
         self._consume(TokenType.RPAREN)
-        return CallExpression(name, args)
+        return CallExpression(name, args, kwargs)
 
     # ----------------------------------------------------------
     # Utility methods
