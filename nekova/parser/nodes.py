@@ -75,6 +75,57 @@ class NullLiteral(Node):
     def __repr__(self):
         return "Null"
 
+class SetLiteral(Node):
+    """
+    A set of unique values.
+    Example:
+        let s = {1, 2, 3}
+    Disambiguated from a dict at parse time (a dict entry always has
+    a 'key: value' shape; a set element never does). Runtime value is
+    a plain Python set built from NEKOVA_SET_UNION/INTERSECTION/
+    DIFFERENCE builtins or the |, &, - operators (see interpreter).
+    """
+    def __init__(self, elements: list):
+        self.elements = elements
+
+    def __repr__(self):
+        return f"Set({self.elements})"
+
+
+class EnumDefinition(Node):
+    """
+    A first-class enum type.
+    Example:
+        enum Status: PENDING, ACTIVE, DONE
+        show Status.ACTIVE     # "ACTIVE"
+    Members are accessed via PropertyAccess (Status.ACTIVE), each
+    evaluating to its own member name as a string — simple and
+    readable, matching how NEKOVA shows values elsewhere.
+    """
+    def __init__(self, name: str, members: list, line: int = 0):
+        self.name    = name
+        self.members = members  # list of member name strings
+        self.line    = line
+
+    def __repr__(self):
+        return f"Enum({self.name}, members={self.members})"
+
+
+class SpreadElement(Node):
+    """
+    A '...expr' item inside a list or dict literal — expanded in place
+    when the literal is built.
+    Example:
+        let combined = [...list_a, ...list_b]
+        let merged   = {...defaults, ...overrides}
+    """
+    def __init__(self, expr: "Node"):
+        self.expr = expr
+
+    def __repr__(self):
+        return f"Spread(...{self.expr})"
+
+
 class ListLiteral(Node):
     """
     A list of values.
@@ -129,10 +180,11 @@ class MethodCall(Node):
         text.replace("a", "b")
     """
     def __init__(self, object: Node,
-                 method: str, args: list):
+                 method: str, args: list, optional: bool = False):
         self.object = object
         self.method = method
         self.args   = args
+        self.optional = optional  # True if called via ?. — short-circuits to null
 
     def __repr__(self):
         return f"MethodCall({self.object}.{self.method})"
@@ -145,9 +197,10 @@ class PropertyAccess(Node):
         args.port
         response.status
     """
-    def __init__(self, object: Node, property: str):
+    def __init__(self, object: Node, property: str, optional: bool = False):
         self.object   = object
         self.property = property
+        self.optional = optional  # True if accessed via ?. — short-circuits to null
 
     def __repr__(self):
         return f"PropertyAccess({self.object}.{self.property})"
@@ -227,15 +280,18 @@ class AssignStatement(Node):
         age: number = 25
         items: list = [1, 2, 3]
     """
-    def __init__(self, name: str, value: Node, type_hint: str = None):
+    def __init__(self, name: str, value: Node, type_hint: str = None,
+                 is_const: bool = False):
         self.name      = name
         self.value     = value
         self.type_hint = type_hint  # e.g. "text", "number", "boolean", "list", "dict"
+        self.is_const  = is_const
 
     def __repr__(self):
+        prefix = "const " if self.is_const else ""
         if self.type_hint:
-            return f"Assign({self.name}: {self.type_hint} = {self.value})"
-        return f"Assign({self.name} = {self.value})"
+            return f"Assign({prefix}{self.name}: {self.type_hint} = {self.value})"
+        return f"Assign({prefix}{self.name} = {self.value})"
 
 
 class ShowStatement(Node):
@@ -663,13 +719,16 @@ class CallExpression(Node):
     Calls a task with arguments.
     Example:
         greet("Emmanuel")
+        greet(name="Sam", greeting="Hi")   -- keyword arguments
+    kwargs: dict of {param_name: expr_node}, empty if none given.
     """
-    def __init__(self, name: str, args: list):
+    def __init__(self, name: str, args: list, kwargs: dict = None):
         self.name = name
         self.args = args
+        self.kwargs = kwargs or {}
 
     def __repr__(self):
-        return f"Call({self.name}, args={self.args})"
+        return f"Call({self.name}, args={self.args}, kwargs={self.kwargs})"
 
 
 # ── Classes / Objects (Phase 6) ──────────────────────────────────────
