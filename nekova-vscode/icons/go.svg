@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <rect x="2" y="1" width="10" height="13" rx="1.5" fill="#1a1a2e"/>
+  <path d="M9 1 L12 4 L9 4 Z" fill="#00acd7" opacity="0.8"/>
+  <text x="3" y="11" font-family="monospace" font-size="4.5" font-weight="bold" fill="#00acd7">.go</text>
+</svg>

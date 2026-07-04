@@ -1,14 +1,114 @@
 {
   "iconDefinitions": {
-    "_nk_file": {
-      "iconPath": "./icons/nk-file.svg"
-    }
+    "_nk_file":    { "iconPath": "./icons/nk-file.svg" },
+    "_file":       { "iconPath": "./icons/file.svg" },
+    "_folder":     { "iconPath": "./icons/folder.svg" },
+    "_folder_open":{ "iconPath": "./icons/folder-open.svg" },
+    "_python":     { "iconPath": "./icons/python.svg" },
+    "_javascript": { "iconPath": "./icons/javascript.svg" },
+    "_typescript": { "iconPath": "./icons/typescript.svg" },
+    "_html":       { "iconPath": "./icons/html.svg" },
+    "_css":        { "iconPath": "./icons/css.svg" },
+    "_json":       { "iconPath": "./icons/json.svg" },
+    "_markdown":   { "iconPath": "./icons/markdown.svg" },
+    "_toml":       { "iconPath": "./icons/toml.svg" },
+    "_yaml":       { "iconPath": "./icons/yaml.svg" },
+    "_git":        { "iconPath": "./icons/git.svg" },
+    "_rust":       { "iconPath": "./icons/rust.svg" },
+    "_go":         { "iconPath": "./icons/go.svg" },
+    "_image":      { "iconPath": "./icons/image.svg" }
   },
+
+  "file":       "_file",
+  "folder":     "_folder",
+  "folderExpanded": "_folder_open",
+
   "fileExtensions": {
-    "nk": "_nk_file"
+    "nk":         "_nk_file",
+    "py":         "_python",
+    "pyw":        "_python",
+    "pyi":        "_python",
+    "js":         "_javascript",
+    "mjs":        "_javascript",
+    "cjs":        "_javascript",
+    "jsx":        "_javascript",
+    "ts":         "_typescript",
+    "tsx":        "_typescript",
+    "mts":        "_typescript",
+    "cts":        "_typescript",
+    "html":       "_html",
+    "htm":        "_html",
+    "xhtml":      "_html",
+    "css":        "_css",
+    "scss":       "_css",
+    "sass":       "_css",
+    "less":       "_css",
+    "json":       "_json",
+    "jsonc":      "_json",
+    "json5":      "_json",
+    "md":         "_markdown",
+    "mdx":        "_markdown",
+    "markdown":   "_markdown",
+    "toml":       "_toml",
+    "yaml":       "_yaml",
+    "yml":        "_yaml",
+    "rs":         "_rust",
+    "go":         "_go",
+    "png":        "_image",
+    "jpg":        "_image",
+    "jpeg":       "_image",
+    "gif":        "_image",
+    "svg":        "_image",
+    "webp":       "_image",
+    "ico":        "_image"
   },
+
   "fileNames": {
-    "nekova.toml": "_nk_file",
-    "main.nk": "_nk_file"
+    "nekova.toml":       "_nk_file",
+    "main.nk":           "_nk_file",
+    ".gitignore":        "_git",
+    ".gitattributes":    "_git",
+    ".gitmodules":       "_git",
+    "package.json":      "_json",
+    "package-lock.json": "_json",
+    "tsconfig.json":     "_json",
+    "jsconfig.json":     "_json",
+    ".eslintrc":         "_json",
+    ".prettierrc":       "_json",
+    "Cargo.toml":        "_toml",
+    "pyproject.toml":    "_toml",
+    "poetry.lock":       "_toml",
+    "README.md":         "_markdown",
+    "CHANGELOG.md":      "_markdown",
+    "ROADMAP.md":        "_markdown",
+    "LICENSE":           "_markdown",
+    "Dockerfile":        "_file",
+    "Makefile":          "_file"
+  },
+
+  "folderNames": {
+    "src":          "_folder",
+    "lib":          "_folder",
+    "dist":         "_folder",
+    "build":        "_folder",
+    "tests":        "_folder",
+    "test":         "_folder",
+    "docs":         "_folder",
+    "node_modules": "_folder",
+    ".git":         "_folder",
+    "__pycache__":  "_folder"
+  },
+
+  "folderNamesExpanded": {
+    "src":          "_folder_open",
+    "lib":          "_folder_open",
+    "dist":         "_folder_open",
+    "build":        "_folder_open",
+    "tests":        "_folder_open",
+    "test":         "_folder_open",
+    "docs":         "_folder_open",
+    "node_modules": "_folder_open",
+    ".git":         "_folder_open",
+    "__pycache__":  "_folder_open"
   }
 }
