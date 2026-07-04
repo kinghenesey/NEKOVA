@@ -178,6 +178,27 @@ class Lexer:
                 self.indent_stack.pop()
                 self._add_token(TokenType.DEDENT, "DEDENT")
 
+            # Phase 23b: bad-indentation-depth detection. A dedent
+            # should always land exactly back on a previously-seen
+            # indent level (e.g. stack [0, 4, 8] dedenting to 4 is
+            # fine). Landing between levels (e.g. dedenting to 3)
+            # means the source mixes tabs/spaces inconsistently or
+            # miscounts spaces — tell the user the valid depths and
+            # the depth actually found, instead of silently accepting
+            # whichever level happens to be closest.
+            if self.indent_stack[-1] != indent:
+                valid = ", ".join(str(lvl) for lvl in self.indent_stack)
+                raise LexerError(
+                    f"Inconsistent indentation — this line is indented "
+                    f"{indent} spaces, but that doesn't match any "
+                    f"enclosing block.\n"
+                    f"  Valid indent levels here: {valid}\n"
+                    f"  Found: {indent}\n"
+                    f"  Tip: mixing tabs and spaces is a common cause "
+                    f"— use spaces consistently.",
+                    self.line, self.column
+                )
+
         # Equal indent → no token needed, same block continues
 
     def _skip_comment(self):
@@ -541,6 +562,13 @@ class Lexer:
             self._add_token(TokenType.DOTDOT, "..")
             self._advance()   # consume first  '.'
             self._advance()   # consume second '.'
+            return
+
+        # ── Optional chaining: ?. (e.g. user?.email) ────────────────
+        if char == "?" and not self._at_end() and self._peek() == ".":
+            self._add_token(TokenType.QUESTION_DOT, "?.")
+            self._advance()   # consume '?'
+            self._advance()   # consume '.'
             return
 
         if char in single:
