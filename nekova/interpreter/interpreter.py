@@ -6,7 +6,8 @@ from nekova.parser.nodes import (
     MemoryStatement, SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UnpackStatement, UseStatement,
-    ListDestructureStatement, DictDestructureStatement,
+    ListDestructureStatement, DictDestructureStatement, SpreadElement,
+    EnumDefinition, SetLiteral,
     ImportStatement, CallExpression, IndexExpression, IndexAssignStatement,
     MethodCall,
     PropertyAccess,
@@ -44,6 +45,23 @@ from nekova.interpreter.class_interpreter import ClassInterpreterMixin
 # Phase 22: sentinel meaning "no mock active" — distinct from None,
 # since `mock think as null` should be a legitimate mocked value.
 _NO_MOCK = object()
+
+
+class NEKOVAEnum:
+    """
+    Runtime value for a Phase 24 'enum' definition.
+    Each member is a plain attribute evaluating to its own name as a
+    string, so PropertyAccess's existing hasattr/getattr fallback
+    handles 'Status.ACTIVE' with no changes needed there.
+    """
+    def __init__(self, name: str, members: list):
+        self.__enum_name__ = name
+        self.__members__ = list(members)
+        for m in members:
+            setattr(self, m, m)
+
+    def __repr__(self):
+        return f"<enum {self.__enum_name__}: {', '.join(self.__members__)}>"
 
 
 class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
@@ -200,6 +218,25 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         """
         value = self._execute_node(node.value)
 
+        # Phase 24: const bindings — a const can be declared once; any
+        # further plain assignment to that name in the same scope is a
+        # runtime error. Checked against the scope we're about to write
+        # to (global if declared 'global' in this task, else current).
+        target_env = self.globals if node.name in self._global_names else self.env
+        if not node.is_const and node.name in target_env.consts:
+            raise NEKOVARuntimeError(
+                f"Cannot reassign '{node.name}' — it was declared "
+                f"with 'const' and consts can't be changed after "
+                f"they're set.\n"
+                f"  Use 'let {node.name} = ...' instead if you need "
+                f"it to change."
+            )
+        if node.is_const and node.name in target_env.variables:
+            raise NEKOVARuntimeError(
+                f"'{node.name}' is already defined and can't be "
+                f"redeclared as const in the same scope."
+            )
+
         # Deep copy mutable values to prevent aliasing bugs
         if isinstance(value, (dict, list)):
             import copy
@@ -258,6 +295,8 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             self.globals[node.name] = value
         else:
             self.env[node.name] = value
+        if node.is_const:
+            target_env.consts.add(node.name)
         return value
 
     def _exec_ShowStatement(self, node: ShowStatement):
@@ -1290,6 +1329,83 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 f"  {e}"
             )
 
+    @staticmethod
+    def _param_name_default_pairs(params):
+        """
+        Normalize either param-tuple shape into (name, default, is_vararg):
+          - TaskStatement:                (name, default, is_vararg)
+          - TypedTaskStatement/AsyncFunction: (name, type_hint, default, is_vararg)
+        """
+        if not params:
+            return []
+        if len(params[0]) == 3:
+            return [(n, d, v) for (n, d, v) in params]
+        return [(n, d, v) for (n, _t, d, v) in params]
+
+    def _resolve_kwargs(self, node, callee, args):
+        """
+        Merge node.kwargs into a fully-positional args list matching
+        callee's declared parameters, evaluating defaults for any
+        parameters that get neither a positional nor a keyword value.
+        This runs entirely before dispatching to _call_task /
+        _call_typed_task / AsyncFunction.call, so none of those need
+        their own keyword-argument logic — they just see a complete
+        positional list, exactly like any other call.
+
+        Note: default expressions filled in here evaluate in the
+        *caller's* environment (this hasn't switched into the callee's
+        local scope yet), whereas purely-positional calls evaluate
+        missing defaults inside the callee's own local environment.
+        This only matters if a default expression references another
+        parameter or a task-local name, which is rare — defaults are
+        almost always literals.
+        """
+        raw_params = getattr(callee, "params", None) or []
+        if raw_params and isinstance(raw_params[0], str):
+            raw_params = [(p, None, False) for p in raw_params]
+
+        norm = self._param_name_default_pairs(raw_params)
+        if not norm:
+            raise NEKOVARuntimeError(
+                f"'{node.name}' doesn't accept keyword arguments — "
+                f"it has no parameters."
+            )
+        names = [n for (n, _d, _v) in norm]
+        callee_label = getattr(callee, "name", node.name)
+
+        resolved = list(args)
+
+        for kw_name, kw_expr in node.kwargs.items():
+            if kw_name not in names:
+                raise NEKOVARuntimeError(
+                    f"'{callee_label}' has no parameter named "
+                    f"'{kw_name}'.\n"
+                    f"  Available parameters: {', '.join(names)}"
+                )
+            idx = names.index(kw_name)
+            if idx < len(args):
+                raise NEKOVARuntimeError(
+                    f"'{callee_label}' got multiple values for "
+                    f"parameter '{kw_name}' — it was passed both "
+                    f"positionally and by keyword."
+                )
+            value = self._execute_node(kw_expr)
+            while len(resolved) <= idx:
+                gap_i = len(resolved)
+                gap_name, gap_default, _gap_vararg = norm[gap_i]
+                if gap_i == idx:
+                    resolved.append(value)
+                elif gap_default is not None:
+                    resolved.append(self._execute_node(gap_default))
+                else:
+                    raise NEKOVARuntimeError(
+                        f"'{callee_label}': parameter '{gap_name}' has "
+                        f"no default and no value was given (needed to "
+                        f"fill the gap before keyword argument "
+                        f"'{kw_name}')."
+                    )
+        return resolved
+
     def _exec_CallExpression(self, node: CallExpression):
         """
         Execute:  greet("Emmanuel")
@@ -1306,7 +1422,46 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         # Built-in Python function
         if callable(callee) and not isinstance(callee, (TaskStatement, TypedTaskStatement)):
-            return callee(*args)
+            builtin_name = node.name if isinstance(node.name, str) else "<builtin>"
+            try:
+                return callee(*args)
+            except NEKOVARuntimeError:
+                raise
+            except (ValueError, TypeError, OverflowError, AttributeError,
+                    IndexError, KeyError, ZeroDivisionError) as e:
+                shown_args = ", ".join(self._to_string(a) for a in args)
+
+                if builtin_name in ("int", "float") and len(args) == 1:
+                    raise NEKOVARuntimeError(
+                        f"Cannot convert {self._to_string(args[0])!r} "
+                        f"to {'a number' if builtin_name == 'int' else 'a decimal number'} "
+                        f"with {builtin_name}().\n"
+                        f"  It needs to look like a plain number, "
+                        f"e.g. {builtin_name}(\"42\")."
+                    )
+
+                # Phase 23b exception audit (generic fallback): builtins
+                # like len(), range(), sum(), chr(), etc. are thin
+                # wrappers around Python's own functions, so a bad
+                # argument used to raise Python's raw exception straight
+                # at the user — plus a full Python traceback with file
+                # paths, since these exception types weren't even caught
+                # anywhere. Every builtin call now gets a clean,
+                # NEKOVA-flavoured message instead, regardless of which
+                # Python exception type it happens to raise internally.
+                raise NEKOVARuntimeError(
+                    f"'{builtin_name}({shown_args})' failed: {e}\n"
+                    f"  Check that the argument(s) are the type "
+                    f"'{builtin_name}' expects."
+                )
+
+        # Phase 24: keyword arguments — greet(name="Sam", greeting="Hi").
+        # Resolved into a fully-positional args list up front (filling
+        # any gaps with evaluated defaults) so every call path below
+        # (typed task, prompt, task, async task) is unaffected and
+        # doesn't need its own kwargs-handling logic.
+        if node.kwargs:
+            args = self._resolve_kwargs(node, callee, args)
 
         # NEKOVA typed task (Phase 17)
         if isinstance(callee, TypedTaskStatement):
@@ -1494,14 +1649,72 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     def _exec_NullLiteral(self, node: NullLiteral):
         return None
     
+    def _exec_SetLiteral(self, node: SetLiteral):
+        """
+        Execute a set literal like {1, 2, 3} — duplicates are silently
+        collapsed, matching normal set semantics.
+        """
+        result = set()
+        for e in node.elements:
+            value = self._execute_node(e)
+            try:
+                result.add(value)
+            except TypeError:
+                raise NEKOVARuntimeError(
+                    f"Cannot put '{self._to_string(value)}' in a set — "
+                    f"{type(value).__name__} values can't be checked "
+                    f"for uniqueness (lists and dicts aren't allowed "
+                    f"inside a set)."
+                )
+        return result
+
+    def _exec_EnumDefinition(self, node: EnumDefinition):
+        """Execute:  enum Status: PENDING, ACTIVE, DONE"""
+        enum_obj = NEKOVAEnum(node.name, node.members)
+        self.env.set(node.name, enum_obj)
+        return enum_obj
+
     def _exec_ListLiteral(self, node: ListLiteral):
-        """Execute a list literal like [1, 2, 3]."""
-        return [self._execute_node(e) for e in node.elements]
-    
+        """
+        Execute a list literal like [1, 2, 3], expanding any spread
+        items in place: [...list_a, extra, ...list_b].
+        """
+        result = []
+        for e in node.elements:
+            if isinstance(e, SpreadElement):
+                spread_val = self._execute_node(e.expr)
+                if not isinstance(spread_val, (list, tuple)):
+                    raise NEKOVARuntimeError(
+                        f"Cannot spread '{self._to_string(spread_val)}' "
+                        f"into a list — it's a "
+                        f"{type(spread_val).__name__}, not a list.\n"
+                        f"  Example:  [...list_a, ...list_b]"
+                    )
+                result.extend(spread_val)
+            else:
+                result.append(self._execute_node(e))
+        return result
+
     def _exec_DictLiteral(self, node: DictLiteral):
-        """Execute a dictionary literal."""
+        """
+        Execute a dictionary literal, expanding any spread items in
+        place: {...defaults, ...overrides} — later keys (including
+        those from a later spread) win, matching how a plain repeated
+        key would behave.
+        """
         result = {}
         for key_node, value_node in node.pairs:
+            if isinstance(key_node, SpreadElement):
+                spread_val = self._execute_node(key_node.expr)
+                if not isinstance(spread_val, dict):
+                    raise NEKOVARuntimeError(
+                        f"Cannot spread '{self._to_string(spread_val)}' "
+                        f"into a dict — it's a "
+                        f"{type(spread_val).__name__}, not a dict.\n"
+                        f"  Example:  {{...defaults, ...overrides}}"
+                    )
+                result.update(spread_val)
+                continue
             key   = self._execute_node(key_node)
             value = self._execute_node(value_node)
             result[str(key)] = value
@@ -1578,6 +1791,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         obj  = self._execute_node(node.object)
         prop = node.property
 
+        # Optional chaining: obj?.prop — if obj is null, the whole
+        # chain short-circuits to null instead of raising.
+        if obj is None and getattr(node, "optional", False):
+            return None
+
         # NEKOVA class instances — check first
         from nekova.interpreter.nekova_class import NEKOVAInstance
         if isinstance(obj, NEKOVAInstance):
@@ -1606,6 +1824,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         obj    = self._execute_node(node.object)
         method = node.method
         args   = [self._execute_node(a) for a in node.args]
+
+        # Optional chaining: obj?.method() — if obj is null, the whole
+        # chain short-circuits to null instead of raising.
+        if obj is None and getattr(node, "optional", False):
+            return None
 
         # ── String methods ────────────────────────────────
         if isinstance(obj, str):
@@ -2040,6 +2263,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         if isinstance(value, list):
             items = [self._to_string(i) for i in value]
             return "[" + ", ".join(items) + "]"
+        if isinstance(value, set):
+            if not value:
+                return "{}"
+            items = [self._to_string(i) for i in sorted(value, key=str)]
+            return "{" + ", ".join(items) + "}"
         if isinstance(value, str):
             return value
         if isinstance(value, (int, float)):
@@ -2097,6 +2325,29 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 return f"No docstring for '{name}'."
             return "No docstring available."
         self.globals.set("doc", _doc)
+
+        # ── Phase 24: set operations ─────────────────────────────
+        def _as_set(x, fn_name):
+            if isinstance(x, set):
+                return x
+            if isinstance(x, (list, tuple)):
+                return set(x)
+            raise NEKOVARuntimeError(
+                f"{fn_name}() needs sets (or lists), got a "
+                f"{type(x).__name__}."
+            )
+        self.globals.set(
+            "set_union",
+            lambda a, b: _as_set(a, "set_union") | _as_set(b, "set_union")
+        )
+        self.globals.set(
+            "set_intersection",
+            lambda a, b: _as_set(a, "set_intersection") & _as_set(b, "set_intersection")
+        )
+        self.globals.set(
+            "set_difference",
+            lambda a, b: _as_set(a, "set_difference") - _as_set(b, "set_difference")
+        )
 
 
         # ── Phase 19: Sandbox API ─────────────────────────────
