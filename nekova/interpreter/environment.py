@@ -40,6 +40,7 @@ class Environment:
 
     def __init__(self, parent=None):
         self.variables = {}
+        self.consts    = set()   # names declared with 'const' in THIS scope
         self.parent    = parent
 
     def get(self, name: str):
@@ -115,4 +116,3 @@ class Environment:
             return True
         except NameError:
             return False
-
