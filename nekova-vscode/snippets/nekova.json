@@ -7,21 +7,21 @@
     "body": [
       "think \"${1:prompt}\" as text"
     ],
-    "description": "AI think — text response"
+    "description": "AI think \u2014 text response"
   },
   "Think as json": {
     "prefix": "thinkj",
     "body": [
       "think \"${1:prompt}\" as json"
     ],
-    "description": "AI think — JSON response"
+    "description": "AI think \u2014 JSON response"
   },
   "Think as list": {
     "prefix": "thinkl",
     "body": [
       "think \"${1:prompt}\" as list"
     ],
-    "description": "AI think — list response"
+    "description": "AI think \u2014 list response"
   },
   "Think captured": {
     "prefix": "thinkcap",
@@ -232,7 +232,10 @@
     "description": "Parallel AI execution"
   },
   "Prompt block": {
-    "prefix": ["prompt", "promptdef"],
+    "prefix": [
+      "prompt",
+      "promptdef"
+    ],
     "body": [
       "prompt ${1:name}(${2:text}, ${3:style}=\"${4:professional}\"):",
       "    \"\"\"",
@@ -273,7 +276,7 @@
     "body": [
       "mock think as \"${1:response}\""
     ],
-    "description": "Stub think inside a test block — no real AI call (Phase 22)"
+    "description": "Stub think inside a test block \u2014 no real AI call (Phase 22)"
   },
   "Pipe chain": {
     "prefix": "pipe",
@@ -328,7 +331,7 @@
   "NEKOVA file header": {
     "prefix": "header",
     "body": [
-      "# ${1:Project Name} — built with NEKOVA",
+      "# ${1:Project Name} \u2014 built with NEKOVA",
       "# Built by ${2:SYNEKCOT Tech}",
       "",
       "${3:show \"Hello, NEKOVA!\"}"
@@ -427,7 +430,7 @@
       "watch \"${1:config.toml}\":",
       "\t${2:show \"file changed\"}"
     ],
-    "description": "File watcher — runs body when file changes"
+    "description": "File watcher \u2014 runs body when file changes"
   },
   "Generator task": {
     "prefix": "taskgen",
@@ -522,7 +525,7 @@
       "\t${1:# safe code only}",
       "show sandbox_result[\"safe\"]"
     ],
-    "description": "Strict sandbox block — blocks all file/system access"
+    "description": "Strict sandbox block \u2014 blocks all file/system access"
   },
   "Sandbox relaxed": {
     "prefix": "sandboxr",
@@ -530,7 +533,7 @@
       "sandbox relaxed:",
       "\t${1:# read-only file access allowed}"
     ],
-    "description": "Relaxed sandbox — allows read-only file operations"
+    "description": "Relaxed sandbox \u2014 allows read-only file operations"
   },
   "Sandbox run": {
     "prefix": "sandboxrun",
@@ -540,5 +543,77 @@
       "show ${1:result}[\"safe\"]"
     ],
     "description": "Run NEKOVA code in a sandbox programmatically"
+  },
+  "Const binding": {
+    "prefix": "const",
+    "body": [
+      "const ${1:NAME} = ${2:value}"
+    ],
+    "description": "Declare an immutable const binding (Phase 24)"
+  },
+  "Enum definition": {
+    "prefix": "enum",
+    "body": [
+      "enum ${1:Name}: ${2:MEMBER_ONE}, ${3:MEMBER_TWO}, ${4:MEMBER_THREE}"
+    ],
+    "description": "Define a first-class enum (Phase 24)"
+  },
+  "List destructure": {
+    "prefix": "letlist",
+    "body": [
+      "let [${1:first}, ...${2:rest}] = ${3:my_list}"
+    ],
+    "description": "Destructure a list with a rest capture (Phase 24)"
+  },
+  "Tuple destructure": {
+    "prefix": "lettuple",
+    "body": [
+      "let (${1:a}, ${2:b}) = ${3:pair}"
+    ],
+    "description": "Destructure a tuple/pair (Phase 24)"
+  },
+  "Dict destructure": {
+    "prefix": "letdict",
+    "body": [
+      "let {${1:name}, ${2:age}} = ${3:my_dict}"
+    ],
+    "description": "Destructure a dict by key (Phase 24)"
+  },
+  "Optional chaining": {
+    "prefix": "optchain",
+    "body": [
+      "${1:value}?.${2:property}"
+    ],
+    "description": "Optional chaining \u2014 short-circuits to null (Phase 24)"
+  },
+  "Set literal": {
+    "prefix": "setlit",
+    "body": [
+      "let ${1:name} = {${2:1, 2, 3}}"
+    ],
+    "description": "Define a set literal (Phase 24)"
+  },
+  "Keyword arguments call": {
+    "prefix": "callkw",
+    "body": [
+      "${1:task_name}(${2:param}=${3:value})"
+    ],
+    "description": "Call a task with keyword arguments (Phase 24)"
+  },
+  "Think with inline error handling": {
+    "prefix": "thinkerr",
+    "body": [
+      "let ${1:result} = think \"${2:prompt}\" when error: ${3:\"fallback\"}"
+    ],
+    "description": "think with inline error fallback (Phase 23)"
+  },
+  "Task docstring": {
+    "prefix": "taskdoc",
+    "body": [
+      "task ${1:name}(${2:args}):",
+      "    \"\"\"${3:Describe what this task does.}\"\"\"",
+      "    ${4:pass}"
+    ],
+    "description": "Task with a docstring (Phase 23)"
   }
 }

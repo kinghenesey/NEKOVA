@@ -1,4 +1,4 @@
-{
+﻿{
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "NEKOVA",
   "scopeName": "source.nekova",
@@ -321,7 +321,7 @@
     },
     "keywords_declaration": {
       "name": "keyword.declaration.nekova",
-      "match": "\\b(task|func|use|import|from|let|async|await|class|object|error|schema|save)\\b"
+      "match": "\\b(task|func|use|import|from|let|const|enum|async|await|class|object|error|schema|save)\\b"
     },
     "keywords_class": {
       "name": "keyword.other.class.nekova",
@@ -410,8 +410,16 @@
           "match": "\\|>"
         },
         {
+          "name": "keyword.operator.spread.nekova",
+          "match": "\\.\\.\\."
+        },
+        {
           "name": "keyword.operator.range.nekova",
           "match": "\\.\\."
+        },
+        {
+          "name": "keyword.operator.optional-chaining.nekova",
+          "match": "\\?\\."
         }
       ]
     },

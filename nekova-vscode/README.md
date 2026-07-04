@@ -1,4 +1,4 @@
-﻿# NEKOVA VS Code Extension — v1.9.8
+﻿# NEKOVA VS Code Extension — v1.9.9
 
 Syntax highlighting, two branded color themes, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
@@ -8,12 +8,12 @@ Built by [SYNEKCOT Tech](https://github.com/kinghenesey/NEKOVA) 🇳🇬
 
 ## Features
 
-- **Syntax highlighting** for all NEKOVA keywords — `think`, `remember`, `recall`, `route`, `serve`, `connect`, `object`, `class`, `match`, `yield`, `error`, `shape`, `every`, `test`, `expect`, `imagine`, `speak`, `listen`, `watch`, `sandbox`, `prompt`, `retry`, `fallback`, `observe`, `mock`, and more
+- **Syntax highlighting** for all NEKOVA keywords — `think`, `remember`, `recall`, `route`, `serve`, `connect`, `object`, `class`, `match`, `yield`, `error`, `shape`, `every`, `test`, `expect`, `imagine`, `speak`, `listen`, `watch`, `sandbox`, `prompt`, `retry`, `fallback`, `observe`, `mock`, `const`, `enum`, and more — plus operators added in Phase 24: optional chaining (`?.`) and spread (`...`), correctly distinguished from the range operator (`..`)
 - **`observe` blocks** and **`mock think`** highlighted and auto-indented correctly, plus the **`|>` pipe operator**
 - **Two color themes — NEKOVA Dark and NEKOVA Light** — both built from NEKOVA's brand palette of green and white only. AI-native keywords (`think`, `speak`, `listen`, `imagine`, `watch`, `every`) are highlighted in the brightest green in both themes, since that's the language's whole identity. True red/amber are reserved exclusively for actual errors and warnings, so diagnostics stay visually distinct from ordinary syntax in either theme. NEKOVA Light uses a genuine pure-white (`#FFFFFF`) background, not a lightened grey. Select either via `Preferences: Color Theme → NEKOVA Dark` / `NEKOVA Light`
 - **Branded `.nk` file icon** — a simplified "nk" mark on a small dark backing, designed to stay legible at actual file-icon size (16px), not just at logo size
 - **`prompt` blocks** highlighted as a declaration (like `task`/`class`) only when genuinely defining a prompt — `prompt name(...):` — while still working correctly as an ordinary variable name elsewhere, matching NEKOVA's own soft-keyword design
-- **65 snippets** — type `think`, `task`, `route`, `obj`, `class`, `match`, `pipeline`, `parallel`, `sandbox`, `taskgen`, `decorator`, `shape`, `every`, `test`, `prompt`, `retry`, `observe`, `mock`, `pipe`, and more
+- **75 snippets** — type `think`, `task`, `route`, `obj`, `class`, `match`, `pipeline`, `parallel`, `sandbox`, `taskgen`, `decorator`, `shape`, `every`, `test`, `prompt`, `retry`, `observe`, `mock`, `pipe`, `const`, `enum`, `lettuple`, `letlist`, `letdict`, `optchain`, `setlit`, `callkw`, `thinkerr`, `taskdoc`, and more
 - **Run file** — press `F5` to run the active `.nk` file
 - **Watch mode** — press `Ctrl+F5` to run with `--watch` (auto-reruns on save)
 - **Format file** — press `Shift+Alt+F` to run `nekova fmt`
@@ -210,6 +210,25 @@ match status:
 ---
 
 ## Release Notes
+
+### 1.9.9
+- Syntax highlighting for all of Phase 23/24's new syntax: `const`,
+  `enum`, optional chaining (`?.`), and spread (`...`) — previously
+  `...` inside a list/dict would highlight as two range operators
+  (`..`) plus a stray dot, since spread didn't exist as its own
+  pattern; the range pattern is now correctly checked after spread so
+  the three dots aren't split apart
+- 10 new snippets: `const`, `enum`, `letlist`/`lettuple`/`letdict`
+  (destructuring), `optchain`, `setlit`, `callkw` (keyword arguments),
+  `thinkerr` (think with inline error handling), `taskdoc` (task with
+  a docstring)
+- Welcome message and status bar now report `v1.9.9`, describing what
+  actually shipped: destructuring, keyword arguments, `const`, spread
+  syntax, optional chaining, enums, and a new `Set` type, plus more
+  accurate error messages (indentation depth, builtin exceptions) —
+  no extension-side logic changes were needed for the error-message
+  improvements, since those are core-interpreter fixes, but the
+  version and in-editor messaging now reflect them
 
 ### 1.9.8
 - Welcome message and status bar now report `v1.9.8`, announcing Phase 23's
