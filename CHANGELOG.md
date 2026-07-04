@@ -5,6 +5,72 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.9.9] — 2026-07-04 · Phase 23b "Correctness & Trust — Part 2" + Phase 24 "Language Completeness II"
+
+Both phases shipped together in this release — Phase 24 was originally
+slated for 1.10.0, but landed alongside 23b and is published as 1.9.9.
+See the note under the Version Map in ROADMAP.md; this is a deliberate,
+transparent exception to the versioning policy, not an oversight.
+
+### Fixed — Phase 23b
+
+- **Bad-indentation-depth detection** — a dedent that doesn't land
+  exactly on a previously-seen indent level now raises immediately,
+  showing the valid indent levels and the depth actually found, instead
+  of silently snapping to the nearest lower level or giving a generic
+  "check your indentation" message.
+- **Builtin exception audit** — every builtin call (`int()`, `float()`,
+  `len()`, `range()`, `sum()`, etc.) is now wrapped so a bad argument
+  raises a clean `NEKOVARuntimeError` instead of leaking a raw Python
+  exception. Several of these previously weren't caught at all
+  (`ValueError` had no handler anywhere) and surfaced a full Python
+  traceback with file paths to the user — about as far from
+  beginner-friendly as an error message can get. `int()`/`float()` get
+  an extra-specific message since they're the most common case a
+  beginner will hit.
+
+### Added — Phase 24
+
+- **Tuple-style destructuring** — `let (a, b) = pair`, `let (first,
+  ...rest) = my_list`. Same semantics as the existing bracket form.
+  `let (q, r) = divmod(10, 3)` covers "multiple return values" for free.
+- **Named/keyword arguments** — `greet(name="Sam", greeting="Hi")`,
+  including mixed positional+keyword calls and gap-filling with
+  declared defaults. Clear errors for an unknown keyword or a value
+  passed both positionally and by keyword.
+- **`const` bindings** — `const MAX_RETRIES = 5`. Immutable once set;
+  reassigning or redeclaring in the same scope raises. Simpler than
+  `let` by design — no destructuring or captured-think forms.
+- **Spread syntax** — `[...list_a, ...list_b]` and `{...defaults,
+  ...overrides}`, including mixed spread+literal items. Overlapping
+  dict keys: last write wins, same as writing them out by hand.
+- **Optional chaining (`?.`)** — `user?.email`, `user?.method()`.
+  Short-circuits to `null` if the object is `null` instead of raising;
+  chains correctly (`a?.b?.c`). A plain `.` after a null result from an
+  earlier `?.` still raises — only the explicit `?.` short-circuits.
+- **Enums** — `enum Status: PENDING, ACTIVE, DONE`. Each member
+  evaluates to its own name as a string (`Status.ACTIVE == "ACTIVE"`).
+- **`Set` type** — `{1, 2, 3}` literal syntax, automatically
+  disambiguated from a dict literal at parse time (a dict entry always
+  has a `key: value` shape; a set element never does). `{}` still means
+  an empty dict, unchanged. New builtins: `set_union`, `set_intersection`,
+  `set_difference`. Putting an unhashable value (a list or dict) in a
+  set raises a clear error instead of a raw Python `TypeError`.
+- **`null` semantics audited** — comparisons, truthiness, arithmetic,
+  and container membership all checked and confirmed consistent; no
+  further code changes were needed beyond what 23a/23b already fixed.
+
+### Not done this release
+
+- **`nekova check --strict`** (opt-in static type-hint enforcement) —
+  deferred rather than rushed. It's CLI/tooling work distinct from the
+  runtime language changes above and deserves its own scoped pass.
+
+- **`tests/test_phase23b.py`** — 10 tests. **`tests/test_phase24.py`** —
+  40 tests. **1,326 tests passing, zero regressions.**
+
+---
+
 ## [1.9.8] — 2026-07-03 · Phase 23a "Correctness & Trust — Part 1"
 
 ### Fixed
