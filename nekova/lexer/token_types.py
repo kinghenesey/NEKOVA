@@ -61,6 +61,8 @@ class TokenType(Enum):
     INIT        = auto()
     SELF        = auto()
     LET         = auto()
+    CONST       = auto()
+    ENUM        = auto()
 
     # ── Pattern Matching (Phase 7) ────────────────────────────
     MATCH       = auto()
@@ -138,6 +140,7 @@ class TokenType(Enum):
     DOT         = auto()
     DOTDOT      = auto()   # range operator: 'a'..'z'  or  0..9
     ELLIPSIS    = auto()   # rest/spread marker: let [first, ...rest] = list
+    QUESTION_DOT = auto()  # optional chaining: user?.email
     COMMA       = auto()
     LPAREN      = auto()
     RPAREN      = auto()
@@ -195,6 +198,8 @@ KEYWORDS = {
     "fetch":      TokenType.FETCH,
     "func":       TokenType.FUNC,
     "let":        TokenType.LET,
+    "const":      TokenType.CONST,
+    "enum":       TokenType.ENUM,
     "object":     TokenType.OBJECT,
     "new":        TokenType.NEW,
     "init":       TokenType.INIT,
