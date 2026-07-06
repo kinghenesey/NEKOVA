@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="{{ root }}static/css/docs.css">{% endblock %}
+
+{% block content %}
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    {% for group in nav %}
+    <div class="group">
+      <div class="group-label">{{ group.label }}</div>
+      <ul>
+        {% for item in group['items'] %}
+        <li><a href="{{ root }}{{ item.href }}"{% if item.href == current_href %} class="active"{% endif %}>{{ item.title }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="{{ root }}index.html">NEKOVA</a> / <a href="{{ root }}docs/getting-started/installation.html">Docs</a> / {{ group_label }}
+    </div>
+
+    <h1>{{ page_title }}</h1>
+    {% if lede %}<p class="lede">{{ lede }}</p>{% endif %}
+
+    {{ content|safe }}
+
+    <div class="docs-pager">
+      {% if prev_page %}
+      <a href="{{ root }}{{ prev_page.href }}" class="prev">
+        <span class="dir">← Previous</span>
+        <span class="title">{{ prev_page.title }}</span>
+      </a>
+      {% else %}<span></span>{% endif %}
+      {% if next_page %}
+      <a href="{{ root }}{{ next_page.href }}" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">{{ next_page.title }}</span>
+      </a>
+      {% endif %}
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    {% if toc %}
+    <div class="toc-label">On this page</div>
+    <ul>
+      {% for h in toc %}
+      <li class="lvl-{{ h.level }}"><a href="#{{ h.id }}">{{ h.text }}</a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </aside>
+
+</div>
+{% endblock %}
