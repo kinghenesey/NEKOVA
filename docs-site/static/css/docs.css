@@ -1,0 +1,242 @@
+/* ============================================================
+   NEKOVA Docs — Documentation Page Layout
+   ============================================================ */
+
+.docs-shell {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 220px;
+  gap: var(--space-6);
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--space-5);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .docs-shell { grid-template-columns: 240px minmax(0, 1fr); }
+  .docs-toc { display: none; }
+}
+@media (max-width: 800px) {
+  .docs-shell { grid-template-columns: 1fr; }
+  .docs-sidebar { display: none; }
+  .docs-sidebar.is-open { display: block; }
+}
+
+/* --- Sidebar --- */
+.docs-sidebar {
+  position: sticky;
+  top: 88px;
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+  padding-right: var(--space-3);
+}
+.docs-sidebar .group { margin-bottom: var(--space-5); }
+.docs-sidebar .group-label {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--nk-green);
+  margin-bottom: var(--space-2);
+  padding-left: var(--space-3);
+}
+.docs-sidebar ul { list-style: none; margin: 0; padding: 0; }
+.docs-sidebar li a {
+  display: block;
+  padding: 0.4em var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--nk-white-2);
+  font-size: 0.9rem;
+  border-left: 2px solid transparent;
+  transition: all 0.15s ease;
+}
+.docs-sidebar li a:hover {
+  color: var(--nk-white);
+  background: rgba(212, 148, 10, 0.06);
+}
+.docs-sidebar li a.active {
+  color: var(--nk-green-bright);
+  border-left-color: var(--nk-green);
+  background: rgba(212, 148, 10, 0.09);
+  font-weight: 600;
+}
+
+/* --- Main content --- */
+.docs-content { min-width: 0; }
+.docs-breadcrumb {
+  font-size: 0.82rem;
+  color: var(--nk-white-3);
+  margin-bottom: var(--space-3);
+}
+.docs-breadcrumb a { color: var(--nk-white-3); }
+.docs-breadcrumb a:hover { color: var(--nk-green); }
+
+.docs-content h1 {
+  font-size: 2.1rem;
+  margin: 0 0 var(--space-2);
+  background: linear-gradient(120deg, var(--nk-white) 40%, var(--nk-green-bright) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.docs-content .lede {
+  font-size: 1.1rem;
+  color: var(--nk-white-2);
+  margin-bottom: var(--space-5);
+  max-width: 65ch;
+}
+.docs-content h2 {
+  font-size: 1.4rem;
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--nk-grey-2);
+}
+.docs-content h3 {
+  font-size: 1.12rem;
+  margin-top: var(--space-5);
+  color: var(--nk-green-bright);
+}
+.docs-content p { color: var(--nk-white-2); max-width: 72ch; }
+.docs-content ul, .docs-content ol { color: var(--nk-white-2); max-width: 72ch; }
+.docs-content li { margin-bottom: 0.35em; }
+.docs-content strong { color: var(--nk-white); }
+.docs-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: var(--space-4) 0;
+  font-size: 0.92rem;
+}
+.docs-content th, .docs-content td {
+  border: 1px solid var(--nk-grey-2);
+  padding: 0.6em 0.9em;
+  text-align: left;
+}
+.docs-content th {
+  background: var(--nk-black-2);
+  color: var(--nk-green);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.docs-content blockquote {
+  border-left: 3px solid var(--nk-green-deep);
+  margin: var(--space-4) 0;
+  padding: var(--space-2) var(--space-4);
+  background: rgba(46, 204, 113, 0.05);
+  color: var(--nk-white-2);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.docs-content .callout {
+  border: 1px solid var(--nk-grey-2);
+  border-left: 3px solid var(--nk-green);
+  background: var(--nk-black-2);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: var(--space-4);
+  margin: var(--space-4) 0;
+}
+.docs-content .callout .callout-title {
+  font-family: var(--font-display);
+  color: var(--nk-green);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 0.4em;
+}
+/* Warning/error callouts — the ONLY places these colors appear,
+   matching NEKOVA's own rule that red/amber are reserved for
+   real problems, never decoration. */
+.docs-content .callout.warning {
+  border-left-color: var(--nk-warning);
+  background: rgba(232, 184, 75, 0.06);
+}
+.docs-content .callout.warning .callout-title { color: var(--nk-warning); }
+.docs-content .callout.error {
+  border-left-color: var(--nk-error);
+  background: rgba(255, 92, 92, 0.06);
+}
+.docs-content .callout.error .callout-title { color: var(--nk-error); }
+
+.docs-pager {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-7);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--nk-grey-2);
+  gap: var(--space-3);
+}
+.docs-pager a {
+  border: 1px solid var(--nk-grey-2);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  flex: 1;
+  max-width: 45%;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.docs-pager a:hover { border-color: var(--nk-green-deep); transform: translateY(-2px); }
+.docs-pager .dir { font-size: 0.72rem; color: var(--nk-white-3); text-transform: uppercase; letter-spacing: 0.08em; }
+.docs-pager .title { color: var(--nk-white); font-weight: 600; display: block; margin-top: 0.2em; }
+.docs-pager .next { text-align: right; margin-left: auto; }
+
+/* --- Right-hand mini table of contents --- */
+.docs-toc {
+  position: sticky;
+  top: 88px;
+  font-size: 0.85rem;
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+}
+.docs-toc .toc-label {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--nk-white-3);
+  margin-bottom: var(--space-2);
+}
+.docs-toc ul { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--nk-grey-2); }
+.docs-toc li a {
+  display: block;
+  padding: 0.3em var(--space-3);
+  color: var(--nk-white-3);
+  border-left: 2px solid transparent;
+  margin-left: -1px;
+}
+.docs-toc li a:hover { color: var(--nk-white-2); }
+.docs-toc li a.active { color: var(--nk-green-bright); border-left-color: var(--nk-green); }
+.docs-toc li.lvl-3 a { padding-left: var(--space-4); font-size: 0.92em; }
+
+/* Copy button on code blocks */
+.code-copy-btn {
+  position: absolute;
+  top: 0.6em; right: 0.6em;
+  background: var(--nk-black-2);
+  border: 1px solid var(--nk-grey-2);
+  color: var(--nk-white-3);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  padding: 0.3em 0.7em;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+pre:hover .code-copy-btn { opacity: 1; }
+.code-copy-btn:hover { color: var(--nk-green-bright); border-color: var(--nk-green-deep); }
+.code-copy-btn.copied { color: var(--nk-green-bright); border-color: var(--nk-green); }
+
+/* Mobile sidebar toggle */
+.docs-mobile-toggle {
+  display: none;
+  background: var(--nk-black-3);
+  border: 1px solid var(--nk-grey-2);
+  color: var(--nk-white);
+  padding: 0.5em 1em;
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-4);
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+@media (max-width: 800px) {
+  .docs-mobile-toggle { display: inline-block; }
+}
