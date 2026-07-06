@@ -1,0 +1,80 @@
+# NEKOVA Docs — Navigation
+# ==========================================================
+# This file is the ONLY place you need to touch to add, remove,
+# reorder, or rename a page. Add a new markdown file under
+# content/, then add one entry here pointing at it. Run
+# `python build.py` and the page exists — sidebar, prev/next
+# pager, and table of contents are all generated automatically.
+# ==========================================================
+
+- label: Getting Started
+  items:
+    - title: Installation
+      file: getting-started/installation.md
+    - title: Quickstart
+      file: getting-started/quickstart.md
+    - title: Project Structure
+      file: getting-started/project-structure.md
+
+- label: Core Syntax
+  items:
+    - title: Variables & Constants
+      file: syntax/variables.md
+    - title: Control Flow
+      file: syntax/control-flow.md
+    - title: Functions & Tasks
+      file: syntax/functions.md
+    - title: Destructuring
+      file: syntax/destructuring.md
+    - title: Data Structures
+      file: syntax/data-structures.md
+    - title: Error Handling
+      file: syntax/error-handling.md
+
+- label: AI-Native Features
+  items:
+    - title: think
+      file: ai-native/think.md
+    - title: remember & recall
+      file: ai-native/remember-recall.md
+    - title: Prompt Blocks
+      file: ai-native/prompt-blocks.md
+    - title: Testing with mock & observe
+      file: ai-native/testing.md
+    - title: retry & fallback
+      file: ai-native/retry-fallback.md
+    - title: async & await
+      file: ai-native/async-await.md
+
+- label: Classes & Objects
+  items:
+    - title: Classes
+      file: classes/classes.md
+    - title: Inheritance
+      file: classes/inheritance.md
+    - title: Enums
+      file: classes/enums.md
+
+- label: Advanced
+  items:
+    - title: Pattern Matching
+      file: advanced/pattern-matching.md
+    - title: Pipe Operator
+      file: advanced/pipe-operator.md
+    - title: Optional Chaining
+      file: advanced/optional-chaining.md
+    - title: Sandbox
+      file: advanced/sandbox.md
+    - title: Web Routes
+      file: advanced/web-routes.md
+
+- label: Reference
+  items:
+    - title: CLI Commands
+      file: reference/cli-commands.md
+    - title: Built-in Functions
+      file: reference/builtins.md
+    - title: Error Codes
+      file: reference/error-codes.md
+    - title: Changelog
+      file: reference/changelog.md
