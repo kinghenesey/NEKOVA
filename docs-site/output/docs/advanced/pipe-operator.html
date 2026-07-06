@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pipe Operator · NEKOVA Docs</title>
+<meta name="description" content="The |> operator chains transformations left to right, without nested calls or throwaway intermediate variables.">
+<link rel="icon" href="../../static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../static/css/theme.css">
+<link rel="stylesheet" href="../../static/css/docs.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="../../index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="../../index.html#story">Why NEKOVA</a>
+    <a href="../../docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="../../docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    
+    <div class="group">
+      <div class="group-label">Getting Started</div>
+      <ul>
+        
+        <li><a href="../../docs/getting-started/installation.html">Installation</a></li>
+        
+        <li><a href="../../docs/getting-started/quickstart.html">Quickstart</a></li>
+        
+        <li><a href="../../docs/getting-started/project-structure.html">Project Structure</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Core Syntax</div>
+      <ul>
+        
+        <li><a href="../../docs/syntax/variables.html">Variables & Constants</a></li>
+        
+        <li><a href="../../docs/syntax/control-flow.html">Control Flow</a></li>
+        
+        <li><a href="../../docs/syntax/functions.html">Functions & Tasks</a></li>
+        
+        <li><a href="../../docs/syntax/destructuring.html">Destructuring</a></li>
+        
+        <li><a href="../../docs/syntax/data-structures.html">Data Structures</a></li>
+        
+        <li><a href="../../docs/syntax/error-handling.html">Error Handling</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">AI-Native Features</div>
+      <ul>
+        
+        <li><a href="../../docs/ai-native/think.html">think</a></li>
+        
+        <li><a href="../../docs/ai-native/remember-recall.html">remember & recall</a></li>
+        
+        <li><a href="../../docs/ai-native/prompt-blocks.html">Prompt Blocks</a></li>
+        
+        <li><a href="../../docs/ai-native/testing.html">Testing with mock & observe</a></li>
+        
+        <li><a href="../../docs/ai-native/retry-fallback.html">retry & fallback</a></li>
+        
+        <li><a href="../../docs/ai-native/async-await.html">async & await</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Classes & Objects</div>
+      <ul>
+        
+        <li><a href="../../docs/classes/classes.html">Classes</a></li>
+        
+        <li><a href="../../docs/classes/inheritance.html">Inheritance</a></li>
+        
+        <li><a href="../../docs/classes/enums.html">Enums</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Advanced</div>
+      <ul>
+        
+        <li><a href="../../docs/advanced/pattern-matching.html">Pattern Matching</a></li>
+        
+        <li><a href="../../docs/advanced/pipe-operator.html" class="active">Pipe Operator</a></li>
+        
+        <li><a href="../../docs/advanced/optional-chaining.html">Optional Chaining</a></li>
+        
+        <li><a href="../../docs/advanced/sandbox.html">Sandbox</a></li>
+        
+        <li><a href="../../docs/advanced/web-routes.html">Web Routes</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Reference</div>
+      <ul>
+        
+        <li><a href="../../docs/reference/cli-commands.html">CLI Commands</a></li>
+        
+        <li><a href="../../docs/reference/builtins.html">Built-in Functions</a></li>
+        
+        <li><a href="../../docs/reference/error-codes.html">Error Codes</a></li>
+        
+        <li><a href="../../docs/reference/changelog.html">Changelog</a></li>
+        
+      </ul>
+    </div>
+    
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="../../index.html">NEKOVA</a> / <a href="../../docs/getting-started/installation.html">Docs</a> / Advanced
+    </div>
+
+    <h1>Pipe Operator</h1>
+    <p class="lede">The |> operator chains transformations left to right, without nested calls or throwaway intermediate variables.</p>
+
+    <h2 id="basic-usage">Basic usage</h2>
+<pre class="glow-border"><code><span class="tok-decl">task</span> double(x):
+    <span class="tok-kw">return</span> x * <span class="tok-num">2</span>
+
+<span class="tok-decl">task</span> add_one(x):
+    <span class="tok-kw">return</span> x + <span class="tok-num">1</span>
+
+<span class="tok-decl">let</span> result = <span class="tok-num">5</span> |&gt; double |&gt; add_one
+<span class="tok-kw">show</span> result   <span class="tok-com"># 11</span>
+</code></pre>
+<p>Without the pipe operator, the same computation reads inside-out:</p>
+<pre class="glow-border"><code><span class="tok-decl">let</span> result = add_one(double(<span class="tok-num">5</span>))
+</code></pre>
+<p><code>|&gt;</code> reads in the order the operations actually happen, which matters more the longer the chain gets.</p>
+<h2 id="chaining-more-steps">Chaining more steps</h2>
+<pre class="glow-border"><code><span class="tok-decl">task</span> clean(text):
+    <span class="tok-kw">return</span> text.trim()
+
+<span class="tok-decl">task</span> shout(text):
+    <span class="tok-kw">return</span> text.upper()
+
+<span class="tok-decl">let</span> result = <span class="tok-str">&quot;  hello world  &quot;</span> |&gt; clean |&gt; shout
+<span class="tok-kw">show</span> result   <span class="tok-com"># &quot;HELLO WORLD&quot;</span>
+</code></pre>
+<h2 id="where-it-pairs-naturally">Where it pairs naturally</h2>
+<p><code>|&gt;</code> is particularly suited to <code>think</code>-based pipelines, where each stage transforms a document or a response into the next stage's input — see <a href="../ai-native/think.html">think</a>.</p>
+
+    <div class="docs-pager">
+      
+      <a href="../../docs/advanced/pattern-matching.html" class="prev">
+        <span class="dir">← Previous</span>
+        <span class="title">Pattern Matching</span>
+      </a>
+      
+      
+      <a href="../../docs/advanced/optional-chaining.html" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">Optional Chaining</span>
+      </a>
+      
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    
+    <div class="toc-label">On this page</div>
+    <ul>
+      
+      <li class="lvl-2"><a href="#basic-usage">Basic usage</a></li>
+      
+      <li class="lvl-2"><a href="#chaining-more-steps">Chaining more steps</a></li>
+      
+      <li class="lvl-2"><a href="#where-it-pairs-naturally">Where it pairs naturally</a></li>
+      
+    </ul>
+    
+  </aside>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="../../docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="../../static/js/animations.js"></script>
+
+</body>
+</html>

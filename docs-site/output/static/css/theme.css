@@ -204,7 +204,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   justify-content: space-between;
   padding: var(--space-3) var(--space-5);
   background: rgba(10, 12, 11, 0.85);
-  border-filter: blur(10px);
+  filter: blur(10px);
   border-bottom: 1px solid var(--nk-grey-2);
 }
 .topbar .brand {

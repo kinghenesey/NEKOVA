@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLI Commands · NEKOVA Docs</title>
+<meta name="description" content="Every command the nekova tool supports, grouped the way the CLI's own --help groups them.">
+<link rel="icon" href="../../static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../static/css/theme.css">
+<link rel="stylesheet" href="../../static/css/docs.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="../../index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="../../index.html#story">Why NEKOVA</a>
+    <a href="../../docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="../../docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    
+    <div class="group">
+      <div class="group-label">Getting Started</div>
+      <ul>
+        
+        <li><a href="../../docs/getting-started/installation.html">Installation</a></li>
+        
+        <li><a href="../../docs/getting-started/quickstart.html">Quickstart</a></li>
+        
+        <li><a href="../../docs/getting-started/project-structure.html">Project Structure</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Core Syntax</div>
+      <ul>
+        
+        <li><a href="../../docs/syntax/variables.html">Variables & Constants</a></li>
+        
+        <li><a href="../../docs/syntax/control-flow.html">Control Flow</a></li>
+        
+        <li><a href="../../docs/syntax/functions.html">Functions & Tasks</a></li>
+        
+        <li><a href="../../docs/syntax/destructuring.html">Destructuring</a></li>
+        
+        <li><a href="../../docs/syntax/data-structures.html">Data Structures</a></li>
+        
+        <li><a href="../../docs/syntax/error-handling.html">Error Handling</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">AI-Native Features</div>
+      <ul>
+        
+        <li><a href="../../docs/ai-native/think.html">think</a></li>
+        
+        <li><a href="../../docs/ai-native/remember-recall.html">remember & recall</a></li>
+        
+        <li><a href="../../docs/ai-native/prompt-blocks.html">Prompt Blocks</a></li>
+        
+        <li><a href="../../docs/ai-native/testing.html">Testing with mock & observe</a></li>
+        
+        <li><a href="../../docs/ai-native/retry-fallback.html">retry & fallback</a></li>
+        
+        <li><a href="../../docs/ai-native/async-await.html">async & await</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Classes & Objects</div>
+      <ul>
+        
+        <li><a href="../../docs/classes/classes.html">Classes</a></li>
+        
+        <li><a href="../../docs/classes/inheritance.html">Inheritance</a></li>
+        
+        <li><a href="../../docs/classes/enums.html">Enums</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Advanced</div>
+      <ul>
+        
+        <li><a href="../../docs/advanced/pattern-matching.html">Pattern Matching</a></li>
+        
+        <li><a href="../../docs/advanced/pipe-operator.html">Pipe Operator</a></li>
+        
+        <li><a href="../../docs/advanced/optional-chaining.html">Optional Chaining</a></li>
+        
+        <li><a href="../../docs/advanced/sandbox.html">Sandbox</a></li>
+        
+        <li><a href="../../docs/advanced/web-routes.html">Web Routes</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Reference</div>
+      <ul>
+        
+        <li><a href="../../docs/reference/cli-commands.html" class="active">CLI Commands</a></li>
+        
+        <li><a href="../../docs/reference/builtins.html">Built-in Functions</a></li>
+        
+        <li><a href="../../docs/reference/error-codes.html">Error Codes</a></li>
+        
+        <li><a href="../../docs/reference/changelog.html">Changelog</a></li>
+        
+      </ul>
+    </div>
+    
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="../../index.html">NEKOVA</a> / <a href="../../docs/getting-started/installation.html">Docs</a> / Reference
+    </div>
+
+    <h1>CLI Commands</h1>
+    <p class="lede">Every command the nekova tool supports, grouped the way the CLI's own --help groups them.</p>
+
+    <h2 id="running-files">Running files</h2>
+<pre class="glow-border"><code class="language-bash">nekova hello.nk               # run a file
+nekova hello.nk --debug       # run with debug output
+nekova hello.nk --compile     # run using the compiler
+nekova run hello.nk           # equivalent to the bare form above
+nekova repl                   # start the interactive shell
+</code></pre>
+<h2 id="developer-tools">Developer tools</h2>
+<pre class="glow-border"><code class="language-bash">nekova test                   # run every test block in the project
+nekova build hello.nk         # validate a file without running it
+nekova new my-project         # scaffold a new project
+nekova info                   # show system info
+nekova clean                  # remove cache files
+nekova debug hello.nk         # visual debugger
+nekova ide                    # launch the web IDE
+nekova format hello.nk        # format code style
+nekova format --check hello.nk  # check formatting without writing
+nekova check hello.nk         # run the static checker (unused variables, near-miss suggestions, etc.)
+</code></pre>
+<h2 id="deployment">Deployment</h2>
+<pre class="glow-border"><code class="language-bash">nekova compile hello.nk       # compile to native/Python
+nekova export hello.nk        # export to HTML/script
+nekova package my-project/    # package a project
+nekova publish my-pkg.nkpkg   # publish to the registry
+nekova deploy hello.nk        # full deploy pipeline
+</code></pre>
+<h2 id="marketplace">Marketplace</h2>
+<pre class="glow-border"><code class="language-bash">nekova marketplace                  # browse all packages
+nekova marketplace search &lt;query&gt;   # search packages
+nekova marketplace install &lt;name&gt;   # install a package
+nekova marketplace info &lt;name&gt;      # package details
+nekova marketplace featured         # top packages
+</code></pre>
+<h2 id="package-manager">Package manager</h2>
+<pre class="glow-border"><code class="language-bash">nekova --packages              # list installed packages
+nekova --install &lt;package&gt;     # install a package
+nekova --uninstall &lt;package&gt;   # uninstall a package
+</code></pre>
+<h2 id="other">Other</h2>
+<pre class="glow-border"><code class="language-bash">nekova --version
+nekova --help
+</code></pre>
+
+    <div class="docs-pager">
+      
+      <a href="../../docs/advanced/web-routes.html" class="prev">
+        <span class="dir">← Previous</span>
+        <span class="title">Web Routes</span>
+      </a>
+      
+      
+      <a href="../../docs/reference/builtins.html" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">Built-in Functions</span>
+      </a>
+      
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    
+    <div class="toc-label">On this page</div>
+    <ul>
+      
+      <li class="lvl-2"><a href="#running-files">Running files</a></li>
+      
+      <li class="lvl-2"><a href="#developer-tools">Developer tools</a></li>
+      
+      <li class="lvl-2"><a href="#deployment">Deployment</a></li>
+      
+      <li class="lvl-2"><a href="#marketplace">Marketplace</a></li>
+      
+      <li class="lvl-2"><a href="#package-manager">Package manager</a></li>
+      
+      <li class="lvl-2"><a href="#other">Other</a></li>
+      
+    </ul>
+    
+  </aside>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="../../docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="../../static/js/animations.js"></script>
+
+</body>
+</html>

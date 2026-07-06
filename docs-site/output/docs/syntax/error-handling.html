@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Error Handling · NEKOVA Docs</title>
+<meta name="description" content="try/catch/finally, raising your own errors, and defining structured custom error types.">
+<link rel="icon" href="../../static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../static/css/theme.css">
+<link rel="stylesheet" href="../../static/css/docs.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="../../index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="../../index.html#story">Why NEKOVA</a>
+    <a href="../../docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="../../docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    
+    <div class="group">
+      <div class="group-label">Getting Started</div>
+      <ul>
+        
+        <li><a href="../../docs/getting-started/installation.html">Installation</a></li>
+        
+        <li><a href="../../docs/getting-started/quickstart.html">Quickstart</a></li>
+        
+        <li><a href="../../docs/getting-started/project-structure.html">Project Structure</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Core Syntax</div>
+      <ul>
+        
+        <li><a href="../../docs/syntax/variables.html">Variables & Constants</a></li>
+        
+        <li><a href="../../docs/syntax/control-flow.html">Control Flow</a></li>
+        
+        <li><a href="../../docs/syntax/functions.html">Functions & Tasks</a></li>
+        
+        <li><a href="../../docs/syntax/destructuring.html">Destructuring</a></li>
+        
+        <li><a href="../../docs/syntax/data-structures.html">Data Structures</a></li>
+        
+        <li><a href="../../docs/syntax/error-handling.html" class="active">Error Handling</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">AI-Native Features</div>
+      <ul>
+        
+        <li><a href="../../docs/ai-native/think.html">think</a></li>
+        
+        <li><a href="../../docs/ai-native/remember-recall.html">remember & recall</a></li>
+        
+        <li><a href="../../docs/ai-native/prompt-blocks.html">Prompt Blocks</a></li>
+        
+        <li><a href="../../docs/ai-native/testing.html">Testing with mock & observe</a></li>
+        
+        <li><a href="../../docs/ai-native/retry-fallback.html">retry & fallback</a></li>
+        
+        <li><a href="../../docs/ai-native/async-await.html">async & await</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Classes & Objects</div>
+      <ul>
+        
+        <li><a href="../../docs/classes/classes.html">Classes</a></li>
+        
+        <li><a href="../../docs/classes/inheritance.html">Inheritance</a></li>
+        
+        <li><a href="../../docs/classes/enums.html">Enums</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Advanced</div>
+      <ul>
+        
+        <li><a href="../../docs/advanced/pattern-matching.html">Pattern Matching</a></li>
+        
+        <li><a href="../../docs/advanced/pipe-operator.html">Pipe Operator</a></li>
+        
+        <li><a href="../../docs/advanced/optional-chaining.html">Optional Chaining</a></li>
+        
+        <li><a href="../../docs/advanced/sandbox.html">Sandbox</a></li>
+        
+        <li><a href="../../docs/advanced/web-routes.html">Web Routes</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Reference</div>
+      <ul>
+        
+        <li><a href="../../docs/reference/cli-commands.html">CLI Commands</a></li>
+        
+        <li><a href="../../docs/reference/builtins.html">Built-in Functions</a></li>
+        
+        <li><a href="../../docs/reference/error-codes.html">Error Codes</a></li>
+        
+        <li><a href="../../docs/reference/changelog.html">Changelog</a></li>
+        
+      </ul>
+    </div>
+    
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="../../index.html">NEKOVA</a> / <a href="../../docs/getting-started/installation.html">Docs</a> / Core Syntax
+    </div>
+
+    <h1>Error Handling</h1>
+    <p class="lede">try/catch/finally, raising your own errors, and defining structured custom error types.</p>
+
+    <h2 id="try-catch">try / catch</h2>
+<pre class="glow-border"><code><span class="tok-kw">try</span>:
+    <span class="tok-decl">let</span> x = <span class="tok-num">10</span> / <span class="tok-num">0</span>
+<span class="tok-kw">catch</span> e:
+    <span class="tok-kw">show</span> <span class="tok-str">&quot;caught: &quot;</span> + e
+</code></pre>
+<p>The caught value <code>e</code> is a real object, not just a string — building a message with <code>"caught: " + e</code> works because NEKOVA knows how to render an error object as text.</p>
+<h2 id="finally">finally</h2>
+<pre class="glow-border"><code><span class="tok-kw">try</span>:
+    <span class="tok-decl">let</span> x = <span class="tok-num">10</span> / <span class="tok-num">0</span>
+<span class="tok-kw">catch</span> e:
+    <span class="tok-kw">show</span> <span class="tok-str">&quot;caught: &quot;</span> + e
+<span class="tok-kw">finally</span>:
+    <span class="tok-kw">show</span> <span class="tok-str">&quot;cleanup&quot;</span>
+</code></pre>
+<p><code>finally</code> runs whether or not an error occurred.</p>
+<h2 id="raise">raise</h2>
+<pre class="glow-border"><code><span class="tok-kw">try</span>:
+    <span class="tok-kw">raise</span> <span class="tok-str">&quot;custom error&quot;</span>
+<span class="tok-kw">catch</span> e:
+    <span class="tok-kw">show</span> <span class="tok-str">&quot;caught: &quot;</span> + e
+</code></pre>
+<p>An unhandled <code>raise</code> propagates out of the program.</p>
+<h2 id="custom-error-types">Custom error types</h2>
+<p>For anything more structured than a bare string, define an error type with typed fields — optionally with defaults:</p>
+<pre class="glow-border"><code><span class="tok-decl">error</span> NetworkError:
+    message str
+    code int
+
+<span class="tok-decl">error</span> AppError:
+    message str
+    code int = <span class="tok-num">500</span>
+
+<span class="tok-kw">try</span>:
+    <span class="tok-kw">raise</span> NetworkError(<span class="tok-str">&quot;timeout&quot;</span>, <span class="tok-num">408</span>)
+<span class="tok-kw">catch</span> e:
+    <span class="tok-kw">show</span> e[<span class="tok-str">&quot;message&quot;</span>]   <span class="tok-com"># &quot;timeout&quot;</span>
+    <span class="tok-kw">show</span> e[<span class="tok-str">&quot;code&quot;</span>]      <span class="tok-com"># 408</span>
+</code></pre>
+<h2 id="assert">assert</h2>
+<pre class="glow-border"><code><span class="tok-kw">assert</span> <span class="tok-num">1</span> == <span class="tok-num">1</span>
+</code></pre>
+<p>A failing <code>assert</code> raises with a clear message rather than a bare <code>AssertionError</code>.</p>
+<h2 id="errors-from-built-in-functions">Errors from built-in functions</h2>
+<p>Every built-in (<code>int()</code>, <code>len()</code>, <code>range()</code>, <code>sum()</code>, and the rest) converts a bad argument into a clean NEKOVA error instead of leaking a raw Python exception:</p>
+<pre class="glow-border"><code><span class="tok-kw">show</span> int(<span class="tok-str">&quot;abc&quot;</span>)
+</code></pre>
+<pre><code>error: Cannot convert 'abc' to a number with int().
+  It needs to look like a plain number, e.g. int(&quot;42&quot;).
+</code></pre>
+<h2 id="recursion-limits">Recursion limits</h2>
+<pre class="glow-border"><code><span class="tok-decl">task</span> loop_forever(n):
+    <span class="tok-kw">return</span> loop_forever(n + <span class="tok-num">1</span>)
+
+loop_forever(<span class="tok-num">1</span>)
+</code></pre>
+<p>NEKOVA tracks its own call depth (500 by default), so this raises with the exact depth reached — not Python's own stack overflow error, and not a guess about whether it's "infinite" recursion versus a legitimately deep computation.</p>
+
+    <div class="docs-pager">
+      
+      <a href="../../docs/syntax/data-structures.html" class="prev">
+        <span class="dir">← Previous</span>
+        <span class="title">Data Structures</span>
+      </a>
+      
+      
+      <a href="../../docs/ai-native/think.html" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">think</span>
+      </a>
+      
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    
+    <div class="toc-label">On this page</div>
+    <ul>
+      
+      <li class="lvl-2"><a href="#try-catch">try / catch</a></li>
+      
+      <li class="lvl-2"><a href="#finally">finally</a></li>
+      
+      <li class="lvl-2"><a href="#raise">raise</a></li>
+      
+      <li class="lvl-2"><a href="#custom-error-types">Custom error types</a></li>
+      
+      <li class="lvl-2"><a href="#assert">assert</a></li>
+      
+      <li class="lvl-2"><a href="#errors-from-built-in-functions">Errors from built-in functions</a></li>
+      
+      <li class="lvl-2"><a href="#recursion-limits">Recursion limits</a></li>
+      
+    </ul>
+    
+  </aside>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="../../docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="../../static/js/animations.js"></script>
+
+</body>
+</html>

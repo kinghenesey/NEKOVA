@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>async & await · NEKOVA Docs</title>
+<meta name="description" content="async task and await, with the same defaults/varargs/type-hints support as a regular task.">
+<link rel="icon" href="../../static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../static/css/theme.css">
+<link rel="stylesheet" href="../../static/css/docs.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="../../index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="../../index.html#story">Why NEKOVA</a>
+    <a href="../../docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="../../docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    
+    <div class="group">
+      <div class="group-label">Getting Started</div>
+      <ul>
+        
+        <li><a href="../../docs/getting-started/installation.html">Installation</a></li>
+        
+        <li><a href="../../docs/getting-started/quickstart.html">Quickstart</a></li>
+        
+        <li><a href="../../docs/getting-started/project-structure.html">Project Structure</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Core Syntax</div>
+      <ul>
+        
+        <li><a href="../../docs/syntax/variables.html">Variables & Constants</a></li>
+        
+        <li><a href="../../docs/syntax/control-flow.html">Control Flow</a></li>
+        
+        <li><a href="../../docs/syntax/functions.html">Functions & Tasks</a></li>
+        
+        <li><a href="../../docs/syntax/destructuring.html">Destructuring</a></li>
+        
+        <li><a href="../../docs/syntax/data-structures.html">Data Structures</a></li>
+        
+        <li><a href="../../docs/syntax/error-handling.html">Error Handling</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">AI-Native Features</div>
+      <ul>
+        
+        <li><a href="../../docs/ai-native/think.html">think</a></li>
+        
+        <li><a href="../../docs/ai-native/remember-recall.html">remember & recall</a></li>
+        
+        <li><a href="../../docs/ai-native/prompt-blocks.html">Prompt Blocks</a></li>
+        
+        <li><a href="../../docs/ai-native/testing.html">Testing with mock & observe</a></li>
+        
+        <li><a href="../../docs/ai-native/retry-fallback.html">retry & fallback</a></li>
+        
+        <li><a href="../../docs/ai-native/async-await.html" class="active">async & await</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Classes & Objects</div>
+      <ul>
+        
+        <li><a href="../../docs/classes/classes.html">Classes</a></li>
+        
+        <li><a href="../../docs/classes/inheritance.html">Inheritance</a></li>
+        
+        <li><a href="../../docs/classes/enums.html">Enums</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Advanced</div>
+      <ul>
+        
+        <li><a href="../../docs/advanced/pattern-matching.html">Pattern Matching</a></li>
+        
+        <li><a href="../../docs/advanced/pipe-operator.html">Pipe Operator</a></li>
+        
+        <li><a href="../../docs/advanced/optional-chaining.html">Optional Chaining</a></li>
+        
+        <li><a href="../../docs/advanced/sandbox.html">Sandbox</a></li>
+        
+        <li><a href="../../docs/advanced/web-routes.html">Web Routes</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Reference</div>
+      <ul>
+        
+        <li><a href="../../docs/reference/cli-commands.html">CLI Commands</a></li>
+        
+        <li><a href="../../docs/reference/builtins.html">Built-in Functions</a></li>
+        
+        <li><a href="../../docs/reference/error-codes.html">Error Codes</a></li>
+        
+        <li><a href="../../docs/reference/changelog.html">Changelog</a></li>
+        
+      </ul>
+    </div>
+    
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="../../index.html">NEKOVA</a> / <a href="../../docs/getting-started/installation.html">Docs</a> / AI-Native Features
+    </div>
+
+    <h1>async & await</h1>
+    <p class="lede">async task and await, with the same defaults/varargs/type-hints support as a regular task.</p>
+
+    <h2 id="basic-usage">Basic usage</h2>
+<pre class="glow-border"><code><span class="tok-decl">async</span> <span class="tok-decl">task</span> greet(name):
+    <span class="tok-kw">return</span> name
+
+<span class="tok-kw">show</span> <span class="tok-decl">await</span> greet(<span class="tok-str">&quot;Sam&quot;</span>)
+</code></pre>
+<h2 id="why-async-if-nekova-is-single-threaded">Why "async" if NEKOVA is single-threaded?</h2>
+<p>There's no actual concurrency being scheduled — calling an <code>async task</code> runs synchronously under the hood, the same as a regular task. <code>async</code>/<code>await</code> exist as a familiar, readable marker for operations that conceptually involve waiting (an AI call, a network request), matching syntax people already know from other languages, without requiring you to manage an event loop yourself.</p>
+<h2 id="full-parity-with-regular-tasks">Full parity with regular tasks</h2>
+<p><code>async task</code> supports everything a regular task does — default values, varargs, type hints, arbitrary control flow, and docstrings:</p>
+<pre class="glow-border"><code><span class="tok-decl">async</span> <span class="tok-decl">task</span> add(a, b=<span class="tok-num">5</span>):
+    <span class="tok-kw">return</span> a + b
+
+<span class="tok-kw">show</span> <span class="tok-decl">await</span> add(<span class="tok-num">10</span>)       <span class="tok-com"># 15</span>
+<span class="tok-kw">show</span> <span class="tok-decl">await</span> add(<span class="tok-num">10</span>, <span class="tok-num">20</span>)   <span class="tok-com"># 30</span>
+</code></pre>
+<pre class="glow-border"><code><span class="tok-decl">async</span> <span class="tok-decl">task</span> total(*nums):
+    <span class="tok-decl">let</span> s = <span class="tok-num">0</span>
+    <span class="tok-kw">for</span> n <span class="tok-kw">in</span> nums:
+        s = s + n
+    <span class="tok-kw">return</span> s
+
+<span class="tok-kw">show</span> <span class="tok-decl">await</span> total(<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>)   <span class="tok-com"># 6</span>
+</code></pre>
+<h2 id="calling-without-await">Calling without await</h2>
+<p>Calling an <code>async task</code> without <code>await</code> still works — you just get the return value directly rather than through the <code>await</code> keyword:</p>
+<pre class="glow-border"><code><span class="tok-decl">async</span> <span class="tok-decl">task</span> greet(name):
+    <span class="tok-kw">return</span> name
+
+<span class="tok-decl">let</span> r = greet(<span class="tok-str">&quot;Sam&quot;</span>)
+<span class="tok-kw">show</span> r   <span class="tok-com"># &quot;Sam&quot;</span>
+</code></pre>
+<h2 id="nesting">Nesting</h2>
+<pre class="glow-border"><code><span class="tok-decl">async</span> <span class="tok-decl">task</span> inner(x):
+    <span class="tok-kw">return</span> x * <span class="tok-num">2</span>
+
+<span class="tok-decl">async</span> <span class="tok-decl">task</span> outer(x):
+    <span class="tok-decl">let</span> y = <span class="tok-decl">await</span> inner(x)
+    <span class="tok-kw">return</span> y + <span class="tok-num">1</span>
+
+<span class="tok-kw">show</span> <span class="tok-decl">await</span> outer(<span class="tok-num">5</span>)   <span class="tok-com"># 11</span>
+</code></pre>
+<h2 id="await-as-a-general-expression">await as a general expression</h2>
+<p><code>await</code> works anywhere an expression can appear, not just as a standalone statement:</p>
+<pre class="glow-border"><code><span class="tok-decl">async</span> <span class="tok-decl">task</span> get_num():
+    <span class="tok-kw">return</span> <span class="tok-num">10</span>
+
+<span class="tok-kw">show</span> <span class="tok-decl">await</span> get_num() + <span class="tok-num">5</span>      <span class="tok-com"># 15</span>
+
+<span class="tok-decl">async</span> <span class="tok-decl">task</span> inner():
+    <span class="tok-kw">return</span> <span class="tok-num">1</span>
+
+<span class="tok-decl">async</span> <span class="tok-decl">task</span> outer():
+    <span class="tok-kw">return</span> <span class="tok-decl">await</span> inner() + <span class="tok-num">1</span>
+
+<span class="tok-kw">show</span> <span class="tok-decl">await</span> outer()            <span class="tok-com"># 2</span>
+</code></pre>
+
+    <div class="docs-pager">
+      
+      <a href="../../docs/ai-native/retry-fallback.html" class="prev">
+        <span class="dir">← Previous</span>
+        <span class="title">retry & fallback</span>
+      </a>
+      
+      
+      <a href="../../docs/classes/classes.html" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">Classes</span>
+      </a>
+      
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    
+    <div class="toc-label">On this page</div>
+    <ul>
+      
+      <li class="lvl-2"><a href="#basic-usage">Basic usage</a></li>
+      
+      <li class="lvl-2"><a href="#why-async-if-nekova-is-single-threaded">Why "async" if NEKOVA is single-threaded?</a></li>
+      
+      <li class="lvl-2"><a href="#full-parity-with-regular-tasks">Full parity with regular tasks</a></li>
+      
+      <li class="lvl-2"><a href="#calling-without-await">Calling without await</a></li>
+      
+      <li class="lvl-2"><a href="#nesting">Nesting</a></li>
+      
+      <li class="lvl-2"><a href="#await-as-a-general-expression">await as a general expression</a></li>
+      
+    </ul>
+    
+  </aside>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="../../docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="../../static/js/animations.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,265 @@
+/* ============================================================
+   NEKOVA Docs — Landing Page
+   Signature: a blinking terminal cursor that "wakes up" and
+   starts thinking as you scroll — literalizing `think` as a
+   keyword. Green/white/grey only; red and amber never appear
+   here, since nothing on this page is an error or warning.
+   ============================================================ */
+
+.landing { overflow-x: clip; }
+
+/* --- Hero --- */
+.hero {
+  min-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  padding: var(--space-5);
+}
+
+.hero-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.55;
+}
+
+.hero-content { position: relative; z-index: 1; max-width: 780px; }
+
+.hero-kicker {
+  font-family: var(--font-code);
+  font-size: 0.85rem;
+  color: var(--nk-green);
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+}
+.hero-kicker .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--nk-green-bright);
+  box-shadow: 0 0 10px 2px rgba(61, 220, 132, 0.6);
+  animation: blink 1.4s step-start infinite;
+}
+
+.hero h1 {
+  font-size: clamp(2.4rem, 6vw, 4.2rem);
+  margin: 0 0 var(--space-4);
+  line-height: 1.15;
+}
+.hero h1 .think-kw {
+  color: var(--nk-green-bright);
+  position: relative;
+}
+.hero h1 .cursor-caret {
+  display: inline-block;
+  width: 0.09em;
+  background: var(--nk-green-bright);
+  margin-left: 0.05em;
+  animation: blink 1s step-start infinite;
+}
+
+.hero .sub {
+  font-size: 1.15rem;
+  color: var(--nk-white-2);
+  max-width: 56ch;
+  margin: 0 auto var(--space-5);
+}
+
+.hero-actions { display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap; }
+.btn {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.85em 1.7em;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  display: inline-block;
+}
+.btn-primary {
+  background: var(--nk-green);
+  color: var(--nk-black);
+}
+.btn-primary:hover {
+  background: var(--nk-green-bright);
+  color: var(--nk-black);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow-green);
+}
+.btn-ghost {
+  border-color: var(--nk-grey-2);
+  color: var(--nk-white-2);
+  background: transparent;
+}
+.btn-ghost:hover { border-color: var(--nk-grey); color: var(--nk-white); transform: translateY(-2px); }
+
+.scroll-cue {
+  position: absolute;
+  bottom: var(--space-5);
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--nk-white-3);
+  font-size: 0.78rem;
+  font-family: var(--font-code);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+  opacity: 0.8;
+}
+.scroll-cue .line { width: 1px; height: 34px; background: linear-gradient(var(--nk-green), transparent); animation: scroll-pulse 1.8s ease-in-out infinite; }
+@keyframes scroll-pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+/* --- Story sections (scrollytelling) --- */
+.story {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-5);
+}
+.story-eyebrow {
+  font-family: var(--font-code);
+  font-size: 0.8rem;
+  color: var(--nk-green);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-3);
+}
+.story h2 {
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  margin: 0 0 var(--space-4);
+}
+.story p {
+  font-size: 1.08rem;
+  color: var(--nk-white-2);
+  margin-bottom: var(--space-3);
+}
+.story .highlight { color: var(--nk-white); font-weight: 600; }
+.story .accent { color: var(--nk-green-bright); }
+
+/* --- Terminal reproduction (origin story visual) --- */
+.terminal-window {
+  background: var(--nk-black-3);
+  border: 1px solid var(--nk-grey-2);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  margin: var(--space-5) 0;
+}
+.terminal-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.7em 1em;
+  background: var(--nk-black-2);
+  border-bottom: 1px solid var(--nk-grey-2);
+}
+.terminal-titlebar .tdot { width: 10px; height: 10px; border-radius: 50%; background: var(--nk-grey); }
+.terminal-titlebar .tlabel {
+  margin-left: auto;
+  font-family: var(--font-code);
+  font-size: 0.75rem;
+  color: var(--nk-white-3);
+}
+.terminal-body {
+  padding: var(--space-4);
+  font-family: var(--font-code);
+  font-size: 0.88rem;
+  color: var(--nk-white-2);
+  line-height: 1.7;
+}
+.terminal-body .prompt { color: var(--nk-green); }
+.terminal-body .err { color: var(--nk-error); }
+.terminal-body .ok { color: var(--nk-green-bright); }
+
+/* --- Pillars (3D tilt cards) --- */
+.pillars {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-5);
+}
+.pillars-head { text-align: center; max-width: 640px; margin: 0 auto var(--space-6); }
+.pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  perspective: 1200px;
+}
+@media (max-width: 860px) { .pillars-grid { grid-template-columns: 1fr; } }
+
+.pillar-card {
+  background: var(--nk-black-3);
+  border: 1px solid var(--nk-grey-2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  transform-style: preserve-3d;
+  transition: transform 0.15s ease-out, border-color 0.3s ease, box-shadow 0.3s ease;
+  will-change: transform;
+}
+.pillar-card:hover {
+  border-color: var(--nk-green-deep);
+  box-shadow: var(--shadow-glow-green);
+}
+.pillar-card .pillar-icon {
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--nk-grey-2);
+  border-radius: var(--radius-md);
+  color: var(--nk-green-bright);
+  margin-bottom: var(--space-4);
+  font-family: var(--font-code);
+  font-size: 1.2rem;
+  transform: translateZ(30px);
+}
+.pillar-card h3 {
+  transform: translateZ(20px);
+  margin: 0 0 var(--space-2);
+  font-size: 1.15rem;
+}
+.pillar-card p {
+  transform: translateZ(10px);
+  color: var(--nk-white-2);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* --- Live example --- */
+.showcase {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+}
+.showcase-code {
+  text-align: left;
+  margin-top: var(--space-5);
+}
+
+/* --- Final CTA --- */
+.final-cta {
+  text-align: center;
+  padding: var(--space-8) var(--space-5) var(--space-7);
+  max-width: 640px;
+  margin: 0 auto;
+}
+.final-cta h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); margin-bottom: var(--space-3); }
+.final-cta p { color: var(--nk-white-2); margin-bottom: var(--space-5); }
+.install-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8em;
+  background: var(--nk-black-3);
+  border: 1px solid var(--nk-grey-2);
+  border-radius: var(--radius-md);
+  padding: 0.9em 1.4em;
+  font-family: var(--font-code);
+  font-size: 0.95rem;
+  color: var(--nk-green-pale);
+  margin-bottom: var(--space-5);
+}
+.install-line .prompt-mark { color: var(--nk-green); }

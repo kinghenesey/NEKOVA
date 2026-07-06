@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>think · NEKOVA Docs</title>
+<meta name="description" content="The keyword that calls an AI model — no client, no SDK, no response object to unwrap.">
+<link rel="icon" href="../../static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../static/css/theme.css">
+<link rel="stylesheet" href="../../static/css/docs.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="../../index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="../../index.html#story">Why NEKOVA</a>
+    <a href="../../docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="../../docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    
+    <div class="group">
+      <div class="group-label">Getting Started</div>
+      <ul>
+        
+        <li><a href="../../docs/getting-started/installation.html">Installation</a></li>
+        
+        <li><a href="../../docs/getting-started/quickstart.html">Quickstart</a></li>
+        
+        <li><a href="../../docs/getting-started/project-structure.html">Project Structure</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Core Syntax</div>
+      <ul>
+        
+        <li><a href="../../docs/syntax/variables.html">Variables & Constants</a></li>
+        
+        <li><a href="../../docs/syntax/control-flow.html">Control Flow</a></li>
+        
+        <li><a href="../../docs/syntax/functions.html">Functions & Tasks</a></li>
+        
+        <li><a href="../../docs/syntax/destructuring.html">Destructuring</a></li>
+        
+        <li><a href="../../docs/syntax/data-structures.html">Data Structures</a></li>
+        
+        <li><a href="../../docs/syntax/error-handling.html">Error Handling</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">AI-Native Features</div>
+      <ul>
+        
+        <li><a href="../../docs/ai-native/think.html" class="active">think</a></li>
+        
+        <li><a href="../../docs/ai-native/remember-recall.html">remember & recall</a></li>
+        
+        <li><a href="../../docs/ai-native/prompt-blocks.html">Prompt Blocks</a></li>
+        
+        <li><a href="../../docs/ai-native/testing.html">Testing with mock & observe</a></li>
+        
+        <li><a href="../../docs/ai-native/retry-fallback.html">retry & fallback</a></li>
+        
+        <li><a href="../../docs/ai-native/async-await.html">async & await</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Classes & Objects</div>
+      <ul>
+        
+        <li><a href="../../docs/classes/classes.html">Classes</a></li>
+        
+        <li><a href="../../docs/classes/inheritance.html">Inheritance</a></li>
+        
+        <li><a href="../../docs/classes/enums.html">Enums</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Advanced</div>
+      <ul>
+        
+        <li><a href="../../docs/advanced/pattern-matching.html">Pattern Matching</a></li>
+        
+        <li><a href="../../docs/advanced/pipe-operator.html">Pipe Operator</a></li>
+        
+        <li><a href="../../docs/advanced/optional-chaining.html">Optional Chaining</a></li>
+        
+        <li><a href="../../docs/advanced/sandbox.html">Sandbox</a></li>
+        
+        <li><a href="../../docs/advanced/web-routes.html">Web Routes</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Reference</div>
+      <ul>
+        
+        <li><a href="../../docs/reference/cli-commands.html">CLI Commands</a></li>
+        
+        <li><a href="../../docs/reference/builtins.html">Built-in Functions</a></li>
+        
+        <li><a href="../../docs/reference/error-codes.html">Error Codes</a></li>
+        
+        <li><a href="../../docs/reference/changelog.html">Changelog</a></li>
+        
+      </ul>
+    </div>
+    
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="../../index.html">NEKOVA</a> / <a href="../../docs/getting-started/installation.html">Docs</a> / AI-Native Features
+    </div>
+
+    <h1>think</h1>
+    <p class="lede">The keyword that calls an AI model — no client, no SDK, no response object to unwrap.</p>
+
+    <h2 id="basic-usage">Basic usage</h2>
+<pre class="glow-border"><code><span class="tok-decl">let</span> summary = <span class="tok-ai">think</span> <span class="tok-str">&quot;Summarize the plot of Romeo and Juliet in one sentence&quot;</span>
+<span class="tok-kw">show</span> summary
+</code></pre>
+<p><code>think</code> sends the prompt to the configured AI provider and returns the response directly.</p>
+<h2 id="the-mock-provider">The mock provider</h2>
+<p>By default, NEKOVA uses a <strong>mock provider</strong> so you can write and test AI-flavored code without an API key. Every mock response is tagged <code>[MOCK]</code>, so it's never mistaken for a real model reply — this was a deliberate fix (see the <a href="../reference/changelog.html">Changelog</a>) after early versions had some untagged mock branches.</p>
+<h2 id="output-formats">Output formats</h2>
+<p><code>think</code> can ask for a specific shape back:</p>
+<pre class="glow-border"><code><span class="tok-decl">let</span> data = <span class="tok-ai">think</span> <span class="tok-str">&quot;Extract fields from this text&quot;</span> as json
+<span class="tok-decl">let</span> items = <span class="tok-ai">think</span> <span class="tok-str">&quot;List three colors&quot;</span> as list
+<span class="tok-decl">let</span> is_valid = <span class="tok-ai">think</span> <span class="tok-str">&quot;Is this a valid email?&quot;</span> as bool
+<span class="tok-decl">let</span> count = <span class="tok-ai">think</span> <span class="tok-str">&quot;How many legs does a spider have?&quot;</span> as number
+</code></pre>
+<h2 id="structured-schemas">Structured schemas</h2>
+<pre class="glow-border"><code><span class="tok-decl">let</span> user = <span class="tok-ai">think</span> <span class="tok-str">&quot;Extract name and age from: Ada, 30&quot;</span> as <span class="tok-decl">schema</span> {<span class="tok-str">&quot;name&quot;</span>: <span class="tok-str">&quot;text&quot;</span>, <span class="tok-str">&quot;age&quot;</span>: <span class="tok-str">&quot;number&quot;</span>}
+</code></pre>
+<h2 id="inline-error-handling">Inline error handling</h2>
+<p>If the AI call fails, <code>when error:</code> lets you supply a fallback instead of embedding an error string in the result:</p>
+<pre class="glow-border"><code><span class="tok-decl">let</span> summary = <span class="tok-ai">think</span> <span class="tok-str">&quot;summarize this document&quot;</span> <span class="tok-kw">when</span> <span class="tok-decl">error</span>: <span class="tok-str">&quot;unavailable&quot;</span>
+</code></pre>
+<p>Without the <code>when error:</code> clause, a failed call embeds <code>[think error: ...]</code> in the result rather than crashing the program — <code>when error:</code> exists for when you'd rather control that fallback yourself.</p>
+<pre class="glow-border"><code><span class="tok-decl">let</span> x = <span class="tok-ai">think</span> <span class="tok-str">&quot;hi&quot;</span> as json <span class="tok-kw">when</span> <span class="tok-decl">error</span>: {<span class="tok-str">&quot;status&quot;</span>: <span class="tok-str">&quot;down&quot;</span>}
+</code></pre>
+<h2 id="f-strings-in-prompts">f-strings in prompts</h2>
+<pre class="glow-border"><code><span class="tok-decl">task</span> summarize(document):
+    <span class="tok-kw">return</span> <span class="tok-ai">think</span> <span class="tok-str">f&quot;Summarize this in one sentence: {document}&quot;</span>
+</code></pre>
+<h2 id="timeouts">Timeouts</h2>
+<p><code>think</code> calls run with a timeout under the hood, so a hung provider doesn't hang your whole program — see <a href="async-await.html">async &amp; await</a> for how NEKOVA handles this without you needing to manage an event loop yourself.</p>
+
+    <div class="docs-pager">
+      
+      <a href="../../docs/syntax/error-handling.html" class="prev">
+        <span class="dir">← Previous</span>
+        <span class="title">Error Handling</span>
+      </a>
+      
+      
+      <a href="../../docs/ai-native/remember-recall.html" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">remember & recall</span>
+      </a>
+      
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    
+    <div class="toc-label">On this page</div>
+    <ul>
+      
+      <li class="lvl-2"><a href="#basic-usage">Basic usage</a></li>
+      
+      <li class="lvl-2"><a href="#the-mock-provider">The mock provider</a></li>
+      
+      <li class="lvl-2"><a href="#output-formats">Output formats</a></li>
+      
+      <li class="lvl-2"><a href="#structured-schemas">Structured schemas</a></li>
+      
+      <li class="lvl-2"><a href="#inline-error-handling">Inline error handling</a></li>
+      
+      <li class="lvl-2"><a href="#f-strings-in-prompts">f-strings in prompts</a></li>
+      
+      <li class="lvl-2"><a href="#timeouts">Timeouts</a></li>
+      
+    </ul>
+    
+  </aside>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="../../docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="../../static/js/animations.js"></script>
+
+</body>
+</html>

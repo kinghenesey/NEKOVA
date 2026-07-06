@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Destructuring · NEKOVA Docs</title>
+<meta name="description" content="Pull values out of lists, tuples, and dicts in one line — three related forms, one underlying idea.">
+<link rel="icon" href="../../static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../static/css/theme.css">
+<link rel="stylesheet" href="../../static/css/docs.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="../../index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="../../index.html#story">Why NEKOVA</a>
+    <a href="../../docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="../../docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    
+    <div class="group">
+      <div class="group-label">Getting Started</div>
+      <ul>
+        
+        <li><a href="../../docs/getting-started/installation.html">Installation</a></li>
+        
+        <li><a href="../../docs/getting-started/quickstart.html">Quickstart</a></li>
+        
+        <li><a href="../../docs/getting-started/project-structure.html">Project Structure</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Core Syntax</div>
+      <ul>
+        
+        <li><a href="../../docs/syntax/variables.html">Variables & Constants</a></li>
+        
+        <li><a href="../../docs/syntax/control-flow.html">Control Flow</a></li>
+        
+        <li><a href="../../docs/syntax/functions.html">Functions & Tasks</a></li>
+        
+        <li><a href="../../docs/syntax/destructuring.html" class="active">Destructuring</a></li>
+        
+        <li><a href="../../docs/syntax/data-structures.html">Data Structures</a></li>
+        
+        <li><a href="../../docs/syntax/error-handling.html">Error Handling</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">AI-Native Features</div>
+      <ul>
+        
+        <li><a href="../../docs/ai-native/think.html">think</a></li>
+        
+        <li><a href="../../docs/ai-native/remember-recall.html">remember & recall</a></li>
+        
+        <li><a href="../../docs/ai-native/prompt-blocks.html">Prompt Blocks</a></li>
+        
+        <li><a href="../../docs/ai-native/testing.html">Testing with mock & observe</a></li>
+        
+        <li><a href="../../docs/ai-native/retry-fallback.html">retry & fallback</a></li>
+        
+        <li><a href="../../docs/ai-native/async-await.html">async & await</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Classes & Objects</div>
+      <ul>
+        
+        <li><a href="../../docs/classes/classes.html">Classes</a></li>
+        
+        <li><a href="../../docs/classes/inheritance.html">Inheritance</a></li>
+        
+        <li><a href="../../docs/classes/enums.html">Enums</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Advanced</div>
+      <ul>
+        
+        <li><a href="../../docs/advanced/pattern-matching.html">Pattern Matching</a></li>
+        
+        <li><a href="../../docs/advanced/pipe-operator.html">Pipe Operator</a></li>
+        
+        <li><a href="../../docs/advanced/optional-chaining.html">Optional Chaining</a></li>
+        
+        <li><a href="../../docs/advanced/sandbox.html">Sandbox</a></li>
+        
+        <li><a href="../../docs/advanced/web-routes.html">Web Routes</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Reference</div>
+      <ul>
+        
+        <li><a href="../../docs/reference/cli-commands.html">CLI Commands</a></li>
+        
+        <li><a href="../../docs/reference/builtins.html">Built-in Functions</a></li>
+        
+        <li><a href="../../docs/reference/error-codes.html">Error Codes</a></li>
+        
+        <li><a href="../../docs/reference/changelog.html">Changelog</a></li>
+        
+      </ul>
+    </div>
+    
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="../../index.html">NEKOVA</a> / <a href="../../docs/getting-started/installation.html">Docs</a> / Core Syntax
+    </div>
+
+    <h1>Destructuring</h1>
+    <p class="lede">Pull values out of lists, tuples, and dicts in one line — three related forms, one underlying idea.</p>
+
+    <h2 id="list-destructuring">List destructuring</h2>
+<pre class="glow-border"><code><span class="tok-decl">let</span> scores = [<span class="tok-num">10</span>, <span class="tok-num">20</span>, <span class="tok-num">30</span>]
+<span class="tok-decl">let</span> [first, second] = scores
+<span class="tok-kw">show</span> first    <span class="tok-com"># 10</span>
+<span class="tok-kw">show</span> second   <span class="tok-com"># 20</span>
+</code></pre>
+<p>Extra trailing items beyond your named targets are simply ignored. If there aren't <em>enough</em> items to fill your named targets, NEKOVA raises rather than leaving some as <code>null</code>.</p>
+<h2 id="rest-capture">Rest capture</h2>
+<pre class="glow-border"><code><span class="tok-decl">let</span> [first, ...rest] = [<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>, <span class="tok-num">4</span>]
+<span class="tok-kw">show</span> first   <span class="tok-com"># 1</span>
+<span class="tok-kw">show</span> rest    <span class="tok-com"># [2, 3, 4]</span>
+</code></pre>
+<p><code>...rest</code> must be the last element in the pattern, and it always captures a list — even if it ends up empty.</p>
+<h2 id="tuple-style-destructuring">Tuple-style destructuring</h2>
+<p>Parentheses work exactly the same way as brackets:</p>
+<pre class="glow-border"><code><span class="tok-decl">let</span> pair = [<span class="tok-num">1</span>, <span class="tok-num">2</span>]
+<span class="tok-decl">let</span> (a, b) = pair
+<span class="tok-kw">show</span> a   <span class="tok-com"># 1</span>
+<span class="tok-kw">show</span> b   <span class="tok-com"># 2</span>
+</code></pre>
+<p>This is also how you capture multiple return values from a task or builtin:</p>
+<pre class="glow-border"><code><span class="tok-decl">let</span> (quotient, remainder) = divmod(<span class="tok-num">10</span>, <span class="tok-num">3</span>)
+<span class="tok-kw">show</span> quotient    <span class="tok-com"># 3</span>
+<span class="tok-kw">show</span> remainder   <span class="tok-com"># 1</span>
+</code></pre>
+<h2 id="dict-destructuring">Dict destructuring</h2>
+<pre class="glow-border"><code><span class="tok-decl">let</span> user = {<span class="tok-str">&quot;name&quot;</span>: <span class="tok-str">&quot;Ada&quot;</span>, <span class="tok-str">&quot;age&quot;</span>: <span class="tok-num">30</span>}
+<span class="tok-decl">let</span> {name, age} = user
+<span class="tok-kw">show</span> name   <span class="tok-com"># &quot;Ada&quot;</span>
+<span class="tok-kw">show</span> age    <span class="tok-com"># 30</span>
+</code></pre>
+<p>Each name inside <code>{}</code> is both the key read from the dict and the variable it's bound to. A missing key raises immediately, listing which keys were actually available.</p>
+<h2 id="where-its-useful">Where it's useful</h2>
+<p>Destructuring a task's return value is the most common pattern:</p>
+<pre class="glow-border"><code><span class="tok-decl">task</span> get_bounds(numbers):
+    <span class="tok-kw">return</span> [min(numbers), max(numbers)]
+
+<span class="tok-decl">let</span> [low, high] = get_bounds([<span class="tok-num">4</span>, <span class="tok-num">8</span>, <span class="tok-num">1</span>, <span class="tok-num">9</span>, <span class="tok-num">3</span>])
+<span class="tok-kw">show</span> low    <span class="tok-com"># 1</span>
+<span class="tok-kw">show</span> high   <span class="tok-com"># 9</span>
+</code></pre>
+
+    <div class="docs-pager">
+      
+      <a href="../../docs/syntax/functions.html" class="prev">
+        <span class="dir">← Previous</span>
+        <span class="title">Functions & Tasks</span>
+      </a>
+      
+      
+      <a href="../../docs/syntax/data-structures.html" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">Data Structures</span>
+      </a>
+      
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    
+    <div class="toc-label">On this page</div>
+    <ul>
+      
+      <li class="lvl-2"><a href="#list-destructuring">List destructuring</a></li>
+      
+      <li class="lvl-2"><a href="#rest-capture">Rest capture</a></li>
+      
+      <li class="lvl-2"><a href="#tuple-style-destructuring">Tuple-style destructuring</a></li>
+      
+      <li class="lvl-2"><a href="#dict-destructuring">Dict destructuring</a></li>
+      
+      <li class="lvl-2"><a href="#where-its-useful">Where it's useful</a></li>
+      
+    </ul>
+    
+  </aside>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="../../docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="../../static/js/animations.js"></script>
+
+</body>
+</html>

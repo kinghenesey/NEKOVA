@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installation · NEKOVA Docs</title>
+<meta name="description" content="NEKOVA installs like any other Python package — one command, no separate runtime to manage.">
+<link rel="icon" href="../../static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../static/css/theme.css">
+<link rel="stylesheet" href="../../static/css/docs.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="../../index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="../../index.html#story">Why NEKOVA</a>
+    <a href="../../docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="../../docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    
+    <div class="group">
+      <div class="group-label">Getting Started</div>
+      <ul>
+        
+        <li><a href="../../docs/getting-started/installation.html" class="active">Installation</a></li>
+        
+        <li><a href="../../docs/getting-started/quickstart.html">Quickstart</a></li>
+        
+        <li><a href="../../docs/getting-started/project-structure.html">Project Structure</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Core Syntax</div>
+      <ul>
+        
+        <li><a href="../../docs/syntax/variables.html">Variables & Constants</a></li>
+        
+        <li><a href="../../docs/syntax/control-flow.html">Control Flow</a></li>
+        
+        <li><a href="../../docs/syntax/functions.html">Functions & Tasks</a></li>
+        
+        <li><a href="../../docs/syntax/destructuring.html">Destructuring</a></li>
+        
+        <li><a href="../../docs/syntax/data-structures.html">Data Structures</a></li>
+        
+        <li><a href="../../docs/syntax/error-handling.html">Error Handling</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">AI-Native Features</div>
+      <ul>
+        
+        <li><a href="../../docs/ai-native/think.html">think</a></li>
+        
+        <li><a href="../../docs/ai-native/remember-recall.html">remember & recall</a></li>
+        
+        <li><a href="../../docs/ai-native/prompt-blocks.html">Prompt Blocks</a></li>
+        
+        <li><a href="../../docs/ai-native/testing.html">Testing with mock & observe</a></li>
+        
+        <li><a href="../../docs/ai-native/retry-fallback.html">retry & fallback</a></li>
+        
+        <li><a href="../../docs/ai-native/async-await.html">async & await</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Classes & Objects</div>
+      <ul>
+        
+        <li><a href="../../docs/classes/classes.html">Classes</a></li>
+        
+        <li><a href="../../docs/classes/inheritance.html">Inheritance</a></li>
+        
+        <li><a href="../../docs/classes/enums.html">Enums</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Advanced</div>
+      <ul>
+        
+        <li><a href="../../docs/advanced/pattern-matching.html">Pattern Matching</a></li>
+        
+        <li><a href="../../docs/advanced/pipe-operator.html">Pipe Operator</a></li>
+        
+        <li><a href="../../docs/advanced/optional-chaining.html">Optional Chaining</a></li>
+        
+        <li><a href="../../docs/advanced/sandbox.html">Sandbox</a></li>
+        
+        <li><a href="../../docs/advanced/web-routes.html">Web Routes</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Reference</div>
+      <ul>
+        
+        <li><a href="../../docs/reference/cli-commands.html">CLI Commands</a></li>
+        
+        <li><a href="../../docs/reference/builtins.html">Built-in Functions</a></li>
+        
+        <li><a href="../../docs/reference/error-codes.html">Error Codes</a></li>
+        
+        <li><a href="../../docs/reference/changelog.html">Changelog</a></li>
+        
+      </ul>
+    </div>
+    
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="../../index.html">NEKOVA</a> / <a href="../../docs/getting-started/installation.html">Docs</a> / Getting Started
+    </div>
+
+    <h1>Installation</h1>
+    <p class="lede">NEKOVA installs like any other Python package — one command, no separate runtime to manage.</p>
+
+    <h2 id="requirements">Requirements</h2>
+<p>NEKOVA runs on top of Python 3.10 or later. You don't need to know Python to write NEKOVA programs, but the interpreter itself is a Python package, so <code>pip</code> is how it gets onto your machine.</p>
+<h2 id="install-from-pypi">Install from PyPI</h2>
+<pre class="glow-border"><code class="language-bash">pip install nekova-lang
+</code></pre>
+<p>This installs the <code>nekova</code> command-line tool, which gives you everything: running files, the REPL, the project scaffolder, and the built-in checker.</p>
+<p>Verify it worked:</p>
+<pre class="glow-border"><code class="language-bash">nekova --version
+</code></pre>
+<h2 id="your-first-file">Your first file</h2>
+<p>Create a file called <code>hello.nk</code>:</p>
+<pre class="glow-border"><code><span class="tok-kw">show</span> <span class="tok-str">&quot;Hello from NEKOVA&quot;</span>
+</code></pre>
+<p>Run it:</p>
+<pre class="glow-border"><code class="language-bash">nekova run hello.nk
+</code></pre>
+<h2 id="the-ai-provider">The AI provider</h2>
+<p>NEKOVA ships with a <strong>mock AI provider</strong> enabled by default, so <code>think</code> and friends work immediately with no API key — every mock response is tagged <code>[MOCK]</code> so it's never mistaken for a real model reply. This is deliberate: you shouldn't need to sign up for anything to try the language.</p>
+<p>When you're ready to use a real model, set the relevant API key as an environment variable (the exact variable name depends on which provider you configure) and NEKOVA will use it automatically. See <a href="../ai-native/think.html"><code>think</code></a> for details.</p>
+<h2 id="vs-code-extension">VS Code extension</h2>
+<p>If you use VS Code, search the marketplace for <strong>"NEKOVA - AI Native Programming Language"</strong> (publisher: SYNEKCOTTech), or install directly:</p>
+<pre class="glow-border"><code class="language-bash">code --install-extension SYNEKCOTTech.nekova-lang
+</code></pre>
+<p>It adds syntax highlighting, snippets, two color themes built from NEKOVA's own brand palette, and a <code>.nk</code> file icon.</p>
+<div class="callout">
+<div class="callout-title">Next</div>
+Head to the <a href="quickstart.html">Quickstart</a> for a guided tour of the language, or jump straight to <a href="../syntax/variables.html">Core Syntax</a> if you'd rather explore on your own.
+</div>
+
+    <div class="docs-pager">
+      <span></span>
+      
+      <a href="../../docs/getting-started/quickstart.html" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">Quickstart</span>
+      </a>
+      
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    
+    <div class="toc-label">On this page</div>
+    <ul>
+      
+      <li class="lvl-2"><a href="#requirements">Requirements</a></li>
+      
+      <li class="lvl-2"><a href="#install-from-pypi">Install from PyPI</a></li>
+      
+      <li class="lvl-2"><a href="#your-first-file">Your first file</a></li>
+      
+      <li class="lvl-2"><a href="#the-ai-provider">The AI provider</a></li>
+      
+      <li class="lvl-2"><a href="#vs-code-extension">VS Code extension</a></li>
+      
+    </ul>
+    
+  </aside>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="../../docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="../../static/js/animations.js"></script>
+
+</body>
+</html>

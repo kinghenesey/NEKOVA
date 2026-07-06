@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Error Codes · NEKOVA Docs</title>
+<meta name="description" content="Every error and warning code NEKOVA can report, and what each one means.">
+<link rel="icon" href="../../static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../static/css/theme.css">
+<link rel="stylesheet" href="../../static/css/docs.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="../../index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="../../index.html#story">Why NEKOVA</a>
+    <a href="../../docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="../../docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    
+    <div class="group">
+      <div class="group-label">Getting Started</div>
+      <ul>
+        
+        <li><a href="../../docs/getting-started/installation.html">Installation</a></li>
+        
+        <li><a href="../../docs/getting-started/quickstart.html">Quickstart</a></li>
+        
+        <li><a href="../../docs/getting-started/project-structure.html">Project Structure</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Core Syntax</div>
+      <ul>
+        
+        <li><a href="../../docs/syntax/variables.html">Variables & Constants</a></li>
+        
+        <li><a href="../../docs/syntax/control-flow.html">Control Flow</a></li>
+        
+        <li><a href="../../docs/syntax/functions.html">Functions & Tasks</a></li>
+        
+        <li><a href="../../docs/syntax/destructuring.html">Destructuring</a></li>
+        
+        <li><a href="../../docs/syntax/data-structures.html">Data Structures</a></li>
+        
+        <li><a href="../../docs/syntax/error-handling.html">Error Handling</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">AI-Native Features</div>
+      <ul>
+        
+        <li><a href="../../docs/ai-native/think.html">think</a></li>
+        
+        <li><a href="../../docs/ai-native/remember-recall.html">remember & recall</a></li>
+        
+        <li><a href="../../docs/ai-native/prompt-blocks.html">Prompt Blocks</a></li>
+        
+        <li><a href="../../docs/ai-native/testing.html">Testing with mock & observe</a></li>
+        
+        <li><a href="../../docs/ai-native/retry-fallback.html">retry & fallback</a></li>
+        
+        <li><a href="../../docs/ai-native/async-await.html">async & await</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Classes & Objects</div>
+      <ul>
+        
+        <li><a href="../../docs/classes/classes.html">Classes</a></li>
+        
+        <li><a href="../../docs/classes/inheritance.html">Inheritance</a></li>
+        
+        <li><a href="../../docs/classes/enums.html">Enums</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Advanced</div>
+      <ul>
+        
+        <li><a href="../../docs/advanced/pattern-matching.html">Pattern Matching</a></li>
+        
+        <li><a href="../../docs/advanced/pipe-operator.html">Pipe Operator</a></li>
+        
+        <li><a href="../../docs/advanced/optional-chaining.html">Optional Chaining</a></li>
+        
+        <li><a href="../../docs/advanced/sandbox.html">Sandbox</a></li>
+        
+        <li><a href="../../docs/advanced/web-routes.html">Web Routes</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Reference</div>
+      <ul>
+        
+        <li><a href="../../docs/reference/cli-commands.html">CLI Commands</a></li>
+        
+        <li><a href="../../docs/reference/builtins.html">Built-in Functions</a></li>
+        
+        <li><a href="../../docs/reference/error-codes.html" class="active">Error Codes</a></li>
+        
+        <li><a href="../../docs/reference/changelog.html">Changelog</a></li>
+        
+      </ul>
+    </div>
+    
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="../../index.html">NEKOVA</a> / <a href="../../docs/getting-started/installation.html">Docs</a> / Reference
+    </div>
+
+    <h1>Error Codes</h1>
+    <p class="lede">Every error and warning code NEKOVA can report, and what each one means.</p>
+
+    <h2 id="runtime-errors-raised-while-a-program-runs">Runtime errors (raised while a program runs)</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Name</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E001</td>
+<td>Variable Not Found</td>
+<td>A name was used before it was defined. Comes with a "did you mean?" suggestion (real <code>difflib</code> similarity check) when a similarly-named variable is in scope.</td>
+</tr>
+<tr>
+<td>E002</td>
+<td>Syntax Error</td>
+<td>The lexer or tokenizer hit something it couldn't read — includes inconsistent indentation that doesn't match any enclosing block.</td>
+</tr>
+<tr>
+<td>E003</td>
+<td>Parse Error</td>
+<td>The parser understood the tokens but not their arrangement.</td>
+</tr>
+<tr>
+<td>E004</td>
+<td>Type Error</td>
+<td>An operation got a value of the wrong type — including the <code>"5" + 3</code> string/number mismatch.</td>
+</tr>
+<tr>
+<td>E005</td>
+<td>Runtime Error</td>
+<td>The general-purpose runtime error — most custom interpreter errors (destructuring failures, const reassignment, keyword-argument mistakes) surface under this code.</td>
+</tr>
+<tr>
+<td>E006</td>
+<td>Division By Zero</td>
+<td>Self-explanatory.</td>
+</tr>
+<tr>
+<td>E007</td>
+<td>Module Not Found</td>
+<td>An <code>import</code>/<code>use</code> couldn't find its target.</td>
+</tr>
+<tr>
+<td>E008</td>
+<td>Index Out of Range</td>
+<td>A list index (or negative index) fell outside the list's bounds.</td>
+</tr>
+<tr>
+<td>E009</td>
+<td>Key Not Found</td>
+<td>A dict key or destructured key wasn't present — lists the keys that <em>were</em> available.</td>
+</tr>
+<tr>
+<td>E010</td>
+<td>Maximum Call Depth Exceeded</td>
+<td>NEKOVA's own call-depth tracking (500 by default) caught unbounded recursion, and reports the exact depth reached.</td>
+</tr>
+<tr>
+<td>E011</td>
+<td>Reserved Keyword Used as Name</td>
+<td>A variable or parameter tried to reuse a language keyword (e.g. naming something <code>fetch</code>).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="checker-warnings-nekova-check">Checker warnings (<code>nekova check</code>)</h2>
+<p>These don't stop your program from running — they're surfaced by the static checker.</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>W001</td>
+<td>A name is used but may not be defined anywhere in scope.</td>
+</tr>
+<tr>
+<td>W002</td>
+<td>A variable is defined but never used.</td>
+</tr>
+<tr>
+<td>W003</td>
+<td>A task was called with the wrong number of arguments.</td>
+</tr>
+<tr>
+<td>W005</td>
+<td>A built-in name (like <code>len</code> or <code>str</code>) was shadowed by a local variable.</td>
+</tr>
+<tr>
+<td>W006</td>
+<td>Unreachable code — statements after a <code>return</code>/<code>raise</code>/<code>break</code> that can never run.</td>
+</tr>
+<tr>
+<td>W009</td>
+<td>A <code>match</code> block has no <code>else</code> arm and may not cover every case.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="reading-an-error-message">Reading an error message</h2>
+<p>Every NEKOVA error follows the same shape: <strong>what happened</strong>, <strong>why</strong>, and <strong>what to check next</strong> — never a bare stack trace. For example:</p>
+<pre><code>error[E010]: Maximum Call Depth Exceeded
+  Task 'loop_forever' exceeded the maximum call depth (500 nested calls).
+</code></pre>
+<p>If you hit a raw Python traceback instead of this format, that's considered a bug in NEKOVA itself worth reporting — see the <a href="changelog.html">Changelog</a> for the ongoing audit of exactly this class of issue.</p>
+
+    <div class="docs-pager">
+      
+      <a href="../../docs/reference/builtins.html" class="prev">
+        <span class="dir">← Previous</span>
+        <span class="title">Built-in Functions</span>
+      </a>
+      
+      
+      <a href="../../docs/reference/changelog.html" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">Changelog</span>
+      </a>
+      
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    
+    <div class="toc-label">On this page</div>
+    <ul>
+      
+      <li class="lvl-2"><a href="#runtime-errors-raised-while-a-program-runs">Runtime errors (raised while a program runs)</a></li>
+      
+      <li class="lvl-2"><a href="#checker-warnings-nekova-check">Checker warnings (nekova check)</a></li>
+      
+      <li class="lvl-2"><a href="#reading-an-error-message">Reading an error message</a></li>
+      
+    </ul>
+    
+  </aside>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="../../docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="../../static/js/animations.js"></script>
+
+</body>
+</html>

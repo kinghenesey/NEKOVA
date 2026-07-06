@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Variables & Constants · NEKOVA Docs</title>
+<meta name="description" content="let for values that change, const for values that shouldn't — and NEKOVA enforces the difference at runtime.">
+<link rel="icon" href="../../static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../static/css/theme.css">
+<link rel="stylesheet" href="../../static/css/docs.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="../../index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="../../index.html#story">Why NEKOVA</a>
+    <a href="../../docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="../../docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    
+    <div class="group">
+      <div class="group-label">Getting Started</div>
+      <ul>
+        
+        <li><a href="../../docs/getting-started/installation.html">Installation</a></li>
+        
+        <li><a href="../../docs/getting-started/quickstart.html">Quickstart</a></li>
+        
+        <li><a href="../../docs/getting-started/project-structure.html">Project Structure</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Core Syntax</div>
+      <ul>
+        
+        <li><a href="../../docs/syntax/variables.html" class="active">Variables & Constants</a></li>
+        
+        <li><a href="../../docs/syntax/control-flow.html">Control Flow</a></li>
+        
+        <li><a href="../../docs/syntax/functions.html">Functions & Tasks</a></li>
+        
+        <li><a href="../../docs/syntax/destructuring.html">Destructuring</a></li>
+        
+        <li><a href="../../docs/syntax/data-structures.html">Data Structures</a></li>
+        
+        <li><a href="../../docs/syntax/error-handling.html">Error Handling</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">AI-Native Features</div>
+      <ul>
+        
+        <li><a href="../../docs/ai-native/think.html">think</a></li>
+        
+        <li><a href="../../docs/ai-native/remember-recall.html">remember & recall</a></li>
+        
+        <li><a href="../../docs/ai-native/prompt-blocks.html">Prompt Blocks</a></li>
+        
+        <li><a href="../../docs/ai-native/testing.html">Testing with mock & observe</a></li>
+        
+        <li><a href="../../docs/ai-native/retry-fallback.html">retry & fallback</a></li>
+        
+        <li><a href="../../docs/ai-native/async-await.html">async & await</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Classes & Objects</div>
+      <ul>
+        
+        <li><a href="../../docs/classes/classes.html">Classes</a></li>
+        
+        <li><a href="../../docs/classes/inheritance.html">Inheritance</a></li>
+        
+        <li><a href="../../docs/classes/enums.html">Enums</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Advanced</div>
+      <ul>
+        
+        <li><a href="../../docs/advanced/pattern-matching.html">Pattern Matching</a></li>
+        
+        <li><a href="../../docs/advanced/pipe-operator.html">Pipe Operator</a></li>
+        
+        <li><a href="../../docs/advanced/optional-chaining.html">Optional Chaining</a></li>
+        
+        <li><a href="../../docs/advanced/sandbox.html">Sandbox</a></li>
+        
+        <li><a href="../../docs/advanced/web-routes.html">Web Routes</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Reference</div>
+      <ul>
+        
+        <li><a href="../../docs/reference/cli-commands.html">CLI Commands</a></li>
+        
+        <li><a href="../../docs/reference/builtins.html">Built-in Functions</a></li>
+        
+        <li><a href="../../docs/reference/error-codes.html">Error Codes</a></li>
+        
+        <li><a href="../../docs/reference/changelog.html">Changelog</a></li>
+        
+      </ul>
+    </div>
+    
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="../../index.html">NEKOVA</a> / <a href="../../docs/getting-started/installation.html">Docs</a> / Core Syntax
+    </div>
+
+    <h1>Variables & Constants</h1>
+    <p class="lede">let for values that change, const for values that shouldn't — and NEKOVA enforces the difference at runtime.</p>
+
+    <h2 id="let">let</h2>
+<pre class="glow-border"><code><span class="tok-decl">let</span> name = <span class="tok-str">&quot;Ada&quot;</span>
+<span class="tok-decl">let</span> age = <span class="tok-num">30</span>
+name = <span class="tok-str">&quot;Grace&quot;</span>
+</code></pre>
+<p><code>let</code> declares a variable. Reassigning it later — with or without writing <code>let</code> again — works fine.</p>
+<h2 id="const">const</h2>
+<pre class="glow-border"><code><span class="tok-decl">const</span> MAX_RETRIES = <span class="tok-num">3</span>
+<span class="tok-kw">show</span> MAX_RETRIES
+</code></pre>
+<p>A <code>const</code> binding can be set once. Both reassigning it and redeclaring it raise a runtime error:</p>
+<pre class="glow-border"><code><span class="tok-decl">const</span> MAX_RETRIES = <span class="tok-num">3</span>
+MAX_RETRIES = <span class="tok-num">5</span>
+</code></pre>
+<pre><code>error: Cannot reassign 'MAX_RETRIES' — it was declared with 'const' and
+consts can't be changed after they're set.
+  Use 'let MAX_RETRIES = ...' instead if you need it to change.
+</code></pre>
+<p><code>const</code> is deliberately simpler than <code>let</code> — no destructuring form, no captured-<code>think</code> form. It exists for one job: a value that should never silently change.</p>
+<h2 id="type-hints">Type hints</h2>
+<pre class="glow-border"><code><span class="tok-decl">let</span> age: int = <span class="tok-num">30</span>
+<span class="tok-decl">let</span> name: str = <span class="tok-str">&quot;Ada&quot;</span>
+</code></pre>
+<p>Type hints are enforced when present. NEKOVA currently checks <code>int</code>, <code>float</code>, <code>str</code>, <code>bool</code>, <code>list</code>, and <code>dict</code> — a hint using any other word (like a descriptive <code>number</code> or <code>text</code>) is accepted syntactically but isn't type-checked, so stick to the six recognized names if you want real enforcement.</p>
+<h2 id="null">null</h2>
+<pre class="glow-border"><code><span class="tok-decl">let</span> user = <span class="tok-const">null</span>
+
+<span class="tok-kw">if</span> user:
+    <span class="tok-kw">show</span> <span class="tok-str">&quot;has a user&quot;</span>
+<span class="tok-kw">else</span>:
+    <span class="tok-kw">show</span> <span class="tok-str">&quot;no user&quot;</span>
+</code></pre>
+<p><code>null</code> is falsy, compares equal to itself, and is distinct from <code>false</code>. Arithmetic on <code>null</code> raises a clear error rather than silently producing a wrong number:</p>
+<pre class="glow-border"><code><span class="tok-kw">show</span> <span class="tok-const">null</span> + <span class="tok-num">1</span>
+</code></pre>
+<pre><code>error: Cannot use '+' between 'NoneType' and 'int'.
+</code></pre>
+<h2 id="booleans">Booleans</h2>
+<pre class="glow-border"><code><span class="tok-decl">let</span> is_ready = <span class="tok-const">true</span>
+<span class="tok-decl">let</span> is_done = <span class="tok-const">false</span>
+</code></pre>
+<h2 id="the-type-mismatch-guardrail">The type-mismatch guardrail</h2>
+<p>One specific case is worth calling out: mixing a string and a number with <code>+</code> raises instead of silently concatenating.</p>
+<pre class="glow-border"><code><span class="tok-kw">show</span> <span class="tok-str">&quot;5&quot;</span> + <span class="tok-num">3</span>
+</code></pre>
+<pre><code>error: Cannot use '+' between 'str' and 'int'.
+  Convert one side explicitly, e.g. str(value) or int(value).
+</code></pre>
+<p>This is deliberate — <code>"5" + 3</code> silently becoming <code>"53"</code> is one of the most common sources of confusing bugs in JS-like languages, and NEKOVA's whole design philosophy is catching exactly this kind of mistake at the point it happens.</p>
+
+    <div class="docs-pager">
+      
+      <a href="../../docs/getting-started/project-structure.html" class="prev">
+        <span class="dir">← Previous</span>
+        <span class="title">Project Structure</span>
+      </a>
+      
+      
+      <a href="../../docs/syntax/control-flow.html" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">Control Flow</span>
+      </a>
+      
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    
+    <div class="toc-label">On this page</div>
+    <ul>
+      
+      <li class="lvl-2"><a href="#let">let</a></li>
+      
+      <li class="lvl-2"><a href="#const">const</a></li>
+      
+      <li class="lvl-2"><a href="#type-hints">Type hints</a></li>
+      
+      <li class="lvl-2"><a href="#null">null</a></li>
+      
+      <li class="lvl-2"><a href="#booleans">Booleans</a></li>
+      
+      <li class="lvl-2"><a href="#the-type-mismatch-guardrail">The type-mismatch guardrail</a></li>
+      
+    </ul>
+    
+  </aside>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="../../docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="../../static/js/animations.js"></script>
+
+</body>
+</html>

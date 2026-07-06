@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEKOVA — The AI-Native Programming Language · NEKOVA Docs</title>
+<meta name="description" content="NEKOVA is a programming language with AI reasoning built into its grammar. Built in Nigeria.">
+<link rel="icon" href="static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="static/css/theme.css">
+<link rel="stylesheet" href="static/css/landing.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="index.html#story">Why NEKOVA</a>
+    <a href="docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="landing">
+
+  <section class="hero">
+    <canvas class="hero-canvas"></canvas>
+    <div class="hero-content">
+      <div class="hero-kicker"><span class="dot"></span> AI-NATIVE · OPEN SOURCE · BUILT IN NIGERIA</div>
+      <h1>The language where<br><span class="think-kw">think<span class="cursor-caret">&nbsp;</span></span> is a keyword</h1>
+      <p class="sub">NEKOVA is a programming language with AI reasoning built into its grammar — not bolted on as a library. Simple enough to teach the classmate who gave up on Python. Serious enough to ship real programs.</p>
+      <div class="hero-actions">
+        <a href="docs/getting-started/installation.html" class="btn btn-primary">Get Started</a>
+        <a href="docs/getting-started/quickstart.html" class="btn btn-ghost">Read the Tour</a>
+      </div>
+    </div>
+    <div class="scroll-cue"><span>SCROLL</span><span class="line"></span></div>
+  </section>
+
+  <section class="story" id="story">
+    <div class="story-eyebrow">Chapter One — The Question</div>
+    <h2>It started with a classmate who quit.</h2>
+    <p>NEKOVA's creator, <span class="highlight">Emmanuel King Christopher</span>, was teaching himself to code in Nigeria when he watched a classmate give up on programming entirely — not because the ideas were too hard, but because the <em>error messages</em> were. A missing colon. An off-by-one indent. Python's own honest, technically-correct exceptions, dropped on a beginner with zero context.</p>
+    <p>The problem wasn't Python. Python is a genuinely well-designed language. The problem was that <span class="highlight">nobody had built a language whose first priority was the moment things go wrong</span> — the moment a learner is most likely to close the laptop for good.</p>
+
+    <div class="terminal-window reveal">
+      <div class="terminal-titlebar">
+        <span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>
+        <span class="tlabel">error message, before and after</span>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">$</span> python broken.py</div>
+        <div class="err">IndentationError: unexpected indent (broken.py, line 4)</div>
+        <div style="margin-top: 1.2em;"><span class="prompt">$</span> nekova run broken.nk</div>
+        <div class="ok">error[E010]: Inconsistent Indentation</div>
+        <div>&nbsp;&nbsp;This line is indented 6 spaces, but that doesn't match</div>
+        <div>&nbsp;&nbsp;any enclosing block. Valid indent levels here: 0, 4</div>
+        <div>&nbsp;&nbsp;Tip: mixing tabs and spaces is a common cause.</div>
+      </div>
+    </div>
+
+    <p>That single idea — <span class="highlight">an error message's job is to teach, not just to be technically correct</span> — became NEKOVA's founding principle. Everything else followed from it.</p>
+  </section>
+
+  <div class="signal-line"></div>
+
+  <section class="story">
+    <div class="story-eyebrow">Chapter Two — The Idea</div>
+    <h2>What if the language could <span class="accent">think</span> too?</h2>
+    <p>By the time NEKOVA's design solidified, large language models had become something any program could reasonably lean on. So the second question followed naturally: if a language is being built from scratch anyway, why should "call an AI model" require an SDK, an API key dance, and a dozen lines of boilerplate?</p>
+    <p>NEKOVA's answer was to make it <span class="highlight">a keyword</span>. Not a library. Not an import. A first-class part of the grammar, sitting right next to <code>if</code> and <code>return</code>.</p>
+
+    <pre class="glow-border reveal"><code><span class="tok-decl">task</span> summarize(document):
+    <span class="tok-decl">let</span> result = <span class="tok-ai">think</span> <span class="tok-str">"Summarize this in one sentence: {document}"</span>
+    <span class="tok-kw">return</span> result</code></pre>
+
+    <p>No client to instantiate. No response object to unwrap. <code>think</code> asks, and hands back an answer — text, a list, a boolean, structured JSON, whatever the task needs — with the same directness as any other expression in the language.</p>
+  </section>
+
+  <div class="signal-line"></div>
+
+  <section class="pillars">
+    <div class="pillars-head reveal">
+      <div class="story-eyebrow" style="justify-content: center; display: flex;">What NEKOVA is built on</div>
+      <h2>Three ideas, held to consistently</h2>
+    </div>
+    <div class="pillars-grid">
+      <div class="pillar-card reveal" data-tilt>
+        <div class="pillar-icon">◆</div>
+        <h3>AI-native, not AI-bolted-on</h3>
+        <p><code>think</code>, <code>remember</code>, <code>recall</code>, <code>prompt</code>, and <code>observe</code> are real syntax — checked by the parser, understood by tooling, testable with <code>mock think</code>. Not a wrapper around someone else's SDK.</p>
+      </div>
+      <div class="pillar-card reveal" data-tilt>
+        <div class="pillar-icon">▚</div>
+        <h3>Errors that teach</h3>
+        <p>Every error message states what happened, why, and what to check next — never a bare stack trace. Near-miss variable suggestions, exact recursion depth, honest uncertainty when the interpreter genuinely doesn't know the cause.</p>
+      </div>
+      <div class="pillar-card reveal" data-tilt>
+        <div class="pillar-icon">▲</div>
+        <h3>Built to outgrow its own scaffolding</h3>
+        <p>NEKOVA runs on Python today. The roadmap's endpoint is self-hosting — a lexer, parser, and interpreter written in NEKOVA itself. Every phase is scoped with that horizon in view.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="signal-line"></div>
+
+  <section class="showcase">
+    <div class="story-eyebrow" style="justify-content: center; display: flex;">See it end to end</div>
+    <h2 class="reveal">A small program, start to finish</h2>
+    <p style="color: var(--nk-white-2); max-width: 60ch; margin: 0 auto;">Destructuring, keyword arguments, a typed task, and an AI call — the everyday shape of a NEKOVA program.</p>
+    <div class="showcase-code">
+      <pre class="glow-border reveal"><code><span class="tok-decl">enum</span> Priority: LOW, MEDIUM, HIGH
+
+<span class="tok-decl">task</span> triage(title, priority=Priority.MEDIUM):
+    <span class="tok-decl">let</span> urgency = <span class="tok-ai">think</span> <span class="tok-str">f"Rate urgency 1-10 for: {title}"</span> <span class="tok-kw">as</span> number <span class="tok-kw">when error</span>: 5
+    <span class="tok-kw">return</span> {<span class="tok-str">"title"</span>: title, <span class="tok-str">"priority"</span>: priority, <span class="tok-str">"urgency"</span>: urgency}
+
+<span class="tok-decl">let</span> {title, urgency} = triage(<span class="tok-str">"Server down"</span>, priority=Priority.HIGH)
+<span class="tok-kw">show</span> f<span class="tok-str">"{title} — urgency {urgency}/10"</span></code></pre>
+    </div>
+  </section>
+
+  <div class="signal-line"></div>
+
+  <section class="final-cta">
+    <h2 class="reveal">Try it in the next sixty seconds</h2>
+    <p class="reveal">One install command. No API key required to start — NEKOVA ships with a mock AI provider for learning and testing.</p>
+    <div class="install-line reveal"><span class="prompt-mark">$</span> pip install nekova-lang</div>
+    <div class="hero-actions reveal">
+      <a href="docs/getting-started/quickstart.html" class="btn btn-primary">Start the Quickstart</a>
+      <a href="https://github.com/kinghenesey/NEKOVA" class="btn btn-ghost" target="_blank" rel="noopener">View Source</a>
+    </div>
+  </section>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="static/js/animations.js"></script>
+
+</body>
+</html>

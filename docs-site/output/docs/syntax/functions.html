@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Functions & Tasks · NEKOVA Docs</title>
+<meta name="description" content="NEKOVA calls functions "tasks" — with default values, varargs, keyword arguments, and type hints all supported.">
+<link rel="icon" href="../../static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../static/css/theme.css">
+<link rel="stylesheet" href="../../static/css/docs.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="../../index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="../../index.html#story">Why NEKOVA</a>
+    <a href="../../docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="../../docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    
+    <div class="group">
+      <div class="group-label">Getting Started</div>
+      <ul>
+        
+        <li><a href="../../docs/getting-started/installation.html">Installation</a></li>
+        
+        <li><a href="../../docs/getting-started/quickstart.html">Quickstart</a></li>
+        
+        <li><a href="../../docs/getting-started/project-structure.html">Project Structure</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Core Syntax</div>
+      <ul>
+        
+        <li><a href="../../docs/syntax/variables.html">Variables & Constants</a></li>
+        
+        <li><a href="../../docs/syntax/control-flow.html">Control Flow</a></li>
+        
+        <li><a href="../../docs/syntax/functions.html" class="active">Functions & Tasks</a></li>
+        
+        <li><a href="../../docs/syntax/destructuring.html">Destructuring</a></li>
+        
+        <li><a href="../../docs/syntax/data-structures.html">Data Structures</a></li>
+        
+        <li><a href="../../docs/syntax/error-handling.html">Error Handling</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">AI-Native Features</div>
+      <ul>
+        
+        <li><a href="../../docs/ai-native/think.html">think</a></li>
+        
+        <li><a href="../../docs/ai-native/remember-recall.html">remember & recall</a></li>
+        
+        <li><a href="../../docs/ai-native/prompt-blocks.html">Prompt Blocks</a></li>
+        
+        <li><a href="../../docs/ai-native/testing.html">Testing with mock & observe</a></li>
+        
+        <li><a href="../../docs/ai-native/retry-fallback.html">retry & fallback</a></li>
+        
+        <li><a href="../../docs/ai-native/async-await.html">async & await</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Classes & Objects</div>
+      <ul>
+        
+        <li><a href="../../docs/classes/classes.html">Classes</a></li>
+        
+        <li><a href="../../docs/classes/inheritance.html">Inheritance</a></li>
+        
+        <li><a href="../../docs/classes/enums.html">Enums</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Advanced</div>
+      <ul>
+        
+        <li><a href="../../docs/advanced/pattern-matching.html">Pattern Matching</a></li>
+        
+        <li><a href="../../docs/advanced/pipe-operator.html">Pipe Operator</a></li>
+        
+        <li><a href="../../docs/advanced/optional-chaining.html">Optional Chaining</a></li>
+        
+        <li><a href="../../docs/advanced/sandbox.html">Sandbox</a></li>
+        
+        <li><a href="../../docs/advanced/web-routes.html">Web Routes</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Reference</div>
+      <ul>
+        
+        <li><a href="../../docs/reference/cli-commands.html">CLI Commands</a></li>
+        
+        <li><a href="../../docs/reference/builtins.html">Built-in Functions</a></li>
+        
+        <li><a href="../../docs/reference/error-codes.html">Error Codes</a></li>
+        
+        <li><a href="../../docs/reference/changelog.html">Changelog</a></li>
+        
+      </ul>
+    </div>
+    
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="../../index.html">NEKOVA</a> / <a href="../../docs/getting-started/installation.html">Docs</a> / Core Syntax
+    </div>
+
+    <h1>Functions & Tasks</h1>
+    <p class="lede">NEKOVA calls functions "tasks" — with default values, varargs, keyword arguments, and type hints all supported.</p>
+
+    <h2 id="basic-tasks">Basic tasks</h2>
+<pre class="glow-border"><code><span class="tok-decl">task</span> add(a, b):
+    <span class="tok-kw">return</span> a + b
+
+<span class="tok-kw">show</span> add(<span class="tok-num">2</span>, <span class="tok-num">3</span>)
+</code></pre>
+<h2 id="default-parameter-values">Default parameter values</h2>
+<pre class="glow-border"><code><span class="tok-decl">task</span> greet(name, greeting=<span class="tok-str">&quot;Hello&quot;</span>):
+    <span class="tok-kw">return</span> greeting + <span class="tok-str">&quot;, &quot;</span> + name
+
+<span class="tok-kw">show</span> greet(<span class="tok-str">&quot;Ada&quot;</span>)               <span class="tok-com"># &quot;Hello, Ada&quot;</span>
+<span class="tok-kw">show</span> greet(<span class="tok-str">&quot;Ada&quot;</span>, <span class="tok-str">&quot;Hey&quot;</span>)        <span class="tok-com"># &quot;Hey, Ada&quot;</span>
+</code></pre>
+<h2 id="keyword-arguments">Keyword arguments</h2>
+<pre class="glow-border"><code><span class="tok-decl">task</span> greet(name, greeting=<span class="tok-str">&quot;Hello&quot;</span>):
+    <span class="tok-kw">return</span> greeting + <span class="tok-str">&quot;, &quot;</span> + name
+
+<span class="tok-kw">show</span> greet(name=<span class="tok-str">&quot;Ada&quot;</span>, greeting=<span class="tok-str">&quot;Hey&quot;</span>)
+<span class="tok-kw">show</span> greet(<span class="tok-str">&quot;Ada&quot;</span>, greeting=<span class="tok-str">&quot;Yo&quot;</span>)   <span class="tok-com"># positional + keyword mixed</span>
+</code></pre>
+<p>Keyword arguments can fill in a later parameter while leaving an earlier one at its default:</p>
+<pre class="glow-border"><code><span class="tok-decl">task</span> greet(name=<span class="tok-str">&quot;World&quot;</span>, greeting=<span class="tok-str">&quot;Hello&quot;</span>):
+    <span class="tok-kw">return</span> greeting + <span class="tok-str">&quot;, &quot;</span> + name
+
+<span class="tok-kw">show</span> greet(greeting=<span class="tok-str">&quot;Hey&quot;</span>)   <span class="tok-com"># &quot;Hey, World&quot;</span>
+</code></pre>
+<p>Passing an unknown keyword, or the same parameter both positionally and by keyword, raises a clear error rather than guessing what you meant.</p>
+<h2 id="variadic-arguments">Variadic arguments</h2>
+<pre class="glow-border"><code><span class="tok-decl">task</span> total(*nums):
+    <span class="tok-decl">let</span> sum = <span class="tok-num">0</span>
+    <span class="tok-kw">for</span> n <span class="tok-kw">in</span> nums:
+        sum = sum + n
+    <span class="tok-kw">return</span> sum
+
+<span class="tok-kw">show</span> total(<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>, <span class="tok-num">4</span>)
+</code></pre>
+<h2 id="type-hints-and-typed-tasks">Type hints and typed tasks</h2>
+<pre class="glow-border"><code><span class="tok-decl">task</span> add(a: int, b: int) -&gt; int:
+    <span class="tok-kw">return</span> a + b
+</code></pre>
+<p>Type hints on parameters and return values are checked at call time for <code>int</code>, <code>float</code>, <code>str</code>, <code>bool</code>, <code>list</code>, and <code>dict</code>.</p>
+<h2 id="docstrings">Docstrings</h2>
+<p>A leading string in a task body is captured as documentation rather than treated as a statement:</p>
+<pre class="glow-border"><code><span class="tok-decl">task</span> greet(name):
+    <span class="tok-str">&quot;&quot;&quot;Says hello to someone.&quot;&quot;&quot;</span>
+    <span class="tok-kw">show</span> <span class="tok-str">&quot;Hello &quot;</span> + name
+
+<span class="tok-kw">show</span> doc(greet)   <span class="tok-com"># &quot;Says hello to someone.&quot;</span>
+</code></pre>
+<h2 id="recursion">Recursion</h2>
+<pre class="glow-border"><code><span class="tok-decl">task</span> factorial(n):
+    <span class="tok-kw">if</span> n &lt;= <span class="tok-num">1</span>:
+        <span class="tok-kw">return</span> <span class="tok-num">1</span>
+    <span class="tok-kw">return</span> n * factorial(n - <span class="tok-num">1</span>)
+</code></pre>
+<p>NEKOVA tracks its own call depth (500 by default) independently of Python's stack, so an unbounded recursive call reports the exact depth reached rather than a vague "infinite recursion" guess.</p>
+<h2 id="closures">Closures</h2>
+<p>Tasks capture variables from their enclosing scope by reading them, the same as any nested scope:</p>
+<pre class="glow-border"><code><span class="tok-decl">task</span> make_adder(x):
+    <span class="tok-decl">task</span> add(y):
+        <span class="tok-kw">return</span> x + y
+    <span class="tok-kw">return</span> add
+
+<span class="tok-decl">let</span> add5 = make_adder(<span class="tok-num">5</span>)
+<span class="tok-kw">show</span> add5(<span class="tok-num">3</span>)    <span class="tok-com"># 8</span>
+<span class="tok-kw">show</span> add5(<span class="tok-num">10</span>)   <span class="tok-com"># 15</span>
+</code></pre>
+<p>Each call to <code>make_adder</code> creates a fresh <code>x</code>, so <code>add5</code> and a second <code>make_adder(100)</code> don't interfere with each other.</p>
+
+    <div class="docs-pager">
+      
+      <a href="../../docs/syntax/control-flow.html" class="prev">
+        <span class="dir">← Previous</span>
+        <span class="title">Control Flow</span>
+      </a>
+      
+      
+      <a href="../../docs/syntax/destructuring.html" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">Destructuring</span>
+      </a>
+      
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    
+    <div class="toc-label">On this page</div>
+    <ul>
+      
+      <li class="lvl-2"><a href="#basic-tasks">Basic tasks</a></li>
+      
+      <li class="lvl-2"><a href="#default-parameter-values">Default parameter values</a></li>
+      
+      <li class="lvl-2"><a href="#keyword-arguments">Keyword arguments</a></li>
+      
+      <li class="lvl-2"><a href="#variadic-arguments">Variadic arguments</a></li>
+      
+      <li class="lvl-2"><a href="#type-hints-and-typed-tasks">Type hints and typed tasks</a></li>
+      
+      <li class="lvl-2"><a href="#docstrings">Docstrings</a></li>
+      
+      <li class="lvl-2"><a href="#recursion">Recursion</a></li>
+      
+      <li class="lvl-2"><a href="#closures">Closures</a></li>
+      
+    </ul>
+    
+  </aside>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="../../docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="../../static/js/animations.js"></script>
+
+</body>
+</html>

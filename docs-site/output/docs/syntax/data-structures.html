@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Structures · NEKOVA Docs</title>
+<meta name="description" content="Lists, dicts, and sets, plus the spread syntax that combines them without a loop.">
+<link rel="icon" href="../../static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../static/css/theme.css">
+<link rel="stylesheet" href="../../static/css/docs.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="../../index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="../../index.html#story">Why NEKOVA</a>
+    <a href="../../docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="../../docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    
+    <div class="group">
+      <div class="group-label">Getting Started</div>
+      <ul>
+        
+        <li><a href="../../docs/getting-started/installation.html">Installation</a></li>
+        
+        <li><a href="../../docs/getting-started/quickstart.html">Quickstart</a></li>
+        
+        <li><a href="../../docs/getting-started/project-structure.html">Project Structure</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Core Syntax</div>
+      <ul>
+        
+        <li><a href="../../docs/syntax/variables.html">Variables & Constants</a></li>
+        
+        <li><a href="../../docs/syntax/control-flow.html">Control Flow</a></li>
+        
+        <li><a href="../../docs/syntax/functions.html">Functions & Tasks</a></li>
+        
+        <li><a href="../../docs/syntax/destructuring.html">Destructuring</a></li>
+        
+        <li><a href="../../docs/syntax/data-structures.html" class="active">Data Structures</a></li>
+        
+        <li><a href="../../docs/syntax/error-handling.html">Error Handling</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">AI-Native Features</div>
+      <ul>
+        
+        <li><a href="../../docs/ai-native/think.html">think</a></li>
+        
+        <li><a href="../../docs/ai-native/remember-recall.html">remember & recall</a></li>
+        
+        <li><a href="../../docs/ai-native/prompt-blocks.html">Prompt Blocks</a></li>
+        
+        <li><a href="../../docs/ai-native/testing.html">Testing with mock & observe</a></li>
+        
+        <li><a href="../../docs/ai-native/retry-fallback.html">retry & fallback</a></li>
+        
+        <li><a href="../../docs/ai-native/async-await.html">async & await</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Classes & Objects</div>
+      <ul>
+        
+        <li><a href="../../docs/classes/classes.html">Classes</a></li>
+        
+        <li><a href="../../docs/classes/inheritance.html">Inheritance</a></li>
+        
+        <li><a href="../../docs/classes/enums.html">Enums</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Advanced</div>
+      <ul>
+        
+        <li><a href="../../docs/advanced/pattern-matching.html">Pattern Matching</a></li>
+        
+        <li><a href="../../docs/advanced/pipe-operator.html">Pipe Operator</a></li>
+        
+        <li><a href="../../docs/advanced/optional-chaining.html">Optional Chaining</a></li>
+        
+        <li><a href="../../docs/advanced/sandbox.html">Sandbox</a></li>
+        
+        <li><a href="../../docs/advanced/web-routes.html">Web Routes</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Reference</div>
+      <ul>
+        
+        <li><a href="../../docs/reference/cli-commands.html">CLI Commands</a></li>
+        
+        <li><a href="../../docs/reference/builtins.html">Built-in Functions</a></li>
+        
+        <li><a href="../../docs/reference/error-codes.html">Error Codes</a></li>
+        
+        <li><a href="../../docs/reference/changelog.html">Changelog</a></li>
+        
+      </ul>
+    </div>
+    
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="../../index.html">NEKOVA</a> / <a href="../../docs/getting-started/installation.html">Docs</a> / Core Syntax
+    </div>
+
+    <h1>Data Structures</h1>
+    <p class="lede">Lists, dicts, and sets, plus the spread syntax that combines them without a loop.</p>
+
+    <h2 id="lists">Lists</h2>
+<pre class="glow-border"><code><span class="tok-decl">let</span> items = [<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-str">&quot;three&quot;</span>, <span class="tok-const">true</span>]
+<span class="tok-kw">show</span> items[<span class="tok-num">0</span>]
+<span class="tok-kw">show</span> len(items)
+</code></pre>
+<h2 id="dicts">Dicts</h2>
+<pre class="glow-border"><code><span class="tok-decl">let</span> user = {<span class="tok-str">&quot;name&quot;</span>: <span class="tok-str">&quot;Ada&quot;</span>, <span class="tok-str">&quot;age&quot;</span>: <span class="tok-num">30</span>}
+<span class="tok-kw">show</span> user[<span class="tok-str">&quot;name&quot;</span>]
+
+<span class="tok-decl">let</span> no_user = <span class="tok-const">null</span>
+<span class="tok-kw">show</span> no_user?.email     <span class="tok-com"># null — see Optional Chaining</span>
+</code></pre>
+<h2 id="sets">Sets</h2>
+<pre class="glow-border"><code><span class="tok-decl">let</span> a = {<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>}
+<span class="tok-kw">show</span> a          <span class="tok-com"># {1, 2, 3}</span>
+
+<span class="tok-decl">let</span> dupes = {<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>, <span class="tok-num">1</span>}
+<span class="tok-kw">show</span> dupes      <span class="tok-com"># {1, 2, 3} — duplicates collapse automatically</span>
+</code></pre>
+<p><code>{}</code> on its own is still an empty <strong>dict</strong>, not a set — that convention doesn't change. NEKOVA tells dicts and sets apart by shape: a dict entry always looks like <code>key: value</code>, a set element never does.</p>
+<pre class="glow-border"><code><span class="tok-decl">let</span> empty_dict = {}
+<span class="tok-decl">let</span> a_set = {<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>}
+</code></pre>
+<h3 id="set-operations">Set operations</h3>
+<pre class="glow-border"><code><span class="tok-decl">let</span> a = {<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>}
+<span class="tok-decl">let</span> b = {<span class="tok-num">2</span>, <span class="tok-num">3</span>, <span class="tok-num">4</span>}
+
+<span class="tok-kw">show</span> set_union(a, b)          <span class="tok-com"># {1, 2, 3, 4}</span>
+<span class="tok-kw">show</span> set_intersection(a, b)   <span class="tok-com"># {2, 3}</span>
+<span class="tok-kw">show</span> set_difference(a, b)     <span class="tok-com"># {1}</span>
+</code></pre>
+<p>Putting a list or dict inside a set raises a clear error — sets need every element to be checkable for uniqueness, and lists/dicts can't be.</p>
+<h2 id="spread-syntax">Spread syntax</h2>
+<p>Expand one list or dict into another, without writing a loop:</p>
+<pre class="glow-border"><code><span class="tok-decl">let</span> a = [<span class="tok-num">1</span>, <span class="tok-num">2</span>]
+<span class="tok-decl">let</span> b = [<span class="tok-num">3</span>, <span class="tok-num">4</span>]
+<span class="tok-kw">show</span> [...a, ...b]          <span class="tok-com"># [1, 2, 3, 4]</span>
+<span class="tok-kw">show</span> [<span class="tok-num">0</span>, ...a, <span class="tok-num">99</span>]         <span class="tok-com"># [0, 1, 2, 99]</span>
+</code></pre>
+<pre class="glow-border"><code><span class="tok-decl">let</span> defaults = {<span class="tok-str">&quot;theme&quot;</span>: <span class="tok-str">&quot;dark&quot;</span>, <span class="tok-str">&quot;retries&quot;</span>: <span class="tok-num">3</span>}
+<span class="tok-decl">let</span> overrides = {<span class="tok-str">&quot;retries&quot;</span>: <span class="tok-num">5</span>}
+<span class="tok-kw">show</span> {...defaults, ...overrides}   <span class="tok-com"># {theme: dark, retries: 5}</span>
+</code></pre>
+<p>When keys collide, whichever spread comes later wins — the same rule as if you'd written the keys out by hand in that order.</p>
+<h2 id="enums">Enums</h2>
+<pre class="glow-border"><code><span class="tok-decl">enum</span> Status: PENDING, ACTIVE, DONE
+
+<span class="tok-decl">let</span> s = Status.ACTIVE
+<span class="tok-kw">show</span> s   <span class="tok-com"># &quot;ACTIVE&quot;</span>
+
+<span class="tok-decl">task</span> describe(status):
+    <span class="tok-kw">if</span> status == Status.DONE:
+        <span class="tok-kw">return</span> <span class="tok-str">&quot;finished&quot;</span>
+    <span class="tok-kw">return</span> <span class="tok-str">&quot;not finished&quot;</span>
+</code></pre>
+<p>Each enum member evaluates to its own name as a string, so comparisons against string literals work naturally.</p>
+
+    <div class="docs-pager">
+      
+      <a href="../../docs/syntax/destructuring.html" class="prev">
+        <span class="dir">← Previous</span>
+        <span class="title">Destructuring</span>
+      </a>
+      
+      
+      <a href="../../docs/syntax/error-handling.html" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">Error Handling</span>
+      </a>
+      
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    
+    <div class="toc-label">On this page</div>
+    <ul>
+      
+      <li class="lvl-2"><a href="#lists">Lists</a></li>
+      
+      <li class="lvl-2"><a href="#dicts">Dicts</a></li>
+      
+      <li class="lvl-2"><a href="#sets">Sets</a></li>
+      
+      <li class="lvl-3"><a href="#set-operations">Set operations</a></li>
+      
+      <li class="lvl-2"><a href="#spread-syntax">Spread syntax</a></li>
+      
+      <li class="lvl-2"><a href="#enums">Enums</a></li>
+      
+    </ul>
+    
+  </aside>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="../../docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="../../static/js/animations.js"></script>
+
+</body>
+</html>

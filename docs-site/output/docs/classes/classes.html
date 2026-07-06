@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classes · NEKOVA Docs</title>
+<meta name="description" content="object defines a class — fields, an init, and methods, all with the vocabulary NEKOVA uses instead of Python's.">
+<link rel="icon" href="../../static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../static/css/theme.css">
+<link rel="stylesheet" href="../../static/css/docs.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="../../index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="../../index.html#story">Why NEKOVA</a>
+    <a href="../../docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="../../docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    
+    <div class="group">
+      <div class="group-label">Getting Started</div>
+      <ul>
+        
+        <li><a href="../../docs/getting-started/installation.html">Installation</a></li>
+        
+        <li><a href="../../docs/getting-started/quickstart.html">Quickstart</a></li>
+        
+        <li><a href="../../docs/getting-started/project-structure.html">Project Structure</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Core Syntax</div>
+      <ul>
+        
+        <li><a href="../../docs/syntax/variables.html">Variables & Constants</a></li>
+        
+        <li><a href="../../docs/syntax/control-flow.html">Control Flow</a></li>
+        
+        <li><a href="../../docs/syntax/functions.html">Functions & Tasks</a></li>
+        
+        <li><a href="../../docs/syntax/destructuring.html">Destructuring</a></li>
+        
+        <li><a href="../../docs/syntax/data-structures.html">Data Structures</a></li>
+        
+        <li><a href="../../docs/syntax/error-handling.html">Error Handling</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">AI-Native Features</div>
+      <ul>
+        
+        <li><a href="../../docs/ai-native/think.html">think</a></li>
+        
+        <li><a href="../../docs/ai-native/remember-recall.html">remember & recall</a></li>
+        
+        <li><a href="../../docs/ai-native/prompt-blocks.html">Prompt Blocks</a></li>
+        
+        <li><a href="../../docs/ai-native/testing.html">Testing with mock & observe</a></li>
+        
+        <li><a href="../../docs/ai-native/retry-fallback.html">retry & fallback</a></li>
+        
+        <li><a href="../../docs/ai-native/async-await.html">async & await</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Classes & Objects</div>
+      <ul>
+        
+        <li><a href="../../docs/classes/classes.html" class="active">Classes</a></li>
+        
+        <li><a href="../../docs/classes/inheritance.html">Inheritance</a></li>
+        
+        <li><a href="../../docs/classes/enums.html">Enums</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Advanced</div>
+      <ul>
+        
+        <li><a href="../../docs/advanced/pattern-matching.html">Pattern Matching</a></li>
+        
+        <li><a href="../../docs/advanced/pipe-operator.html">Pipe Operator</a></li>
+        
+        <li><a href="../../docs/advanced/optional-chaining.html">Optional Chaining</a></li>
+        
+        <li><a href="../../docs/advanced/sandbox.html">Sandbox</a></li>
+        
+        <li><a href="../../docs/advanced/web-routes.html">Web Routes</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Reference</div>
+      <ul>
+        
+        <li><a href="../../docs/reference/cli-commands.html">CLI Commands</a></li>
+        
+        <li><a href="../../docs/reference/builtins.html">Built-in Functions</a></li>
+        
+        <li><a href="../../docs/reference/error-codes.html">Error Codes</a></li>
+        
+        <li><a href="../../docs/reference/changelog.html">Changelog</a></li>
+        
+      </ul>
+    </div>
+    
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="../../index.html">NEKOVA</a> / <a href="../../docs/getting-started/installation.html">Docs</a> / Classes & Objects
+    </div>
+
+    <h1>Classes</h1>
+    <p class="lede">object defines a class — fields, an init, and methods, all with the vocabulary NEKOVA uses instead of Python's.</p>
+
+    <h2 id="defining-a-class">Defining a class</h2>
+<pre class="glow-border"><code><span class="tok-decl">object</span> Person:
+    name: text
+    age: number
+
+    <span class="tok-decl">init</span>(name, age):
+        self.name = name
+        self.age = age
+
+    <span class="tok-decl">func</span> greet():
+        <span class="tok-kw">return</span> <span class="tok-str">f&quot;Hi, I am {self.name}&quot;</span>
+
+<span class="tok-decl">let</span> p = new Person(<span class="tok-str">&quot;Ada&quot;</span>, <span class="tok-num">30</span>)
+<span class="tok-kw">show</span> p.greet()
+<span class="tok-kw">show</span> p.name
+<span class="tok-kw">show</span> p.age
+</code></pre>
+<p>NEKOVA uses <code>object</code> where many languages use <code>class</code>, and <code>new</code> to instantiate.</p>
+<h2 id="fields">Fields</h2>
+<p>Field declarations (<code>name: text</code>, <code>age: number</code>) are documentation of shape — the actual values are set in <code>init</code> via <code>self.name = name</code>.</p>
+<h2 id="docstrings">Docstrings</h2>
+<p>Classes, <code>init</code>, and methods can all carry a leading string as documentation:</p>
+<pre class="glow-border"><code><span class="tok-decl">object</span> Person:
+    <span class="tok-str">&quot;&quot;&quot;Represents a person.&quot;&quot;&quot;</span>
+
+    <span class="tok-decl">init</span>(name):
+        <span class="tok-str">&quot;&quot;&quot;Creates a new person.&quot;&quot;&quot;</span>
+        self.name = name
+
+    <span class="tok-decl">func</span> greet():
+        <span class="tok-str">&quot;&quot;&quot;Returns a greeting.&quot;&quot;&quot;</span>
+        <span class="tok-kw">return</span> <span class="tok-str">f&quot;Hi, I am {self.name}&quot;</span>
+
+<span class="tok-kw">show</span> doc(Person)             <span class="tok-com"># &quot;Represents a person.&quot;</span>
+<span class="tok-kw">show</span> doc(Person, <span class="tok-str">&quot;init&quot;</span>)     <span class="tok-com"># &quot;Creates a new person.&quot;</span>
+<span class="tok-kw">show</span> doc(Person, <span class="tok-str">&quot;greet&quot;</span>)    <span class="tok-com"># &quot;Returns a greeting.&quot;</span>
+</code></pre>
+<h2 id="methods-calling-other-methods">Methods calling other methods</h2>
+<pre class="glow-border"><code><span class="tok-decl">object</span> Circle:
+    <span class="tok-decl">init</span>(radius):
+        self.radius = radius
+
+    <span class="tok-decl">func</span> area():
+        <span class="tok-kw">return</span> <span class="tok-num">3.14159</span> * self.radius * self.radius
+
+    <span class="tok-decl">func</span> describe():
+        <span class="tok-kw">return</span> <span class="tok-str">f&quot;A circle with area {self.area()}&quot;</span>
+
+<span class="tok-decl">let</span> c = new Circle(<span class="tok-num">5</span>)
+<span class="tok-kw">show</span> c.describe()
+</code></pre>
+
+    <div class="docs-pager">
+      
+      <a href="../../docs/ai-native/async-await.html" class="prev">
+        <span class="dir">← Previous</span>
+        <span class="title">async & await</span>
+      </a>
+      
+      
+      <a href="../../docs/classes/inheritance.html" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">Inheritance</span>
+      </a>
+      
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    
+    <div class="toc-label">On this page</div>
+    <ul>
+      
+      <li class="lvl-2"><a href="#defining-a-class">Defining a class</a></li>
+      
+      <li class="lvl-2"><a href="#fields">Fields</a></li>
+      
+      <li class="lvl-2"><a href="#docstrings">Docstrings</a></li>
+      
+      <li class="lvl-2"><a href="#methods-calling-other-methods">Methods calling other methods</a></li>
+      
+    </ul>
+    
+  </aside>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="../../docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="../../static/js/animations.js"></script>
+
+</body>
+</html>

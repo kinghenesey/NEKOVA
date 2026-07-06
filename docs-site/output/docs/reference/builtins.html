@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Built-in Functions · NEKOVA Docs</title>
+<meta name="description" content="Every global function NEKOVA registers automatically, grouped by purpose.">
+<link rel="icon" href="../../static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../static/css/theme.css">
+<link rel="stylesheet" href="../../static/css/docs.css">
+</head>
+<body class="">
+
+<header class="topbar">
+  <a href="../../index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="../../index.html#story">Why NEKOVA</a>
+    <a href="../../docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="../../docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+
+<div class="docs-shell">
+
+  <button class="docs-mobile-toggle" type="button">Show navigation</button>
+
+  <aside class="docs-sidebar">
+    
+    <div class="group">
+      <div class="group-label">Getting Started</div>
+      <ul>
+        
+        <li><a href="../../docs/getting-started/installation.html">Installation</a></li>
+        
+        <li><a href="../../docs/getting-started/quickstart.html">Quickstart</a></li>
+        
+        <li><a href="../../docs/getting-started/project-structure.html">Project Structure</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Core Syntax</div>
+      <ul>
+        
+        <li><a href="../../docs/syntax/variables.html">Variables & Constants</a></li>
+        
+        <li><a href="../../docs/syntax/control-flow.html">Control Flow</a></li>
+        
+        <li><a href="../../docs/syntax/functions.html">Functions & Tasks</a></li>
+        
+        <li><a href="../../docs/syntax/destructuring.html">Destructuring</a></li>
+        
+        <li><a href="../../docs/syntax/data-structures.html">Data Structures</a></li>
+        
+        <li><a href="../../docs/syntax/error-handling.html">Error Handling</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">AI-Native Features</div>
+      <ul>
+        
+        <li><a href="../../docs/ai-native/think.html">think</a></li>
+        
+        <li><a href="../../docs/ai-native/remember-recall.html">remember & recall</a></li>
+        
+        <li><a href="../../docs/ai-native/prompt-blocks.html">Prompt Blocks</a></li>
+        
+        <li><a href="../../docs/ai-native/testing.html">Testing with mock & observe</a></li>
+        
+        <li><a href="../../docs/ai-native/retry-fallback.html">retry & fallback</a></li>
+        
+        <li><a href="../../docs/ai-native/async-await.html">async & await</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Classes & Objects</div>
+      <ul>
+        
+        <li><a href="../../docs/classes/classes.html">Classes</a></li>
+        
+        <li><a href="../../docs/classes/inheritance.html">Inheritance</a></li>
+        
+        <li><a href="../../docs/classes/enums.html">Enums</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Advanced</div>
+      <ul>
+        
+        <li><a href="../../docs/advanced/pattern-matching.html">Pattern Matching</a></li>
+        
+        <li><a href="../../docs/advanced/pipe-operator.html">Pipe Operator</a></li>
+        
+        <li><a href="../../docs/advanced/optional-chaining.html">Optional Chaining</a></li>
+        
+        <li><a href="../../docs/advanced/sandbox.html">Sandbox</a></li>
+        
+        <li><a href="../../docs/advanced/web-routes.html">Web Routes</a></li>
+        
+      </ul>
+    </div>
+    
+    <div class="group">
+      <div class="group-label">Reference</div>
+      <ul>
+        
+        <li><a href="../../docs/reference/cli-commands.html">CLI Commands</a></li>
+        
+        <li><a href="../../docs/reference/builtins.html" class="active">Built-in Functions</a></li>
+        
+        <li><a href="../../docs/reference/error-codes.html">Error Codes</a></li>
+        
+        <li><a href="../../docs/reference/changelog.html">Changelog</a></li>
+        
+      </ul>
+    </div>
+    
+  </aside>
+
+  <main class="docs-content">
+    <div class="docs-breadcrumb">
+      <a href="../../index.html">NEKOVA</a> / <a href="../../docs/getting-started/installation.html">Docs</a> / Reference
+    </div>
+
+    <h1>Built-in Functions</h1>
+    <p class="lede">Every global function NEKOVA registers automatically, grouped by purpose.</p>
+
+    <h2 id="type-conversion">Type conversion</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>int(x)</code></td>
+<td>Convert to an integer. Raises a clear error on an unparsable string.</td>
+</tr>
+<tr>
+<td><code>float(x)</code></td>
+<td>Convert to a decimal number. Same clean-error behavior as <code>int()</code>.</td>
+</tr>
+<tr>
+<td><code>str(x)</code></td>
+<td>Convert to text.</td>
+</tr>
+<tr>
+<td><code>bool(x)</code></td>
+<td>Convert to a boolean.</td>
+</tr>
+<tr>
+<td><code>list(x)</code></td>
+<td>Convert to a list.</td>
+</tr>
+<tr>
+<td><code>dict()</code></td>
+<td>Create an empty dict.</td>
+</tr>
+<tr>
+<td><code>to_number(x)</code></td>
+<td>Convert to a number, tolerant of numeric strings.</td>
+</tr>
+<tr>
+<td><code>to_text(x)</code></td>
+<td>Convert to text.</td>
+</tr>
+<tr>
+<td><code>type_of(x)</code></td>
+<td>Returns the value's type as a string — <code>"int"</code>, <code>"str"</code>, <code>"list"</code>, <code>"dict"</code>, <code>"set"</code>, etc.</td>
+</tr>
+<tr>
+<td><code>isinstance(x, type)</code></td>
+<td>Check a value's type.</td>
+</tr>
+<tr>
+<td><code>callable(x)</code></td>
+<td>Check whether a value can be called.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="math">Math</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>abs(x)</code></td>
+<td>Absolute value.</td>
+</tr>
+<tr>
+<td><code>round(x)</code></td>
+<td>Round to the nearest integer.</td>
+</tr>
+<tr>
+<td><code>floor(x)</code> / <code>ceil(x)</code></td>
+<td>Round down / up.</td>
+</tr>
+<tr>
+<td><code>pow(x, y)</code></td>
+<td><code>x</code> to the power of <code>y</code>.</td>
+</tr>
+<tr>
+<td><code>sqrt(x)</code></td>
+<td>Square root.</td>
+</tr>
+<tr>
+<td><code>sin(x)</code> / <code>cos(x)</code> / <code>tan(x)</code></td>
+<td>Trigonometric functions.</td>
+</tr>
+<tr>
+<td><code>log(x)</code> / <code>log10(x)</code></td>
+<td>Natural log / base-10 log.</td>
+</tr>
+<tr>
+<td><code>divmod(a, b)</code></td>
+<td>Returns <code>(quotient, remainder)</code> — pairs naturally with <a href="../syntax/destructuring.html">tuple destructuring</a>.</td>
+</tr>
+<tr>
+<td><code>min(...)</code> / <code>max(...)</code></td>
+<td>Minimum / maximum of a list or arguments.</td>
+</tr>
+<tr>
+<td><code>sum(iterable)</code></td>
+<td>Sum of a list.</td>
+</tr>
+<tr>
+<td><code>random_num(a, b)</code></td>
+<td>A random number between <code>a</code> and <code>b</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="collections">Collections</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>len(x)</code> / <code>length(x)</code></td>
+<td>Length of a list, string, or dict — two names for the same thing.</td>
+</tr>
+<tr>
+<td><code>range(n)</code></td>
+<td>A range of numbers from 0 to <code>n - 1</code>.</td>
+</tr>
+<tr>
+<td><code>sorted(x)</code></td>
+<td>A sorted copy of a list.</td>
+</tr>
+<tr>
+<td><code>reversed(x)</code></td>
+<td>A reversed copy of a list.</td>
+</tr>
+<tr>
+<td><code>enumerate(x)</code></td>
+<td>Pairs of <code>(index, value)</code>.</td>
+</tr>
+<tr>
+<td><code>zip(a, b)</code></td>
+<td>Pairs values from two lists together.</td>
+</tr>
+<tr>
+<td><code>map(fn, x)</code> / <code>filter(fn, x)</code></td>
+<td>Transform / filter a list.</td>
+</tr>
+<tr>
+<td><code>all(x)</code> / <code>any(x)</code></td>
+<td>Whether every / any item is truthy.</td>
+</tr>
+<tr>
+<td><code>set_union(a, b)</code> / <code>set_intersection(a, b)</code> / <code>set_difference(a, b)</code></td>
+<td><a href="../syntax/data-structures.html">Set operations</a>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="text">Text</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>chr(n)</code> / <code>ord(c)</code></td>
+<td>Character ↔ code point.</td>
+</tr>
+<tr>
+<td><code>hex(n)</code> / <code>oct(n)</code> / <code>bin(n)</code></td>
+<td>Number to hex/octal/binary string.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="dates">Dates</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>date_now()</code> / <code>date_today()</code></td>
+<td>Current date/time.</td>
+</tr>
+<tr>
+<td><code>date_timestamp()</code></td>
+<td>Current Unix timestamp.</td>
+</tr>
+<tr>
+<td><code>date_format(d, fmt)</code></td>
+<td>Format a date.</td>
+</tr>
+<tr>
+<td><code>date_day_of_week(d)</code></td>
+<td>Day of the week for a date.</td>
+</tr>
+<tr>
+<td><code>date_add_days(d, n)</code></td>
+<td>Add <code>n</code> days to a date.</td>
+</tr>
+<tr>
+<td><code>date_diff_days(a, b)</code></td>
+<td>Days between two dates.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="files">Files</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>file_read(path)</code></td>
+<td>Read a file's contents.</td>
+</tr>
+<tr>
+<td><code>file_write(path, contents)</code></td>
+<td>Write to a file.</td>
+</tr>
+<tr>
+<td><code>file_append(path, contents)</code></td>
+<td>Append to a file.</td>
+</tr>
+<tr>
+<td><code>file_delete(path)</code></td>
+<td>Delete a file.</td>
+</tr>
+<tr>
+<td><code>file_exists(path)</code></td>
+<td>Whether a file exists.</td>
+</tr>
+</tbody>
+</table>
+<p>Inside a <a href="../advanced/sandbox.html">sandbox</a>, file access follows the sandbox's mode — <code>strict</code> blocks it entirely, <code>relaxed</code> allows reads.</p>
+<h2 id="other">Other</h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>doc(x)</code> / <code>doc(x, "name")</code></td>
+<td>Read a task, class, <code>init</code>, or method's <a href="../syntax/functions.html#docstrings">docstring</a>.</td>
+</tr>
+<tr>
+<td><code>print(x)</code></td>
+<td>Raw output, without NEKOVA's <code>show</code> formatting.</td>
+</tr>
+<tr>
+<td><code>input()</code> / <code>ask(prompt)</code></td>
+<td>Read a line from the user.</td>
+</tr>
+<tr>
+<td><code>sleep(seconds)</code></td>
+<td>Pause execution.</td>
+</tr>
+<tr>
+<td><code>connect(path)</code></td>
+<td>Open a database connection.</td>
+</tr>
+<tr>
+<td><code>sandbox_run(code)</code></td>
+<td>Run code inside a sandbox from within a running program.</td>
+</tr>
+<tr>
+<td><code>args</code></td>
+<td>Access command-line arguments passed to the running script.</td>
+</tr>
+</tbody>
+</table>
+
+    <div class="docs-pager">
+      
+      <a href="../../docs/reference/cli-commands.html" class="prev">
+        <span class="dir">← Previous</span>
+        <span class="title">CLI Commands</span>
+      </a>
+      
+      
+      <a href="../../docs/reference/error-codes.html" class="next">
+        <span class="dir">Next →</span>
+        <span class="title">Error Codes</span>
+      </a>
+      
+    </div>
+  </main>
+
+  <aside class="docs-toc">
+    
+    <div class="toc-label">On this page</div>
+    <ul>
+      
+      <li class="lvl-2"><a href="#type-conversion">Type conversion</a></li>
+      
+      <li class="lvl-2"><a href="#math">Math</a></li>
+      
+      <li class="lvl-2"><a href="#collections">Collections</a></li>
+      
+      <li class="lvl-2"><a href="#text">Text</a></li>
+      
+      <li class="lvl-2"><a href="#dates">Dates</a></li>
+      
+      <li class="lvl-2"><a href="#files">Files</a></li>
+      
+      <li class="lvl-2"><a href="#other">Other</a></li>
+      
+    </ul>
+    
+  </aside>
+
+</div>
+
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="../../docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="../../static/js/animations.js"></script>
+
+</body>
+</html>
