@@ -1,0 +1,264 @@
+/* ============================================================
+   NEKOVA Docs — Theme Tokens
+   Concept: "The language that's alive" — green is Nigeria's flag,
+   a terminal cursor, and growth, all at once. Everything glows
+   the way an active cursor or a running process does: a steady
+   pulse, not a blaze. Red/amber are reserved strictly for actual
+   errors and warnings — exactly like NEKOVA's own error output —
+   never used decoratively. Palette pulled directly from the
+   NEKOVA VS Code theme, not invented for this page.
+   ============================================================ */
+
+:root {
+  /* --- Core palette (from nekova-dark-color-theme.json) --- */
+  --nk-black:      #0A0C0B;   /* activity bar / deepest background */
+  --nk-black-2:    #0D100E;   /* editor background */
+  --nk-black-3:    #161B17;   /* panels, cards, code blocks */
+  --nk-grey:       #3D6B4D;   /* muted green-grey — comments, secondary text */
+  --nk-grey-2:     #1A211C;   /* dividers, borders */
+
+  --nk-green-bright: #3DDC84; /* AI-native glow — think/remember/recall, cursor */
+  --nk-green:        #2ECC71; /* declarations, badges, primary accent */
+  --nk-green-deep:   #1F7A4C; /* status bar, depth, pressed states */
+  --nk-green-pale:   #A8F0C6; /* strings, soft highlights */
+
+  --nk-white:      #FFFFFF;   /* primary text, control-flow keywords */
+  --nk-white-2:    #C9D6CE;   /* secondary text (white cooled toward green-grey) */
+  --nk-white-3:    #8AA093;   /* faint text, captions */
+
+  /* Errors/warnings — reserved, never decorative */
+  --nk-error:      #FF5C5C;
+  --nk-warning:    #E8B84B;
+
+  /* --- Type --- */
+  --font-display: 'Cinzel', 'Georgia', serif;
+  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-code:    'JetBrains Mono', 'Fira Code', Consolas, monospace;
+
+  /* --- Scale --- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2.5rem;
+  --space-6: 4rem;
+  --space-7: 6rem;
+  --space-8: 9rem;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  --shadow-glow-green: 0 0 40px -8px rgba(61, 220, 132, 0.4);
+  --shadow-card: 0 4px 24px -8px rgba(0, 0, 0, 0.55);
+}
+
+/* --- Reset --- */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--nk-black);
+  color: var(--nk-white);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Faint noise/grain so the black isn't dead-flat */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--nk-white);
+  line-height: 1.25;
+}
+
+a { color: var(--nk-green); text-decoration: none; }
+a:hover { color: var(--nk-green-bright); }
+
+code, pre, kbd {
+  font-family: var(--font-code);
+  font-size: 0.9em;
+}
+
+code:not(pre code) {
+  background: var(--nk-black-3);
+  border: 1px solid var(--nk-grey-2);
+  border-radius: var(--radius-sm);
+  padding: 0.15em 0.45em;
+  color: var(--nk-green-bright);
+}
+
+pre {
+  background: var(--nk-black-3);
+  border: 1px solid var(--nk-grey-2);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  overflow-x: auto;
+  position: relative;
+  box-shadow: var(--shadow-card);
+}
+
+pre.glow-border {
+  transition: box-shadow 0.4s ease, border-color 0.4s ease;
+}
+pre.glow-border:hover {
+  border-color: var(--nk-green-deep);
+  box-shadow: var(--shadow-card), var(--shadow-glow-green);
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--nk-white);
+}
+
+/* Token colors — matches the actual VS Code grammar, not invented */
+.tok-kw   { color: var(--nk-white); font-weight: 600; }        /* control flow: if, for, return */
+.tok-decl { color: var(--nk-green); }                          /* task, let, const, class */
+.tok-ai   { color: var(--nk-green-bright); font-weight: 600; } /* think, remember, recall */
+.tok-str  { color: var(--nk-green-pale); }
+.tok-num  { color: var(--nk-white); }
+.tok-const{ color: var(--nk-green-bright); font-weight: 600; } /* true, false, null */
+.tok-com  { color: var(--nk-grey); font-style: italic; }
+.tok-fn   { color: var(--nk-white); }
+
+::selection { background: rgba(46, 204, 113, 0.28); color: var(--nk-white); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--nk-black); }
+::-webkit-scrollbar-thumb {
+  background: var(--nk-grey-2);
+  border-radius: 10px;
+  border: 2px solid var(--nk-black);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--nk-grey); }
+
+/* Focus visibility (accessibility floor) */
+a:focus-visible, button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--nk-green-bright);
+  outline-offset: 2px;
+}
+
+/* --- Shared: signal-line divider (signature motif) ---
+   A traveling pulse along a thin line, like a terminal cursor
+   or a heartbeat — "the language is alive." */
+.signal-line {
+  height: 1px;
+  width: 100%;
+  background: var(--nk-grey-2);
+  position: relative;
+  margin: var(--space-6) 0;
+  overflow: hidden;
+}
+.signal-line::after {
+  content: "";
+  position: absolute;
+  top: -1.5px; left: -10%;
+  width: 14%; height: 4px;
+  background: linear-gradient(90deg, transparent, var(--nk-green-bright), transparent);
+  filter: blur(1px);
+  animation: signal-travel 4.5s ease-in-out infinite;
+}
+@keyframes signal-travel {
+  0%   { left: -10%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .signal-line::after { animation: none; opacity: 0; }
+}
+
+/* --- Shared: top nav bar --- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  background: rgba(10, 12, 11, 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--nk-grey-2);
+}
+.topbar .brand {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--nk-white);
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.topbar .brand .cursor-dot {
+  color: var(--nk-green-bright);
+  animation: blink 1.4s step-start infinite;
+}
+@keyframes blink { 50% { opacity: 0.15; } }
+.topbar nav { display: flex; gap: var(--space-5); align-items: center; }
+.topbar nav a {
+  color: var(--nk-white-2);
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+.topbar nav a:hover { color: var(--nk-green-bright); }
+.topbar .cta {
+  border: 1px solid var(--nk-green-deep);
+  border-radius: var(--radius-sm);
+  padding: 0.4em 1em;
+  color: var(--nk-green) !important;
+}
+.topbar .cta:hover {
+  border-color: var(--nk-green);
+  background: rgba(46, 204, 113, 0.08);
+  color: var(--nk-green-bright) !important;
+}
+
+.site-footer {
+  border-top: 1px solid var(--nk-grey-2);
+  padding: var(--space-6) var(--space-5);
+  color: var(--nk-white-3);
+  font-size: 0.88rem;
+  text-align: center;
+}
+.site-footer a { color: var(--nk-white-2); }
+
+/* Reveal-on-scroll base state (JS adds .is-visible) */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+              transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+              filter 0.7s ease;
+  filter: brightness(1.6) saturate(1.3);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: brightness(1) saturate(1);
+}
