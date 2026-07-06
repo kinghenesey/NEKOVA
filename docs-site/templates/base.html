@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}{{ page_title }}{% endblock %} · NEKOVA Docs</title>
+<meta name="description" content="{{ page_description|default('NEKOVA — the AI-native programming language where think is a keyword. Built in Nigeria.') }}">
+<link rel="icon" href="{{ root }}static/favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="{{ root }}static/css/theme.css">
+{% block extra_css %}{% endblock %}
+</head>
+<body class="{{ body_class|default('') }}">
+
+<header class="topbar">
+  <a href="{{ root }}index.html" class="brand">
+    <span class="cursor-dot">▍</span> NEKOVA <span style="color: var(--nk-white-3); font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;">docs</span>
+  </a>
+  <nav>
+    <a href="{{ root }}index.html#story">Why NEKOVA</a>
+    <a href="{{ root }}docs/getting-started/installation.html">Docs</a>
+    <a href="https://github.com/kinghenesey/NEKOVA" target="_blank" rel="noopener">GitHub</a>
+    <a href="{{ root }}docs/getting-started/installation.html" class="cta">Get Started</a>
+  </nav>
+</header>
+
+{% block content %}{% endblock %}
+
+<footer class="site-footer">
+  <p>NEKOVA — built by Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬</p>
+  <p><a href="https://github.com/kinghenesey/NEKOVA">GitHub</a> · <a href="{{ root }}docs/reference/changelog.html">Changelog</a> · <a href="https://pypi.org/project/nekova-lang/" target="_blank" rel="noopener">PyPI</a></p>
+</footer>
+
+<script src="{{ root }}static/js/animations.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
