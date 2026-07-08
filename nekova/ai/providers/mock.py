@@ -34,7 +34,25 @@ class MockProvider(BaseProvider):
 
     def _raw_complete(self, prompt: str) -> str:
         """Core mock response generation."""
-        return self._mock_response(prompt)
+        response = self._mock_response(prompt)
+        # Phase 25: acknowledge think "..." using "<model>" in the
+        # response so it's observable/testable — but only for plain
+        # text replies. JSON/schema responses are left byte-for-byte
+        # alone, since appending text there would break parsing.
+        # NOTE: checking startswith('[') is NOT enough to detect JSON
+        # here — every mock text response is itself tagged '[MOCK...]',
+        # which also starts with '[' and would wrongly be treated as
+        # JSON. Attempt an actual parse instead.
+        if self.model:
+            import json as _json
+            try:
+                _json.loads(response)
+                looks_like_json = True
+            except (ValueError, TypeError):
+                looks_like_json = False
+            if not looks_like_json:
+                response = f"[model: {self.model}] {response}"
+        return response
 
     def ask(self, prompt: str) -> str:
         """Return a mock answer to any question (timeout-protected)."""
