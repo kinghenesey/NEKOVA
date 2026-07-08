@@ -63,6 +63,7 @@ class TokenType(Enum):
     LET         = auto()
     CONST       = auto()
     ENUM        = auto()
+    CONVERSE    = auto()
 
     # ── Pattern Matching (Phase 7) ────────────────────────────
     MATCH       = auto()
@@ -200,6 +201,7 @@ KEYWORDS = {
     "let":        TokenType.LET,
     "const":      TokenType.CONST,
     "enum":       TokenType.ENUM,
+    "converse":   TokenType.CONVERSE,
     "object":     TokenType.OBJECT,
     "new":        TokenType.NEW,
     "init":       TokenType.INIT,
