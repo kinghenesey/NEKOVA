@@ -50,3 +50,5 @@ test_*.nk
 
 diff_target.nk
 nk_tokens.nk
+# Phase 25: imagine local cache
+.nekova_cache/
