@@ -20,6 +20,10 @@ class BaseProvider(ABC):
         # Timeout in seconds for ask() / stream() calls.
         # Set to None to disable the timeout entirely.
         self.timeout = DEFAULT_THINK_TIMEOUT
+        # Phase 25: per-call explicit model override, set by
+        # think "..." using "<model>" just before ask() is called.
+        # None means "use whatever this provider defaults to."
+        self.model = None
 
     def remember(self, text: str):
         """Add a fact to AI memory."""
