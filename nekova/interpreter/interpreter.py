@@ -7,7 +7,7 @@ from nekova.parser.nodes import (
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UnpackStatement, UseStatement,
     ListDestructureStatement, DictDestructureStatement, SpreadElement,
-    EnumDefinition, SetLiteral,
+    EnumDefinition, SetLiteral, ConverseStatement,
     ImportStatement, CallExpression, IndexExpression, IndexAssignStatement,
     MethodCall,
     PropertyAccess,
@@ -80,10 +80,16 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     # RecursionError fire first with a misleading message.
     MAX_CALL_DEPTH = 500
 
-    def __init__(self, strict_types: bool = False):
+    def __init__(self, strict_types: bool = False, debug_ai: bool = False):
         # Isolate this interpreter's memory from all other instances
         from nekova.ai.memory_store import init_interpreter_memory
         init_interpreter_memory()
+
+        # Phase 25: --debug-ai — when set, every think call prints the
+        # exact prompt sent to the provider (after memory/conversation
+        # context is prepended), so you can see what a `think` line
+        # actually asks the model, not just the response.
+        self._debug_ai = debug_ai
 
         # Raise Python's own recursion limit so it never fires before our
         # own MAX_CALL_DEPTH check does. Each NEKOVA-level task call costs
@@ -97,6 +103,13 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # NEKOVA-level call depth counter, incremented/decremented in
         # _call_task. This is what MAX_CALL_DEPTH is checked against.
         self._call_depth = 0
+
+        # Phase 25: cumulative AI usage tracking, surfaced via the
+        # ai_usage() builtin. Token counts are an estimate (roughly
+        # 4 characters per token, the same rule of thumb most
+        # providers' own docs use) since NEKOVA doesn't have access
+        # to a real tokenizer for every possible provider.
+        self._ai_usage = {"calls": 0, "tokens": 0}
 
         # Global environment — lives for the entire program
         self.globals      = Environment()
@@ -345,6 +358,121 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 f"  Use relaxed mode to enable AI and I/O operations."
             )
 
+    @staticmethod
+    def _estimate_tokens(text: str) -> int:
+        """
+        Rough token estimate — about 4 characters per token, the
+        same rule of thumb most providers' own docs quote. Not exact
+        (no real tokenizer is used), but good enough for a budget
+        check and for ai_usage() to be a useful running total.
+        """
+        return max(1, len(str(text)) // 4)
+
+    def _track_ai_usage(self, prompt: str, response) -> int:
+        """Record one AI call's estimated token cost and return it."""
+        tokens = self._estimate_tokens(prompt) + self._estimate_tokens(response)
+        self._ai_usage["calls"]  += 1
+        self._ai_usage["tokens"] += tokens
+        return tokens
+
+    def _check_think_budget(self, node, prompt: str, response) -> int:
+        """
+        Phase 25: think "..." with budget: <n> — a hard cap on the
+        estimated tokens (prompt + response) for a single think call.
+        Checked after the call completes (NEKOVA has no way to tell
+        an arbitrary provider to stop generating early), so a budget
+        catches an overly long response rather than preventing one —
+        it's a cost/usage guardrail, not a generation-length limiter.
+        Returns the estimated token count either way, for ai_usage().
+        """
+        tokens = self._estimate_tokens(prompt) + self._estimate_tokens(response)
+        if node.budget is not None:
+            budget_value = self._execute_node(node.budget)
+            if tokens > budget_value:
+                raise NEKOVARuntimeError(
+                    f"think exceeded its token budget: used ~{tokens} "
+                    f"tokens, budget was {budget_value}.\n"
+                    f"  Shorten the prompt, expect a shorter response, "
+                    f"or raise the budget."
+                )
+        return tokens
+
+    _PROMPT_INJECTION_PATTERNS = (
+        "ignore previous instructions", "ignore all previous",
+        "ignore the above", "disregard the above", "disregard previous",
+        "new instructions:", "system prompt:", "you are now",
+        "pretend you are", "act as if you", "forget everything above",
+        "override your instructions", "reveal your system prompt",
+    )
+
+    def _check_prompt_injection(self, prompt: str):
+        """
+        Phase 25: a heuristic guard against prompt injection when
+        'think' is called inside a sandbox — relevant when untrusted
+        input (a file, a network response, user text) flows into a
+        think call inside sandboxed code. This is pattern matching,
+        not a real security boundary — it catches common, obvious
+        injection phrasing, not a determined attacker rewording
+        around it. Recorded as a sandbox violation, same mechanism
+        as blocking eval/exec, rather than a separate error path.
+        """
+        if not self._sandbox_mode:
+            return
+        prompt_lower = str(prompt).lower()
+        for pattern in self._PROMPT_INJECTION_PATTERNS:
+            if pattern in prompt_lower:
+                self._sandbox_violations.append({
+                    "operation": "think",
+                    "mode": self._sandbox_mode,
+                    "reason": f"possible prompt injection: matched '{pattern}'",
+                })
+                raise NEKOVARuntimeError(
+                    f"[sandbox:{self._sandbox_mode}] This prompt looks like "
+                    f"it may contain a prompt-injection attempt (matched: "
+                    f"'{pattern}').\n"
+                    f"  Blocked inside a sandbox as a precaution. If this "
+                    f"is a false positive, rephrase the prompt or handle "
+                    f"this think call outside the sandbox."
+                )
+
+    def _call_ai_with_visible_retry(self, fn, max_retries: int = 2):
+        """
+        Phase 25: think's own default retry/backoff — separate from
+        the language-level `retry:`/`fallback:` block. A transient
+        failure (timeout, rate limit, dropped connection) gets a
+        couple of automatic retries with a short backoff, and each
+        retry attempt is printed so it's visible rather than a
+        silent pause before the eventual result or error. Still
+        raises on the final attempt's failure — this doesn't change
+        think's existing on_error/swallow behavior, it just gives a
+        transient failure a couple of chances before reaching it.
+        """
+        import time as _time
+        import sys as _sys
+        backoffs = [0.3, 0.6][:max_retries]
+        last_exc = None
+        for attempt, _ in enumerate([None] + backoffs, start=1):
+            try:
+                return fn()
+            except Exception as e:
+                last_exc = e
+                if attempt > len(backoffs):
+                    raise
+                delay = backoffs[attempt - 1]
+                # stderr, not stdout: stdout is the program's actual
+                # output (what show/print produce, what tests and
+                # other tools capture and assert on) — retry noise
+                # doesn't belong mixed into that, but should still be
+                # visible to a human watching the terminal, which is
+                # exactly what "visible, not silent" means here.
+                print(
+                    f"[think] attempt {attempt} failed ({e}) — "
+                    f"retrying in {delay}s...",
+                    file=_sys.stderr
+                )
+                _time.sleep(delay)
+        raise last_exc
+
     def _exec_ThinkStatement(self, node):
         """Execute a think statement — calls the active AI provider."""
         self._sandbox_guard("think")
@@ -354,6 +482,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # Step 1: Evaluate the prompt
         prompt = self._execute_node(node.prompt)
         prompt = str(prompt)
+        self._check_prompt_injection(prompt)
 
         # Phase 22: `mock think as <value>` short-circuits the real
         # AI call for the rest of the enclosing test block.
@@ -368,9 +497,25 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # Step 2: Call the AI provider (with timeout)
         try:
             from nekova.ai.providers import get_provider
+            from nekova.ai.memory_store import (
+                conversation_context, add_to_conversation
+            )
             provider = get_provider()
             provider.timeout = self._get_think_timeout()
-            response = provider.ask(prompt)
+            if node.model is not None:
+                provider.model = self._execute_node(node.model)
+            # Same conversation-history behavior 'think ... as <format>'
+            # already had via ask_structured — extended here so plain
+            # 'think' inside a converse: block (or anywhere else) also
+            # remembers prior turns.
+            full_prompt = conversation_context() + prompt
+            if self._debug_ai:
+                print(f"{Fore.YELLOW}[debug-ai] prompt sent: {full_prompt!r}{Style.RESET_ALL}")
+            response = self._call_ai_with_visible_retry(
+                lambda: provider.ask(full_prompt)
+            )
+            add_to_conversation("user", prompt)
+            add_to_conversation("assistant", response)
         except Exception as e:
             if node.on_error is not None:
                 # Inline error handling: evaluate the fallback
@@ -380,6 +525,13 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 # No fallback clause — preserve old behaviour so
                 # existing programs don't start crashing.
                 response = f"[think error: {e}]"
+        else:
+            # Only track usage / enforce budget for a genuine
+            # successful call — not for mock, error-fallback, or
+            # swallowed-error responses, none of which reflect real
+            # AI usage.
+            self._check_think_budget(node, prompt, response)
+            self._track_ai_usage(prompt, response)
 
         # Step 3: Print with cyan formatting
         print(f"{Fore.CYAN}🧠 {response}{Style.RESET_ALL}")
@@ -658,6 +810,15 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         prev_env = self.env
         self.env = sandbox_env
 
+        # Bug fix (found while building Phase 25's prompt-injection
+        # guard): self._sandbox_mode was declared and checked by
+        # _sandbox_guard() but never actually SET when entering a
+        # sandbox block, so operation-level blocking (e.g. 'think' in
+        # strict mode) was silent dead code — it never fired. Track
+        # the previous value too, since sandbox blocks can nest.
+        prev_sandbox_mode = self._sandbox_mode
+        self._sandbox_mode = mode
+
         result = {
             "output": "", "error": None, "safe": True,
             "duration": 0.0, "mode": mode, "violations": violations
@@ -675,6 +836,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 raise
         finally:
             self.env = prev_env
+            self._sandbox_mode = prev_sandbox_mode
             builtins.open = original_open
             sys.stdout = old_stdout
 
@@ -1668,6 +1830,24 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 )
         return result
 
+    def _exec_ConverseStatement(self, node):
+        """
+        Execute a converse: block — a fresh, isolated multi-turn
+        conversation. Clears any prior conversation history so an
+        earlier think/listen elsewhere in the program doesn't leak
+        into this block, runs the body (think/listen inside it
+        automatically carry conversation context — see
+        _exec_ThinkStatement and _exec_ListenExpression), then
+        leaves the accumulated history in place afterward in case
+        the caller wants to inspect it via recall/memory tools.
+        """
+        from nekova.ai.memory_store import clear_conversation
+        clear_conversation()
+        result = None
+        for stmt in node.body:
+            result = self._execute_node(stmt)
+        return result
+
     def _exec_EnumDefinition(self, node: EnumDefinition):
         """Execute:  enum Status: PENDING, ACTIVE, DONE"""
         enum_obj = NEKOVAEnum(node.name, node.members)
@@ -2326,6 +2506,14 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             return "No docstring available."
         self.globals.set("doc", _doc)
 
+        # ── Phase 25: AI usage tracking ──────────────────────────
+        def _ai_usage():
+            """Cumulative {calls, tokens} across every real think()
+            call so far (mock/error-fallback calls aren't counted).
+            Token counts are an estimate — see _estimate_tokens."""
+            return dict(self._ai_usage)
+        self.globals.set("ai_usage", _ai_usage)
+
         # ── Phase 24: set operations ─────────────────────────────
         def _as_set(x, fn_name):
             if isinstance(x, set):
@@ -2659,6 +2847,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         prompt = str(self._execute_node(node.prompt))
         fmt    = node.as_format
+        self._check_prompt_injection(prompt)
 
         # Phase 22: `mock think as <value>` short-circuits the real
         # AI call — the mock value is returned as-is, no coercion
@@ -2670,25 +2859,58 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 self.env.set(node.variable, mock)
             return mock
 
-        # Evaluate schema if present
+        # Evaluate schema if present (explicit `as schema {...}`)
         schema = None
         if node.schema is not None:
             schema = self._execute_node(node.schema)
             if not isinstance(schema, dict):
                 schema = None
 
+        # Phase 25: think "..." as <ShapeName> — a previously defined
+        # `shape` used directly as the output format. Builds an
+        # implicit schema from the shape's own field list, then
+        # coerces the AI's response through the shape's real
+        # constructor afterward, so `as User` gets the exact same
+        # type validation a manual `User(...)` call would.
+        shape_name_matched = None
+        if schema is None and fmt not in ("json", "list", "bool", "text", "number", "schema"):
+            shapes = getattr(self, "_shapes", {})
+            # Format identifiers are lowercased by the parser (so
+            # `as JSON` and `as json` behave the same) — but shape
+            # names are typically capitalized ('User'), so match
+            # case-insensitively against the real shape registry.
+            real_name = next((n for n in shapes if n.lower() == fmt), None)
+            shape_fields = shapes.get(real_name) if real_name else None
+            if shape_fields is not None:
+                schema = {fname: ftype for fname, ftype, _default in shape_fields}
+                shape_name_matched = real_name
+                fmt = "schema"
+
         try:
             provider = get_provider()
-            result   = ask_structured(
+            if node.model is not None:
+                provider.model = self._execute_node(node.model)
+            result   = self._call_ai_with_visible_retry(lambda: ask_structured(
                 provider, prompt, fmt,
                 schema=schema,
                 timeout=self._get_think_timeout(),
-            )
+                debug=self._debug_ai,
+            ))
+            # ask_structured's _coerce_schema already type-coerced every
+            # field against the schema built from the shape above — no
+            # need to re-run it through the shape's own constructor
+            # (which only accepts positional args, not the kwargs a
+            # dict naturally provides). Just tag it as that shape.
+            if shape_name_matched is not None and isinstance(result, dict):
+                result["__shape__"] = shape_name_matched
         except Exception as e:
             if node.on_error is not None:
                 result = self._execute_node(node.on_error)
             else:
                 result = f"[think error: {e}]"
+        else:
+            self._check_think_budget(node, prompt, result)
+            self._track_ai_usage(prompt, result)
 
         if node.variable:
             self.env.set(node.variable, result)
@@ -3056,6 +3278,8 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         if node.prompt is not None:
             prompt = self._to_string(self._execute_node(node.prompt))
 
+        from nekova.ai.memory_store import add_to_conversation
+
         try:
             import speech_recognition as sr
             r = sr.Recognizer()
@@ -3067,11 +3291,14 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 r.adjust_for_ambient_noise(source, duration=0.3)
                 audio = r.listen(source, timeout=10)
             result = r.recognize_google(audio)
+            add_to_conversation("user", result)
             return result
         except ImportError:
             # SpeechRecognition not installed — fall back to input()
             msg = prompt if prompt else "Listening (type instead): "
-            return input(msg)
+            result = input(msg)
+            add_to_conversation("user", result)
+            return result
         except Exception as e:
             raise NEKOVARuntimeError(
                 f"listen failed: {e}\n"
@@ -3240,13 +3467,17 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     # ── imagine ───────────────────────────────────────────────
 
     def _exec_ImagineStatement(self, node: ImagineStatement):
-        """imagine <prompt> [as url|path|base64]"""
+        """imagine <prompt> [as url|path|file|base64]"""
         self._sandbox_guard("imagine")
         prompt = self._to_string(self._execute_node(node.prompt))
         fmt = node.result_format
+        # 'file' is an alias for 'path' — same meaning ("give me a
+        # local file"), just the more intuitive word for it.
+        if fmt == "file":
+            fmt = "path"
 
         try:
-            result = self._imagine(prompt, fmt)
+            result = self._imagine_cached(prompt, fmt)
         except Exception as e:
             raise NEKOVARuntimeError(
                 f"imagine failed: {e}\n"
@@ -3255,6 +3486,39 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         if node.result_var:
             self.env.set(node.result_var, result)
+        return result
+
+    def _imagine_cached(self, prompt: str, fmt: str):
+        """
+        Phase 25: local caching for imagine — an identical
+        (prompt, format) pair during a dev loop returns the cached
+        result instead of re-generating (and re-billing) it. Cached
+        on disk under .nekova_cache/imagine/ so it persists across
+        separate script runs, not just within one.
+        """
+        import hashlib, json, os
+
+        cache_dir = os.path.join(".nekova_cache", "imagine")
+        key = hashlib.sha256(f"{fmt}:{prompt}".encode("utf-8")).hexdigest()
+        cache_file = os.path.join(cache_dir, f"{key}.json")
+
+        if os.path.exists(cache_file):
+            try:
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    cached = json.load(f)
+                return cached["result"]
+            except (OSError, ValueError, KeyError):
+                pass  # corrupt cache entry — fall through and regenerate
+
+        result = self._imagine(prompt, fmt)
+
+        try:
+            os.makedirs(cache_dir, exist_ok=True)
+            with open(cache_file, "w", encoding="utf-8") as f:
+                json.dump({"prompt": prompt, "format": fmt, "result": result}, f)
+        except OSError:
+            pass  # caching is a nice-to-have — don't fail the call over it
+
         return result
 
     def _imagine(self, prompt: str, fmt: str = "url"):
