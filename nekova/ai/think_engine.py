@@ -163,7 +163,7 @@ def _build_format_prompt(prompt: str, fmt: str) -> str:
 def ask_structured(provider, prompt: str, fmt: str,
                    schema: dict = None, use_memory: bool = True,
                    use_history: bool = True,
-                   timeout: float = None):
+                   timeout: float = None, debug: bool = False):
     """
     Call the AI provider and return a structured result.
 
@@ -174,6 +174,7 @@ def ask_structured(provider, prompt: str, fmt: str,
     use_memory:  inject remembered facts into prompt
     use_history: inject conversation history into prompt
     timeout:     seconds before raising RuntimeError (None = use provider default)
+    debug:       (Phase 25 --debug-ai) print the exact prompt sent
     """
     # Apply per-call timeout override
     if timeout is not None:
@@ -194,6 +195,9 @@ def ask_structured(provider, prompt: str, fmt: str,
         full_prompt = context + _build_schema_prompt(prompt, schema)
     else:
         full_prompt = context + _build_format_prompt(prompt, fmt)
+
+    if debug:
+        print(f"[debug-ai] prompt sent: {full_prompt!r}")
 
     # Call the provider
     raw = provider.ask(full_prompt)
