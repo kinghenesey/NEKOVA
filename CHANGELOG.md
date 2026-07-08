@@ -5,6 +5,105 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.10.0] — 2026-07-06 · Phase 24b "Documentation Website" + Phase 25 "AI-Native Differentiators II"
+
+Both phases shipped together in this release, same as 1.9.9 before it —
+Phase 25 was originally slated for 1.11.0, but landed alongside 24b and
+is published as 1.10.0. See the note under the Version Map in
+ROADMAP.md.
+
+### Added — Phase 24b
+
+- **Documentation website**, live at
+  [kinghenesey.github.io/NEKOVA](https://kinghenesey.github.io/NEKOVA/).
+  28 pages (landing page + 27 documentation pages across Getting
+  Started, Core Syntax, AI-Native Features, Classes & Objects,
+  Advanced, and Reference) generated from plain markdown by a small
+  Python static-site generator (`docs-site/build.py`) — adding a page
+  means writing a `.md` file and one line in `nav.yaml`, no HTML or
+  CSS required. Deploys automatically via GitHub Actions on every
+  push to `main` that touches `docs-site/`. Every code example on
+  the site was run against the actual interpreter before publishing,
+  not written from memory.
+
+### Added — Phase 25
+
+- **`think "..." as <ShapeName>`** — a previously defined `shape`
+  used directly as `think`'s output format. Builds an implicit
+  schema from the shape's own fields, and the response comes back
+  type-coerced and tagged with the shape's name.
+  ```nekova
+  shape User:
+      name str
+      age int
+  let u = think "extract from: Ada, 30" as User
+  ```
+- **Cost/token tracking** — `think "..." with budget: 500` raises if
+  the estimated prompt+response tokens exceed the budget; the new
+  `ai_usage()` builtin returns a running `{calls, tokens}` total.
+  Token counts are an estimate (~4 characters per token), since
+  NEKOVA doesn't have a real tokenizer for every possible provider.
+- **Explicit model selection** — `think "..." using "claude-sonnet"`.
+  Sets the provider's `model` attribute for that call; the mock
+  provider acknowledges it in plain-text responses (never in
+  JSON/schema ones, where that would corrupt parsing).
+- **`converse:` blocks** — multi-turn dialogue with automatic context:
+  ```nekova
+  converse:
+      think "ask a clarifying question about {topic}"
+      listen
+      think "respond based on what they said"
+  ```
+  Starts with a clean conversation history each time; every `think`
+  and `listen` inside the block automatically carries prior turns as
+  context. Extended the same conversation-history mechanism (already
+  used by `think ... as <format>`) to plain `think` and to `listen`,
+  which didn't have it before.
+- **`--debug-ai`** — prints the exact prompt sent to the provider
+  (after memory/conversation context is prepended) for every `think`
+  call, so you can see what a `think` line actually asks the model.
+- **Sandbox prompt-injection guard** — `think` calls inside a
+  `sandbox` block are checked against a list of common
+  injection-style phrases ("ignore previous instructions", "you are
+  now", etc.) and blocked as a sandbox violation if matched. Pattern
+  matching, not a real security boundary — catches obvious phrasing,
+  not a determined attacker rewording around it.
+- **`imagine "..." as file`** with local caching — `file` is now a
+  recognized format (alias for `path`), and identical
+  `(prompt, format)` pairs are cached on disk under
+  `.nekova_cache/imagine/`, so repeated calls during a dev loop don't
+  regenerate (or re-bill) the same image.
+- **think's own visible retry/backoff** — a transient failure gets
+  two automatic retries with a short backoff before falling through
+  to `when error:` or the swallow-to-string behavior. Retry messages
+  print to stderr, not stdout, so they're visible to a human watching
+  the terminal without polluting a program's actual output.
+
+### Fixed
+
+- **`self._sandbox_mode` was never actually set when entering a
+  sandbox block.** Found while building the prompt-injection guard
+  above. `_sandbox_guard()` checked this flag to decide whether to
+  block operations like `think` in strict mode, but the flag stayed
+  `""` the entire time a sandbox block ran — meaning `think` was
+  never actually blocked in strict-mode sandboxes despite being in
+  the blocked-operations list. Fixed so strict sandboxes now
+  genuinely block `think`, matching what the code already claimed to
+  do.
+
+### Not done this release
+
+- **Confidence/uncertainty surfacing** for `think ... as bool/json` —
+  deferred rather than rushed. Changing what these calls return would
+  be a breaking change with no real semantic backing in the mock
+  provider (it has no actual notion of confidence to expose), and
+  deserves proper design rather than a bolted-on field.
+
+- **`tests/test_phase25.py`** — 32 tests. **1,358 tests passing, zero
+  regressions.**
+
+---
+
 ## [1.9.9] — 2026-07-04 · Phase 23b "Correctness & Trust — Part 2" + Phase 24 "Language Completeness II"
 
 Both phases shipped together in this release — Phase 24 was originally
