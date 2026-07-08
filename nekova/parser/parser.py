@@ -9,7 +9,7 @@ from nekova.parser.nodes import (
     WhileStatement, TryStatement, ForStatement,
     TaskStatement, ReturnStatement, BreakStatement, ContinueStatement, GlobalStatement, UnpackStatement, UseStatement,
     ListDestructureStatement, DictDestructureStatement, SpreadElement,
-    EnumDefinition, SetLiteral,
+    EnumDefinition, SetLiteral, ConverseStatement,
     ImportStatement, CallExpression, IndexExpression, IndexAssignStatement,
     MethodCall,
     PropertyAccess,
@@ -225,6 +225,9 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
         if token.type == TokenType.ENUM:
             return self._parse_enum()
+
+        if token.type == TokenType.CONVERSE:
+            return self._parse_converse()
 
         if token.type == TokenType.YIELD:
             return self._parse_yield()
@@ -620,6 +623,46 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         self._expect_newline_or_eof()
         return self._stamp(ShowStatement(expr, extras), line)
 
+    def _parse_think_using_model(self):
+        """
+        Parse an optional explicit model-selection clause:
+            think "..." using "claude-sonnet"
+            think "..." as json using "claude-sonnet"
+
+        'using' is a soft keyword (matched by value, like 'budget'
+        and 'error' elsewhere in a think clause) so it stays a plain
+        identifier everywhere else in the language. Returns the
+        model expression Node, or None if not present.
+        """
+        if (self._current().type == TokenType.IDENTIFIER
+                and self._current().value == "using"):
+            self._advance()  # consume 'using'
+            return self._parse_expression()
+        return None
+
+    def _parse_think_with_budget(self):
+        """
+        Parse an optional token-budget clause on a think statement:
+            think "..." with budget: 500
+            think "..." as json with budget: 500
+
+        Returns the budget expression Node, or None if not present.
+        Does not consume the trailing newline.
+        """
+        if self._current().type != TokenType.WITH:
+            return None
+        self._advance()  # consume 'with'
+        budget_tok = self._current()
+        if budget_tok.value != "budget":
+            raise ParseError(
+                f"Expected 'budget' after 'with' in a think clause, "
+                f"got '{budget_tok.value}'.\n"
+                f"  Example:  think \"...\" with budget: 500"
+            )
+        self._advance()  # consume 'budget'
+        self._consume(TokenType.COLON)
+        return self._parse_expression()
+
     def _parse_think_on_error(self):
         """
         Parse an optional inline error-handling clause on a think
@@ -655,6 +698,8 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             think <prompt> as bool
             think <prompt> as text
             think <prompt> as schema {"key": "type", ...}
+            think <prompt> [as <format>] using "<model>"
+            think <prompt> [as <format>] with budget: <n>
             think <prompt> [as <format>] when error: <fallback>
         """
         line = self._current().line
@@ -672,38 +717,49 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                 self._advance()
 
                 if fmt in ("json", "list", "bool", "text", "number"):
+                    model = self._parse_think_using_model()
+                    budget = self._parse_think_with_budget()
                     on_error = self._parse_think_on_error()
                     self._expect_newline_or_eof()
-                    return ThinkAsStatement(prompt, fmt, line=line,
-                                            on_error=on_error)
+                    return ThinkAsStatement(prompt, fmt, line=line, model=model,
+                                            budget=budget, on_error=on_error)
 
                 # as schema {...}
                 if fmt == "schema":
                     schema = self._parse_expression()
+                    model = self._parse_think_using_model()
+                    budget = self._parse_think_with_budget()
                     on_error = self._parse_think_on_error()
                     self._expect_newline_or_eof()
                     return ThinkAsStatement(prompt, "schema",
-                                           schema=schema, line=line,
-                                           on_error=on_error)
+                                           schema=schema, line=line, model=model,
+                                           budget=budget, on_error=on_error)
 
                 # Unknown format — fall back
+                model = self._parse_think_using_model()
+                budget = self._parse_think_with_budget()
                 on_error = self._parse_think_on_error()
                 self._expect_newline_or_eof()
-                return ThinkAsStatement(prompt, fmt, line=line,
-                                        on_error=on_error)
+                return ThinkAsStatement(prompt, fmt, line=line, model=model,
+                                        budget=budget, on_error=on_error)
 
             # as {...}  — treat as inline schema shorthand
             elif fmt_tok.type == TokenType.LBRACE:
                 schema = self._parse_expression()
+                model = self._parse_think_using_model()
+                budget = self._parse_think_with_budget()
                 on_error = self._parse_think_on_error()
                 self._expect_newline_or_eof()
                 return ThinkAsStatement(prompt, "schema",
-                                        schema=schema, line=line,
-                                        on_error=on_error)
+                                        schema=schema, line=line, model=model,
+                                        budget=budget, on_error=on_error)
 
+        model = self._parse_think_using_model()
+        budget = self._parse_think_with_budget()
         on_error = self._parse_think_on_error()
         self._expect_newline_or_eof()
-        return ThinkStatement(prompt, line=line, on_error=on_error)
+        return ThinkStatement(prompt, line=line, model=model,
+                              budget=budget, on_error=on_error)
 
     def _parse_remember(self):
         """
@@ -748,6 +804,8 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         Parse think used as an expression (inside return, let, show, etc.)
             return think "prompt" as json
             let x = think f"..." as list
+            let x = think "..." using "claude-sonnet"
+            let x = think "..." with budget: 500
             let x = think "..." when error: "fallback"
         Delegates to _parse_think() which handles plain and 'as' variants.
         Does NOT call _expect_newline_or_eof — the caller handles line endings.
@@ -766,23 +824,32 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
                 if fmt == "schema":
                     schema = self._parse_expression()
+                    model = self._parse_think_using_model()
+                    budget = self._parse_think_with_budget()
                     on_error = self._parse_think_on_error()
                     return ThinkAsStatement(prompt, "schema",
-                                            schema=schema, line=line,
-                                            on_error=on_error)
+                                            schema=schema, line=line, model=model,
+                                            budget=budget, on_error=on_error)
+                model = self._parse_think_using_model()
+                budget = self._parse_think_with_budget()
                 on_error = self._parse_think_on_error()
-                return ThinkAsStatement(prompt, fmt, line=line,
-                                        on_error=on_error)
+                return ThinkAsStatement(prompt, fmt, line=line, model=model,
+                                        budget=budget, on_error=on_error)
 
             elif fmt_tok.type == TokenType.LBRACE:
                 schema = self._parse_expression()
+                model = self._parse_think_using_model()
+                budget = self._parse_think_with_budget()
                 on_error = self._parse_think_on_error()
                 return ThinkAsStatement(prompt, "schema",
-                                        schema=schema, line=line,
-                                        on_error=on_error)
+                                        schema=schema, line=line, model=model,
+                                        budget=budget, on_error=on_error)
 
+        model = self._parse_think_using_model()
+        budget = self._parse_think_with_budget()
         on_error = self._parse_think_on_error()
-        return ThinkStatement(prompt, line=line, on_error=on_error)
+        return ThinkStatement(prompt, line=line, model=model,
+                              budget=budget, on_error=on_error)
 
     def _parse_recall_expr(self):
         """
@@ -1512,6 +1579,20 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         filepath = self._consume(TokenType.STRING).value
         self._expect_newline_or_eof()
         return ImportStatement(filepath, names=names)
+
+    def _parse_converse(self):
+        """
+        Parse:
+            converse:
+                think "..."
+                listen
+                think "..."
+        """
+        line = self._current().line
+        self._consume(TokenType.CONVERSE)
+        self._consume(TokenType.COLON)
+        body = self._parse_block()
+        return self._stamp(ConverseStatement(body, line=line), line)
 
     def _parse_enum(self):
         """
