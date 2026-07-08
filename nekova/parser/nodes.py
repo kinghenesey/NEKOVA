@@ -92,6 +92,28 @@ class SetLiteral(Node):
         return f"Set({self.elements})"
 
 
+class ConverseStatement(Node):
+    """
+    A multi-turn dialogue block:
+        converse:
+            think "ask a clarifying question about {topic}"
+            listen
+            think "respond based on what they said"
+
+    Starts with a clean conversation history (previous turns from
+    outside the block don't leak in), and every think/listen inside
+    it automatically carries that history as context — the same
+    memory_store conversation machinery think_engine.ask_structured
+    already used, extended to cover plain 'think' and 'listen' too.
+    """
+    def __init__(self, body: list, line: int = 0):
+        self.body = body
+        self.line = line
+
+    def __repr__(self):
+        return f"Converse(body={len(self.body)} statements)"
+
+
 class EnumDefinition(Node):
     """
     A first-class enum type.
@@ -327,6 +349,8 @@ class ThinkStatement(Node):
     variable: str = None
     line: int = 0
     on_error: any = None
+    budget: any = None
+    model: any = None
 
 @dataclass
 class PipelineStatement(Node):
@@ -912,13 +936,15 @@ class ThinkAsStatement(Node):
     """
     def __init__(self, prompt, as_format: str,
                  schema=None, variable: str = None, line: int = 0,
-                 on_error=None):
+                 on_error=None, budget=None, model=None):
         self.prompt     = prompt
         self.as_format  = as_format
         self.schema     = schema
         self.variable   = variable
         self.line       = line
         self.on_error   = on_error
+        self.budget     = budget
+        self.model      = model
 
     def __repr__(self):
         return f"ThinkAs({self.as_format})"
