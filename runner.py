@@ -35,9 +35,10 @@ class NEKOVARunner:
 
     def __init__(self, filepath: str, debug: bool = False,
                  compile_mode: bool = False, strict_types: bool = False,
-                 script_args: dict = None):
+                 script_args: dict = None, debug_ai: bool = False):
         self.filepath     = filepath
         self.debug        = debug
+        self.debug_ai     = debug_ai
         self.compile_mode = compile_mode
         self.strict_types = strict_types
         self.script_args  = script_args or {}
@@ -147,7 +148,8 @@ class NEKOVARunner:
                 except CompileError as e:
                     raise NEKOVARuntimeError(f"Compile error: {e}") from e
             else:
-                interpreter = Interpreter(strict_types=self.strict_types)
+                interpreter = Interpreter(strict_types=self.strict_types,
+                                          debug_ai=self.debug_ai)
                 # Inject CLI script args as built-in 'args' object
                 from nekova.cli.args_object import ArgsObject
                 interpreter.env["args"] = ArgsObject(self.script_args)
