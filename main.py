@@ -52,6 +52,7 @@ v{NEKOVA_VERSION} · {NEKOVA_CODENAME}
 {Color.BOLD}Running files:{Color.RESET}
   python main.py <file.nk>              Run an NEKOVA file
   python main.py <file.nk> --debug      Run with debug output
+  python main.py <file.nk> --debug-ai   Print the exact prompt every think call sends
   python main.py <file.nk> --compile    Run using the compiler
   python main.py run <file.nk>          Run an NEKOVA file
   python main.py repl                     Start interactive shell
@@ -123,12 +124,13 @@ def parse_args(argv: list) -> dict:
         return args
 
     # ── Known NEKOVA CLI flags ────────────────────────────────
-    KNOWN_FLAGS = {"--debug", "--version", "--help", "--packages", "--compile", "--watch"}
+    KNOWN_FLAGS = {"--debug", "--debug-ai", "--version", "--help", "--packages", "--compile", "--watch"}
     KNOWN_VALUE_FLAGS = {"--install", "--uninstall"}
 
     argv_list = list(argv)
 
     args["debug"]    = "--debug"    in argv_list
+    args["debug_ai"] = "--debug-ai" in argv_list
     args["watch"]    = "--watch"    in argv_list
     args["sandbox"]  = "--sandbox"  in argv_list
     args["sandbox_mode"] = "strict"
@@ -347,10 +349,11 @@ def main():
                 strict = config.run.strict_types
                 arg = config.entry_path
                 runner = NEKOVARunner(filepath=arg, debug=args["debug"],
-                                      strict_types=strict,
+                                      strict_types=strict, debug_ai=args["debug_ai"],
                                       script_args=args["script_args"])
             else:
                 runner = NEKOVARunner(filepath=arg, debug=args["debug"],
+                                      debug_ai=args["debug_ai"],
                                       script_args=args["script_args"])
             if args["sandbox"]:
                 # Run file in sandbox mode
@@ -531,6 +534,7 @@ def main():
         print_banner()
         runner    = NEKOVARunner(filepath=args["file"],
                                debug=args["debug"],
+                               debug_ai=args["debug_ai"],
                                compile_mode=args["compile"],
                                script_args=args["script_args"])
         exit_code = runner.run()
