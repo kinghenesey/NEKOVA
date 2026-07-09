@@ -1,6 +1,6 @@
 from nekova.parser.nodes import (
     Program, IntegerLiteral, FloatLiteral, StringLiteral, FStringLiteral,
-    BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
+    BooleanLiteral, NullLiteral, ListLiteral, TupleLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement,
     MemoryStatement, SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
@@ -1537,7 +1537,22 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         resolved = list(args)
 
-        for kw_name, kw_expr in node.kwargs.items():
+        # The gap-filling loop below assumes it's walking keyword
+        # arguments in *declared* parameter order — it fills any gap
+        # before the current one with that parameter's default. If the
+        # caller passed keywords out of declaration order (e.g.
+        # greet(greeting="Hi", name="World") for task greet(name,
+        # greeting)), iterating node.kwargs in call-site order fills
+        # those gaps with defaults instead of the not-yet-visited
+        # keyword value, silently misassigning arguments. Sorting by
+        # each keyword's declared position first makes the loop see
+        # them in the order it expects, regardless of call-site order.
+        sorted_kwargs = sorted(
+            node.kwargs.items(),
+            key=lambda kv: names.index(kv[0]) if kv[0] in names else -1
+        )
+
+        for kw_name, kw_expr in sorted_kwargs:
             if kw_name not in names:
                 raise NEKOVARuntimeError(
                     f"'{callee_label}' has no parameter named "
@@ -1874,6 +1889,32 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             else:
                 result.append(self._execute_node(e))
         return result
+
+    def _exec_TupleLiteral(self, node: TupleLiteral):
+        """
+        Execute a tuple literal like (1, 2), expanding any spread
+        items in place: (...pair_a, extra, ...pair_b). Built as a
+        Python tuple, so it's immutable at runtime for free — index
+        assignment into it already fails via the existing
+        IndexAssignStatement handling, which only special-cases
+        list/dict.
+        """
+        result = []
+        for e in node.elements:
+            if isinstance(e, SpreadElement):
+                spread_val = self._execute_node(e.expr)
+                if not isinstance(spread_val, (list, tuple)):
+                    raise NEKOVARuntimeError(
+                        f"Cannot spread '{self._to_string(spread_val)}' "
+                        f"into a tuple — it's a "
+                        f"{type(spread_val).__name__}, not a list or "
+                        f"tuple.\n"
+                        f"  Example:  (...pair_a, ...pair_b)"
+                    )
+                result.extend(spread_val)
+            else:
+                result.append(self._execute_node(e))
+        return tuple(result)
 
     def _exec_DictLiteral(self, node: DictLiteral):
         """
@@ -2443,6 +2484,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         if isinstance(value, list):
             items = [self._to_string(i) for i in value]
             return "[" + ", ".join(items) + "]"
+        if isinstance(value, tuple):
+            items = [self._to_string(i) for i in value]
+            if len(items) == 1:
+                return "(" + items[0] + ",)"
+            return "(" + ", ".join(items) + ")"
         if isinstance(value, set):
             if not value:
                 return "{}"
