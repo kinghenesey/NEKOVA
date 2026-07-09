@@ -2,7 +2,7 @@ from nekova.lexer.token_types import TokenType
 from nekova.lexer.token import Token
 from nekova.parser.nodes import (
     Program, IntegerLiteral, FloatLiteral, StringLiteral, FStringLiteral,
-    BooleanLiteral, NullLiteral, ListLiteral, DictLiteral,
+    BooleanLiteral, NullLiteral, ListLiteral, TupleLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement, MemoryStatement,
     SandboxStatement, PipelineDefStatement, RunPipelineStatement, IfStatement, RepeatStatement,
@@ -2295,6 +2295,17 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         if token.type == TokenType.LPAREN:
             self._advance()
             expr = self._parse_expression()
+            if self._current().type == TokenType.COMMA:
+                # A comma inside the parens makes this a tuple literal
+                # rather than a plain grouped expression.
+                elements = [expr]
+                while self._current().type == TokenType.COMMA:
+                    self._advance()
+                    if self._current().type == TokenType.RPAREN:
+                        break  # trailing comma, e.g. (1, 2,)
+                    elements.append(self._parse_expression())
+                self._consume(TokenType.RPAREN)
+                return TupleLiteral(elements)
             self._consume(TokenType.RPAREN)
             return expr
 
