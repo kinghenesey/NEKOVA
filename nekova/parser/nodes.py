@@ -162,6 +162,29 @@ class ListLiteral(Node):
     def __repr__(self):
         return f"List({self.elements})"
 
+class TupleLiteral(Node):
+    """
+    An immutable, fixed-size grouping of values.
+    Example:
+        let pair = (1, 2)
+        let solo = (1,)          # trailing comma required for 1 element
+        let (x, y) = pair        # destructuring already accepted tuples
+    Distinct from ListLiteral (mutable) — mirrors the SetLiteral
+    precedent of giving a value with different semantics its own
+    node rather than overloading ListLiteral. A bare parenthesized
+    expression like (1 + 2) still returns the inner expression itself,
+    not a TupleLiteral — only a comma inside the parens makes a tuple.
+    Runtime value is a plain Python tuple, so item-assignment (t[0] = 1)
+    fails naturally with a TypeError the interpreter already surfaces
+    as a NEKOVA runtime error, giving immutability for free.
+    """
+    def __init__(self, elements: list):
+        self.elements = elements
+
+    def __repr__(self):
+        return f"Tuple({self.elements})"
+
+
 class IndexExpression(Node):
     """
     Access a list element by index.
