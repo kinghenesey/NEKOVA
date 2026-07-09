@@ -615,5 +615,50 @@
       "    ${4:pass}"
     ],
     "description": "Task with a docstring (Phase 23)"
+  },
+  "Converse block": {
+    "prefix": "converse",
+    "body": [
+      "converse:",
+      "    think \"${1:ask a clarifying question about {topic}}\"",
+      "    listen",
+      "    think \"${2:respond based on what they said}\""
+    ],
+    "description": "Multi-turn AI dialogue block (Phase 25)"
+  },
+  "Think as shape": {
+    "prefix": "thinkshape",
+    "body": [
+      "let ${1:result} = think \"${2:extract from: {text}}\" as ${3:ShapeName}"
+    ],
+    "description": "think using a defined shape as output format (Phase 25)"
+  },
+  "Think with budget": {
+    "prefix": "thinkbudget",
+    "body": [
+      "let ${1:result} = think \"${2:prompt}\" with budget: ${3:500}"
+    ],
+    "description": "think with a token budget cap (Phase 25)"
+  },
+  "Think using model": {
+    "prefix": "thinkmodel",
+    "body": [
+      "let ${1:result} = think \"${2:prompt}\" using \"${3:claude-sonnet}\""
+    ],
+    "description": "think with explicit model selection (Phase 25)"
+  },
+  "Imagine as file": {
+    "prefix": "imaginefile",
+    "body": [
+      "let ${1:image} = imagine \"${2:a description}\" as file"
+    ],
+    "description": "imagine with local caching (Phase 25)"
+  },
+  "AI usage check": {
+    "prefix": "aiusage",
+    "body": [
+      "show ai_usage()"
+    ],
+    "description": "Show cumulative AI call/token usage (Phase 25)"
   }
 }
