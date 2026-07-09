@@ -1,4 +1,4 @@
-{
+﻿{
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "NEKOVA",
   "scopeName": "source.nekova",
@@ -35,6 +35,12 @@
     },
     {
       "include": "#prompt_definition"
+    },
+    {
+      "include": "#think_using_clause"
+    },
+    {
+      "include": "#think_budget_clause"
     },
     {
       "include": "#keywords_ai"
@@ -311,9 +317,17 @@
       "name": "keyword.declaration.nekova",
       "match": "\\b(prompt)\\b(?=\\s+[a-zA-Z_][a-zA-Z0-9_]*\\s*\\()"
     },
+    "think_using_clause": {
+      "name": "keyword.control.nekova",
+      "match": "\\b(using)\\b(?=\\s*[\"'])"
+    },
+    "think_budget_clause": {
+      "name": "keyword.control.nekova",
+      "match": "\\b(budget)\\b(?=\\s*:)"
+    },
     "keywords_ai": {
       "name": "keyword.other.ai.nekova",
-      "match": "\\b(think|stream|imagine|speak|listen|model|autonomous|parallel|collect|generate|process|pipeline|run|retry|observe|fallback|each|fetch|watch|every|shape)\\b"
+      "match": "\\b(think|stream|imagine|speak|listen|model|autonomous|parallel|collect|generate|process|pipeline|run|retry|observe|fallback|each|fetch|watch|every|shape|converse)\\b"
     },
     "keywords_control": {
       "name": "keyword.control.nekova",
