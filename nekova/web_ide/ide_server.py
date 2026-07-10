@@ -62,9 +62,17 @@ def create_ide_app() -> Flask:
         data = request.get_json()
         code = data.get("code", "")
         try:
-            from formatter import NEKOVAFormatter
-            formatter = NEKOVAFormatter()
-            formatted = formatter.format(code)
+            # Previously imported NEKOVAFormatter from the repo-root
+            # formatter module — that module lives outside the
+            # `nekova` package, so pyproject.toml's `include =
+            # ["nekova*"]` never ships it in the installed wheel at
+            # all. It was also being called with the wrong API
+            # (constructed with no source, then .format(code) — the
+            # source actually belongs in the constructor).
+            # nekova.cli.formatter is properly packaged and already
+            # exposes exactly this shape.
+            from nekova.cli.formatter import fmt_source
+            formatted = fmt_source(code)
             return jsonify({"formatted": formatted, "error": None})
         except Exception as e:
             return jsonify({"formatted": code, "error": str(e)})
