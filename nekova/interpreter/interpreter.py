@@ -91,6 +91,15 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # actually asks the model, not just the response.
         self._debug_ai = debug_ai
 
+        # _exec_ImportStatement reads self.debug to decide whether to
+        # print verbose "→ imported ..." logging, but nothing ever
+        # set it — every single import statement crashed with
+        # AttributeError: 'Interpreter' object has no attribute
+        # 'debug', making multi-file NEKOVA programs completely
+        # non-functional. Defaults off, matching the intent of an
+        # opt-in verbose-logging flag.
+        self.debug = False
+
         # Raise Python's own recursion limit so it never fires before our
         # own MAX_CALL_DEPTH check does. Each NEKOVA-level task call costs
         # several Python stack frames (dispatch, _call_task, statement
@@ -306,8 +315,23 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # ── Write to global scope if declared with 'global' ──────────────────
         if node.name in self._global_names:
             self.globals[node.name] = value
+        elif node.is_declaration:
+            # let/const: always bind in the *current* scope, even if a
+            # variable of the same name exists in an enclosing scope
+            # (deliberate shadowing).
+            self.env.set(node.name, value)
         else:
-            self.env[node.name] = value
+            # Bare reassignment (no let/const): walk up the scope
+            # chain to mutate an existing binding if one exists,
+            # falling back to creating it locally otherwise.
+            # Previously this always wrote straight into the current
+            # scope regardless (`self.env[node.name] = value`, which
+            # never looked past the innermost scope), so a closure
+            # reassigning a variable captured from its enclosing
+            # function's scope silently created a brand-new local
+            # instead of mutating the captured one — the classic
+            # "counter factory" pattern always returned 1, forever.
+            self.env.update(node.name, value)
         if node.is_const:
             target_env.consts.add(node.name)
         return value
@@ -1605,7 +1629,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             except NEKOVARuntimeError:
                 raise
             except (ValueError, TypeError, OverflowError, AttributeError,
-                    IndexError, KeyError, ZeroDivisionError) as e:
+                    IndexError, KeyError, ZeroDivisionError, RuntimeError) as e:
                 shown_args = ", ".join(self._to_string(a) for a in args)
 
                 if builtin_name in ("int", "float") and len(args) == 1:
@@ -1781,22 +1805,23 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
     def _exec_StringLiteral(self, node: StringLiteral):
         """
-        Execute a string literal.
-        Supports interpolation: "Hello {name}!"
+        Execute a plain string literal. Always returns the text
+        verbatim — no interpolation.
+
+        A previous version ran every plain string through
+        re.sub(r'\\{(\\w+)\\}', ...), substituting {name} for any
+        variable named `name` currently in scope, and silently
+        leaving non-matching {...} text alone. That made a plain
+        string's output depend on whatever unrelated variables
+        happened to be in scope when it executed — printing JSON,
+        set notation, regex, or any other brace-containing text was
+        unsafe by default, and it made the f"..." prefix meaningless
+        since plain strings did the same substitution anyway.
+        Interpolation is f"...": see _exec_FStringLiteral, which
+        parses {expr} sections into real expression nodes at parse
+        time rather than guessing from a regex at runtime.
         """
-        import re
-        value = node.value
-
-        # Find all {variable} patterns
-        def replace_var(match):
-            var_name = match.group(1).strip()
-            try:
-                val = self.env.get(var_name)
-                return self._to_string(val)
-            except Exception:
-                return match.group(0)
-
-        return re.sub(r'\{(\w+)\}', replace_var, value)
+        return node.value
 
     def _exec_BooleanLiteral(self, node: BooleanLiteral):
         return node.value
