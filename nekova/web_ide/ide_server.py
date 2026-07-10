@@ -117,9 +117,9 @@ def _execute_code(source: str):
     start      = time.perf_counter()
     error      = None
     try:
-        from lexer import Lexer
-        from parser.parser import Parser
-        from interpreter.interpreter import Interpreter
+        from nekova.lexer.lexer import Lexer
+        from nekova.parser.parser import Parser
+        from nekova.interpreter.interpreter import Interpreter
         tokens      = Lexer(source).tokenize()
         program     = Parser(tokens).parse()
         interpreter = Interpreter()
