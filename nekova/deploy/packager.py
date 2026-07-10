@@ -15,7 +15,7 @@ import json
 import shutil
 import zipfile
 from datetime import datetime
-from nekova.config import NEKOVA_VERSION, Color
+from nekova.config import NEKOVA_VERSION, NEKOVA_EXTENSION, Color
 
 
 class Packager:
@@ -40,6 +40,14 @@ class Packager:
         Build a complete project package.
         Returns path to the created package.
         """
+        # output_dir used to be used as-is, e.g. "dist" — a relative
+        # path resolved against whatever directory the command was
+        # *invoked* from, not the target project_dir passed in. That
+        # meant `nekova package /some/other/project` from an unrelated
+        # cwd wrote to ./dist right where you were standing, not
+        # inside the project being packaged.
+        if not os.path.isabs(output_dir):
+            output_dir = os.path.join(self.project_dir, output_dir)
         os.makedirs(output_dir, exist_ok=True)
 
         pkg_name = f"{self.name}-{self.version}"
@@ -123,7 +131,7 @@ class Packager:
         return install_dir
 
     def _find_NEKOVA_files(self) -> list:
-        """Find all .NEKOVA files in the project."""
+        """Find all .nk source files in the project."""
         NEKOVA_files = []
         for root, dirs, files in os.walk(
                 self.project_dir):
@@ -136,13 +144,32 @@ class Packager:
                 and d != "dist"
             ]
             for f in files:
-                if f.endswith(".NEKOVA"):
+                if f.endswith(NEKOVA_EXTENSION):
                     NEKOVA_files.append(
                         os.path.join(root, f))
         return NEKOVA_files
 
     def _load_config(self) -> dict:
-        """Load project config from NEKOVA.json."""
+        """
+        Load project config. Real projects (from `nekova new`) have a
+        nekova.toml, not a NEKOVA.json — this previously only ever
+        looked for the latter, so self.name/self.version silently
+        fell back to "NEKOVA-project"/"1.0.0" for every real project,
+        no matter what it was actually called.
+        """
+        try:
+            from nekova.toml_loader import load_config
+            cfg = load_config(self.project_dir)
+            if cfg is not None:
+                return {
+                    "name": cfg.project.name,
+                    "version": cfg.project.version,
+                    "main": cfg.project.entry,
+                }
+        except Exception:
+            pass
+
+        # Fall back to a legacy NEKOVA.json if one exists.
         config_path = os.path.join(
             self.project_dir, "NEKOVA.json")
         if os.path.exists(config_path):
