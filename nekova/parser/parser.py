@@ -2282,15 +2282,22 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             first  = lookahead[0] if len(lookahead) > 0 else None
             second = lookahead[1] if len(lookahead) > 1 else None
 
+            # Composite literals — {} dict/set, [] list — previously
+            # returned straight from _parse_primary with no postfix
+            # handling, so `[3,1,2].sort()` or `{"a":1}.keys()` raised
+            # "Unexpected token '.'": only identifiers got .method()
+            # treatment, because `let x = [...]; x.sort()` routes
+            # through a different call site that does apply postfix.
+            # Wrapping every composite literal here generalizes it.
             if first is None or first.type in (TokenType.RBRACE, TokenType.ELLIPSIS):
-                return self._parse_dict()  # {} or {...spread} — dict
+                return self._apply_postfix(self._parse_dict())  # {} or {...spread} — dict
             if (first.type in (TokenType.IDENTIFIER, TokenType.STRING)
                     and second is not None and second.type == TokenType.COLON):
-                return self._parse_dict()  # {key: value, ...} — dict
-            return self._parse_set()       # {1, 2, 3} / {a, b} — set
+                return self._apply_postfix(self._parse_dict())  # {key: value, ...} — dict
+            return self._apply_postfix(self._parse_set())       # {1, 2, 3} / {a, b} — set
         
         if token.type == TokenType.LBRACKET:
-            return self._parse_list()
+            return self._apply_postfix(self._parse_list())
 
         if token.type == TokenType.LPAREN:
             self._advance()
@@ -2305,9 +2312,9 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                         break  # trailing comma, e.g. (1, 2,)
                     elements.append(self._parse_expression())
                 self._consume(TokenType.RPAREN)
-                return TupleLiteral(elements)
+                return self._apply_postfix(TupleLiteral(elements))
             self._consume(TokenType.RPAREN)
-            return expr
+            return self._apply_postfix(expr)
 
         # recall used as expression: let x = recall "key"
         if token.type == TokenType.RECALL:
