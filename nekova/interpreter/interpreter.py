@@ -2325,7 +2325,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                     f"{len(positional)} argument(s) but got {len(args)}."
                 )
             for (pname, phint, _, _), val in zip(positional, args):
-                self._check_type(pname, val, phint, TYPE_VALIDATORS, prompt.name, kind="Prompt")
+                val = self._check_type(pname, val, phint, TYPE_VALIDATORS, prompt.name, kind="Prompt")
                 local_env.set(pname, val)
             local_env.set(vararg_name, list(args[len(positional):]))
         else:
@@ -2337,7 +2337,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 )
             for i, (pname, phint, default, _) in enumerate(params):
                 val = args[i] if i < len(args) else self._execute_node(default)
-                self._check_type(pname, val, phint, TYPE_VALIDATORS, prompt.name, kind="Prompt")
+                val = self._check_type(pname, val, phint, TYPE_VALIDATORS, prompt.name, kind="Prompt")
                 local_env.set(pname, val)
 
         self.env = local_env
@@ -2692,8 +2692,41 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # Functional
         self.globals.set("enumerate", lambda x, start=0: list(enumerate(x, start)))
         self.globals.set("zip",       lambda *a: [list(t) for t in zip(*a)])
-        self.globals.set("map",       lambda f, x: list(map(f, x)))
-        self.globals.set("filter",    lambda f, x: list(filter(f, x)))
+        def _invoke_callable(f, arg):
+            """
+            Call `f(arg)`, dispatching through the interpreter's own
+            task-call mechanism when `f` is a NEKOVA task reference
+            rather than a native Python callable. Task objects aren't
+            directly callable via Python's `()` syntax — passing one
+            straight into Python's builtin map()/filter() raised
+            "'TaskStatement' object is not callable" the moment a real
+            task was used as the predicate/mapper.
+            """
+            if isinstance(f, (TaskStatement, TypedTaskStatement)):
+                return self._call_task(f, [arg])
+            return f(arg)
+
+        self.globals.set("map",       lambda x, f: [_invoke_callable(f, i) for i in x])
+        self.globals.set("filter",    lambda x, f: [i for i in x if _invoke_callable(f, i)])
+        # sort/take: added as pipeable globals — sort() previously only
+        # existed as a list *method* (data.sort()), not a bare global,
+        # so `data |> sort()` failed with "Variable 'sort' does not
+        # exist" even though the README's pipe example shows it
+        # chained like map/filter. take() didn't exist as a global at
+        # all. Both take the piped value first, matching how every
+        # pipe call is built: `a |> f(x)` always becomes `f(a, x)`.
+        #
+        # map/filter's own parameter order was ALSO backwards for pipe
+        # use: they took (function, data), which is the right order
+        # for a normal call like `filter(is_big, data)`, but the pipe
+        # operator always inserts the piped value as the *first*
+        # argument, so `data |> filter(is_big)` was calling
+        # `filter(data, is_big)` — binding the predicate slot to a
+        # list and the data slot to a function, which crashed with
+        # "object is not iterable" the moment a real predicate was
+        # used. Reordering to data-first matches the pipe convention.
+        self.globals.set("sort",      lambda x, reverse=False: sorted(x, reverse=reverse))
+        self.globals.set("take",      lambda x, n: list(x)[:n])
         self.globals.set("any",       lambda x: any(x))
         self.globals.set("all",       lambda x: all(x))
         # Type checks
@@ -2888,6 +2921,8 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             think "prompt" as schema {"name": "text"}
         """
         self._sandbox_guard("think")
+        from colorama import Fore, Style, init
+        init(autoreset=True)
         from nekova.ai.providers import get_provider
         from nekova.ai.think_engine import ask_structured
 
@@ -2901,6 +2936,19 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # controls exactly what comes back.
         mock = getattr(self, "_think_mock", _NO_MOCK)
         if mock is not _NO_MOCK:
+            # Previously this branch (and the real-call path below)
+            # never printed anything at all, regardless of capture —
+            # only plain `think` (without `as <format>`) did. A
+            # standalone `think "..." as text` with no `let x = ...`
+            # capture silently discarded the result with zero output,
+            # even here in mock mode, giving no indication the call
+            # ever happened. Captured usage (`let x = think ... as
+            # json`) stays silent on purpose — that's the normal case
+            # for programmatic/structured extraction, where a banner
+            # would just be noise (and is what the existing test suite
+            # already expects).
+            if node.variable is None:
+                print(f"{Fore.CYAN}🧠 {self._to_string(mock)}{Style.RESET_ALL}")
             if node.variable:
                 self.env.set(node.variable, mock)
             return mock
@@ -2957,6 +3005,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         else:
             self._check_think_budget(node, prompt, result)
             self._track_ai_usage(prompt, result)
+
+        # Print with cyan formatting — standalone (uncaptured) usage
+        # only. See the mock branch above for why.
+        if node.variable is None:
+            print(f"{Fore.CYAN}🧠 {self._to_string(result)}{Style.RESET_ALL}")
 
         if node.variable:
             self.env.set(node.variable, result)
@@ -3223,7 +3276,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             positional = params[:vararg_idx]
             vararg_name = params[vararg_idx][0]
             for (pname, phint, _, _), val in zip(positional, args):
-                self._check_type(pname, val, phint, TYPE_VALIDATORS, task.name)
+                val = self._check_type(pname, val, phint, TYPE_VALIDATORS, task.name)
                 local_env.set(pname, val)
             local_env.set(vararg_name, list(args[len(positional):]))
         else:
@@ -3235,7 +3288,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 )
             for i, (pname, phint, default, _) in enumerate(params):
                 val = args[i] if i < len(args) else self._execute_node(default)
-                self._check_type(pname, val, phint, TYPE_VALIDATORS, task.name)
+                val = self._check_type(pname, val, phint, TYPE_VALIDATORS, task.name)
                 local_env.set(pname, val)
 
         self.env = local_env
@@ -3253,9 +3306,9 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         if task.return_type and task.return_type in TYPE_VALIDATORS:
             py_type, label = TYPE_VALIDATORS[task.return_type]
             if result is not None and not isinstance(result, py_type):
-                try:
-                    result = py_type(result)
-                except (ValueError, TypeError):
+                if task.return_type == "float" and isinstance(result, int) and not isinstance(result, bool):
+                    result = float(result)
+                else:
                     raise NEKOVARuntimeError(
                         f"Task '{task.name}' declared return type "
                         f"'{task.return_type}' but returned "
@@ -3264,20 +3317,42 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         return result
 
     def _check_type(self, pname, val, phint, validators, task_name, kind="Task"):
-        """Enforce a type hint on a parameter value."""
-        if not phint or phint == "any":
-            return
-        if phint in validators:
-            py_type, label = validators[phint]
-            if val is not None and not isinstance(val, py_type):
-                # Try coercion first
-                try:
-                    return py_type(val)
-                except (ValueError, TypeError):
-                    raise NEKOVARuntimeError(
-                        f"{kind} '{task_name}': parameter '{pname}' "
-                        f"expects {label}, got {type(val).__name__}."
-                    )
+        """
+        Enforce a type hint on a parameter value. Returns the value
+        that should actually be bound (may be widened).
+
+        Only one coercion is allowed: a plain int passed where a
+        float is expected, since that widening is always safe and
+        lossless. Every other mismatch is a hard error.
+
+        A previous version tried `py_type(val)` for *every* hint and
+        only raised if that constructor itself failed. But str(),
+        bool(), and float() essentially never fail in Python — str(42),
+        bool("yes"), float(5) all succeed — so str/bool/float hints
+        silently accepted anything. On top of that, the "coerced"
+        result was returned but never applied by the caller, so even
+        int, where coercion legitimately could fail, wasn't actually
+        using the coerced value. This version enforces the declared
+        type directly instead of probing a constructor for it, and its
+        return value is what callers now bind.
+        """
+        if not phint or phint == "any" or phint not in validators:
+            return val
+        if val is None:
+            return val
+
+        py_type, label = validators[phint]
+
+        if isinstance(val, py_type):
+            return val
+
+        if phint == "float" and isinstance(val, int) and not isinstance(val, bool):
+            return float(val)
+
+        raise NEKOVARuntimeError(
+            f"{kind} '{task_name}': parameter '{pname}' "
+            f"expects {label}, got {type(val).__name__}."
+        )
 
 
     # ══════════════════════════════════════════════════════════
@@ -3429,11 +3504,17 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
             t = threading.Thread(target=_loop, daemon=True)
             t.start()
-            print(f"[every] Running every {interval_val}{unit} (Ctrl+C to stop)")
-            try:
-                t.join()
-            except KeyboardInterrupt:
-                stop_event.set()
+            print(f"[every] Running every {interval_val}{unit} "
+                  f"in the background (Ctrl+C to stop the program)")
+            # Previously this called t.join() right after starting the
+            # thread, which blocked the calling script on it anyway —
+            # completely defeating the point of a "background" daemon
+            # thread. The docstring above always promised infinite
+            # `every` loops wouldn't block subsequent code, but they
+            # did, unconditionally, until Ctrl+C. As a daemon thread,
+            # it's automatically cleaned up when the program exits
+            # normally, so no join/wait is needed here at all — the
+            # rest of the script should simply keep running.
 
         return None
 
