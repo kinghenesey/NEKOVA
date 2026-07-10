@@ -130,7 +130,7 @@ class TestFormatterIndentation(unittest.TestCase):
                 f.write("task foo(a, b):\n   return a + b\nshow foo(2, 3)\n")
             from formatter import format_file
             format_file(path)
-            with open(path) as f:
+            with open(path, encoding="utf-8") as f:
                 content = f.read()
             self.assertIn("    return a + b", content)
             tokens = Lexer(content).tokenize()
