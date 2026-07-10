@@ -3,18 +3,18 @@
 # NEKOVA Language â€” Main Entry Point
 # =============================================================
 # Usage:
-#   python main.py <file.nk>              Run a file
-#   python main.py run <file.nk>          Run a file
-#   python main.py test                     Run all tests
-#   python main.py build <file.nk>        Validate a file
-#   python main.py new <project>            Create a project
-#   python main.py info                     System info
-#   python main.py clean                    Remove cache
-#   python main.py --install <package>      Install package
-#   python main.py --uninstall <package>    Uninstall package
-#   python main.py --packages               List packages
-#   python main.py --version                Show version
-#   python main.py --help                   Show help
+#   nekova <file.nk>              Run a file
+#   nekova run <file.nk>          Run a file
+#   nekova test                     Run all tests
+#   nekova build <file.nk>        Validate a file
+#   nekova new <project>            Create a project
+#   nekova info                     System info
+#   nekova clean                    Remove cache
+#   nekova --install <package>      Install package
+#   nekova --uninstall <package>    Uninstall package
+#   nekova --packages               List packages
+#   nekova --version                Show version
+#   nekova --help                   Show help
 
 import sys
 import io
@@ -50,54 +50,54 @@ HELP_TEXT = f"""
 v{NEKOVA_VERSION} · {NEKOVA_CODENAME}
 
 {Color.BOLD}Running files:{Color.RESET}
-  python main.py <file.nk>              Run an NEKOVA file
-  python main.py <file.nk> --debug      Run with debug output
-  python main.py <file.nk> --debug-ai   Print the exact prompt every think call sends
-  python main.py <file.nk> --compile    Run using the compiler
-  python main.py run <file.nk>          Run an NEKOVA file
-  python main.py repl                     Start interactive shell
+  nekova <file.nk>              Run an NEKOVA file
+  nekova <file.nk> --debug      Run with debug output
+  nekova <file.nk> --debug-ai   Print the exact prompt every think call sends
+  nekova <file.nk> --compile    Run using the compiler
+  nekova run <file.nk>          Run an NEKOVA file
+  nekova repl                     Start interactive shell
 
 {Color.BOLD}Developer tools:{Color.RESET}
-  python main.py test                     Run all test suites
-  python main.py build <file.nk>        Validate a file
-  python main.py new <project-name>       Create a new project
-  python main.py info                     Show system info
-  python main.py clean                    Remove cache files
-  python main.py debug <file.nk>        Visual debugger
-  python main.py repl                     Interactive shell
-  python main.py ide                      Launch Web 
-  python main.py format <file.nk>        Format code style
-  python main.py format --check <file>     Check formatting
+  nekova test                     Run all test suites
+  nekova build <file.nk>        Validate a file
+  nekova new <project-name>       Create a new project
+  nekova info                     Show system info
+  nekova clean                    Remove cache files
+  nekova debug <file.nk>        Visual debugger
+  nekova repl                     Interactive shell
+  nekova ide                      Launch Web 
+  nekova format <file.nk>        Format code style
+  nekova format --check <file>     Check formatting
 
 {Color.BOLD}Deployment:{Color.RESET}
-  python main.py compile <file.nk>      Compile to native/Python
-  python main.py export <file.nk>       Export to HTML/script
-  python main.py package <dir>            Package a project
-  python main.py publish <pkg.nkpkg>    Publish to registry
-  python main.py deploy <file.nk>       Full deploy pipeline
+  nekova compile <file.nk>      Compile to native/Python
+  nekova export <file.nk>       Export to HTML/script
+  nekova package <dir>            Package a project
+  nekova publish <pkg.nkpkg>    Publish to registry
+  nekova deploy <file.nk>       Full deploy pipeline
 
 {Color.BOLD}Marketplace:{Color.RESET}
-  python main.py marketplace              Browse all packages
-  python main.py marketplace search <q>  Search packages
-  python main.py marketplace install <n> Install a package
-  python main.py marketplace info <name> Package details
-  python main.py marketplace featured    Top packages
+  nekova marketplace              Browse all packages
+  nekova marketplace search <q>  Search packages
+  nekova marketplace install <n> Install a package
+  nekova marketplace info <name> Package details
+  nekova marketplace featured    Top packages
 
 {Color.BOLD}Package manager:{Color.RESET}
-  python main.py --packages               List all packages
-  python main.py --install <package>      Install a package
-  python main.py --uninstall <package>    Uninstall a package
+  nekova --packages               List all packages
+  nekova --install <package>      Install a package
+  nekova --uninstall <package>    Uninstall a package
 
 {Color.BOLD}Other:{Color.RESET}
-  python main.py --version                Show version
-  python main.py --help                   Show this help
+  nekova --version                Show version
+  nekova --help                   Show this help
 
 {Color.BOLD}Examples:{Color.RESET}
-  python main.py examples/hello.nk
-  python main.py deploy examples/ui_demo.nk
-  python main.py --install charts
-  python main.py new myapp
-  python main.py test
+  nekova examples/hello.nk
+  nekova deploy examples/ui_demo.nk
+  nekova --install charts
+  nekova new myapp
+  nekova test
 """
 
 
@@ -118,13 +118,14 @@ def parse_args(argv: list) -> dict:
         "script_args": {},   # --key value pairs passed through to .nk scripts
         "watch":       False,
         "template":    "default",
+        "quiet":       False,
     }
 
     if not argv:
         return args
 
     # ── Known NEKOVA CLI flags ────────────────────────────────
-    KNOWN_FLAGS = {"--debug", "--debug-ai", "--version", "--help", "--packages", "--compile", "--watch"}
+    KNOWN_FLAGS = {"--debug", "--debug-ai", "--version", "--help", "--packages", "--compile", "--watch", "--quiet", "-q"}
     KNOWN_VALUE_FLAGS = {"--install", "--uninstall"}
 
     argv_list = list(argv)
@@ -133,6 +134,11 @@ def parse_args(argv: list) -> dict:
     args["debug_ai"] = "--debug-ai" in argv_list
     args["watch"]    = "--watch"    in argv_list
     args["sandbox"]  = "--sandbox"  in argv_list
+    # --quiet/-q: skip the banner — makes the CLI usable in scripts,
+    # CI, and piped output, where ~12 lines of ASCII logo ahead of
+    # every command's actual output was previously unavoidable (no
+    # such flag existed at all).
+    args["quiet"]    = ("--quiet" in argv_list) or ("-q" in argv_list)
     args["sandbox_mode"] = "strict"
     if "--sandbox-mode" in argv_list:
         idx = argv_list.index("--sandbox-mode")
@@ -402,7 +408,7 @@ def main():
             if not arg:
                 print_error(
                     "Please provide a file to debug.\n"
-                    "  Usage: python main.py debug app.nk"
+                    "  Usage: nekova debug app.nk"
                 )
                 sys.exit(1)
             from debugger import Debugger
@@ -514,7 +520,7 @@ def main():
             if not arg:
                 print_error(
                     "Please provide a file to compile.\n"
-                    "  Usage: python main.py compile app.nk"
+                    "  Usage: nekova compile app.nk"
                 )
                 sys.exit(1)
             from nekova.compiler.llvm_backend import LLVMCompiler
@@ -543,7 +549,7 @@ def main():
     # â”€â”€ Nothing matched â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     print_error(
         "Unknown command. "
-        "Run 'python main.py --help' for usage."
+        "Run 'nekova --help' for usage."
     )
     sys.exit(1)
 
