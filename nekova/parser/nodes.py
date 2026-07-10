@@ -326,11 +326,20 @@ class AssignStatement(Node):
         items: list = [1, 2, 3]
     """
     def __init__(self, name: str, value: Node, type_hint: str = None,
-                 is_const: bool = False):
+                 is_const: bool = False, is_declaration: bool = False):
         self.name      = name
         self.value     = value
         self.type_hint = type_hint  # e.g. "text", "number", "boolean", "list", "dict"
         self.is_const  = is_const
+        # True for `let`/`const` (always binds in the *current* scope,
+        # e.g. deliberately shadowing an outer variable of the same
+        # name). False for a bare `name = value` reassignment, which
+        # should walk up to mutate an existing binding in an enclosing
+        # scope if the name isn't local — see
+        # Interpreter._exec_AssignStatement for why this distinction
+        # matters (it's what makes closures able to mutate captured
+        # variables instead of always writing a fresh local).
+        self.is_declaration = is_declaration or is_const
 
     def __repr__(self):
         prefix = "const " if self.is_const else ""
