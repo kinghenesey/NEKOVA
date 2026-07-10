@@ -1704,13 +1704,13 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         if self._current().type == TokenType.AWAIT:
             value = self.parse_await_expr()
             self._expect_newline_or_eof()
-            return self._stamp(AssignStatement(name, value, type_hint=type_hint), line)
+            return self._stamp(AssignStatement(name, value, type_hint=type_hint, is_declaration=True), line)
 
         # Fetch expression: let res = fetch "url" method "GET"
         if self._current().type == TokenType.FETCH:
             value = self.parse_fetch_expr()
             self._expect_newline_or_eof()
-            return self._stamp(AssignStatement(name, value, type_hint=type_hint), line)
+            return self._stamp(AssignStatement(name, value, type_hint=type_hint, is_declaration=True), line)
 
         value = self._parse_expression()
 
@@ -1721,7 +1721,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             return self._stamp(node, line)
 
         self._expect_newline_or_eof()
-        return self._stamp(AssignStatement(name, value, type_hint=type_hint), line)
+        return self._stamp(AssignStatement(name, value, type_hint=type_hint, is_declaration=True), line)
 
     def _parse_list_destructure(self, line, open_tok=None, close_tok=None):
         """
