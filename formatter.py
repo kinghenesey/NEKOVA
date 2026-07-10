@@ -65,25 +65,58 @@ class NEKOVAFormatter:
     # ----------------------------------------------------------
 
     def _fix_indentation(self, lines: list) -> list:
-        """Ensure consistent 4-space indentation."""
+        """
+        Normalize indentation to a consistent 4 spaces per level.
+
+        This tracks nesting *depth* with a stack rather than rounding
+        each line's raw space count independently. A previous version
+        computed `(spaces // 4) * 4` per line in isolation, which had
+        two failure modes: (1) any indent under 4 spaces floor-divided
+        to 0, deleting the block's indentation entirely, and (2) even
+        after that was patched to round up, absolute space-counts are
+        inherently ambiguous across files with different indent
+        widths — e.g. in a 2-space-indented file, a doubly-nested line
+        has the same raw width (4) as a singly-nested line in a
+        4-space file, so per-line rounding collapsed separate nesting
+        levels together. Tracking depth relative to the previous
+        indentation level (like Python's own tokenizer) avoids both:
+        each *increase* in raw indent — however large — is exactly one
+        more level (+4 spaces of output), each *decrease* pops back to
+        the matching level, and equal raw indent stays at the current
+        level.
+        """
         result = []
+        # Stack of (raw_width_seen, normalized_output_width) pairs,
+        # starting at the top level (column 0).
+        stack = [(0, 0)]
+
         for line in lines:
             if not line.strip():
                 result.append("")
                 continue
 
-            # Count leading spaces
-            stripped    = line.lstrip()
-            leading     = line[: len(line) - len(stripped)]
+            stripped = line.lstrip()
+            leading  = line[: len(line) - len(stripped)]
+            leading  = leading.replace("\t", "    ")
+            raw      = len(leading)
 
-            # Convert tabs to 4 spaces
-            leading     = leading.replace("\t", "    ")
+            if raw > stack[-1][0]:
+                # Deeper than the current level: one new level, however
+                # many raw spaces the source used to express it.
+                stack.append((raw, stack[-1][1] + 4))
+            else:
+                # Same level or shallower: pop back to the matching
+                # (or nearest enclosing) level.
+                while len(stack) > 1 and raw < stack[-1][0]:
+                    stack.pop()
+                if raw > stack[-1][0]:
+                    # Landed strictly between two known levels (e.g.
+                    # inconsistent indentation) — treat it as a new
+                    # nested level rather than silently merging it
+                    # into the enclosing one.
+                    stack.append((raw, stack[-1][1] + 4))
 
-            # Normalize to multiples of 4
-            spaces      = len(leading)
-            normalized  = (spaces // 4) * 4
-            new_leading = " " * normalized
-
+            new_leading = " " * stack[-1][1]
             result.append(new_leading + stripped)
 
         return result
