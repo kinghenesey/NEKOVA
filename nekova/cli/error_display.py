@@ -340,7 +340,7 @@ def _quick_fix(error_type: str, message: str,
     if error_type == "NameError":
         var = _extract_token(message)
         if var:
-            loc = f"line {line}" if line else "before use"
+            loc = f"line {line}" if line else "use"
             return f"Add before {loc}:  let {var} = \"your value\""
 
     if error_type == "TypeError" and "strict" in message.lower():
