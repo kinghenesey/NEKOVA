@@ -9,7 +9,19 @@ from nekova.config import Color, NEKOVA_VERSION, NEKOVA_CODENAME
 
 
 def print_banner():
-    """Print the NEKOVA startup banner."""
+    """
+    Print the NEKOVA startup banner — unless --quiet/-q was passed.
+
+    Previously this always printed unconditionally, with no way to
+    suppress it, which meant every single CLI invocation was preceded
+    by ~12 lines of ASCII logo even in scripts, CI, or piped output
+    where only the command's actual output matters. Checking sys.argv
+    directly here (rather than threading a `quiet` flag through every
+    one of this function's several call sites in main.py) keeps the
+    fix to one place.
+    """
+    if "--quiet" in sys.argv or "-q" in sys.argv:
+        return
     art = (
         "  _   _ _____  _  ______  _    __ \n"
         " | \\ | | ____|| |/ / __ \\| |   \\ \\\n"
