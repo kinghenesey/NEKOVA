@@ -163,8 +163,49 @@ def _db_insert(table: str, values: str) -> int:
             if d[0] != "id"
         ]
 
-    # Parse values string
+    # Parse values string. Two forms are accepted:
+    #   Positional (documented): "Emmanuel, emma@NEKOVA.dev, 20"
+    #     — matched to columns in creation order.
+    #   key=value (matches db_update's own convention, and is a very
+    #   natural thing to try): "name=Alice, age=30"
+    #     — matched by column name, any order.
+    # Previously ONLY positional was handled — a key=value value like
+    # "name=Alice" was stored verbatim as the literal string
+    # "name=Alice" in the `name` column instead of being recognized
+    # as key=value syntax, silently corrupting every column. Mixing
+    # both forms in one call is rejected rather than guessed at.
     raw_values = [v.strip() for v in values.split(",")]
+    is_kv = [("=" in v) for v in raw_values]
+
+    if any(is_kv) and not all(is_kv):
+        raise RuntimeError(
+            "db_insert: mix of positional and key=value syntax in "
+            f"'{values}'.\n"
+            "  Use either all positional (\"Alice, 30\") or all "
+            "key=value (\"name=Alice, age=30\"), not both."
+        )
+
+    if all(is_kv) and raw_values:
+        data = {}
+        for part in raw_values:
+            col, val = part.split("=", 1)
+            col = col.strip()
+            val = val.strip().strip("'\"")
+            if col not in columns:
+                raise RuntimeError(
+                    f"db_insert: table '{table}' has no column "
+                    f"'{col}'.\n  Columns: {', '.join(columns)}"
+                )
+            try:
+                if "." in val:
+                    data[col] = float(val)
+                else:
+                    data[col] = int(val)
+            except ValueError:
+                data[col] = val
+
+        row_id = _query.insert(table, data)
+        return row_id
 
     if len(raw_values) != len(columns):
         raise RuntimeError(
@@ -201,7 +242,7 @@ def _db_find(table: str,
     """
     _require_connection()
 
-    where_clause = None if where == "all" else where
+    where_clause = None if not where or where == "all" else where
     rows = _query.select(
         str(table),
         where=where_clause,
