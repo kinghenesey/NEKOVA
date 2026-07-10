@@ -187,7 +187,7 @@ def parse_args(argv: list) -> dict:
         "run", "test", "build", "new", "info", "clean",
         "export", "package", "publish", "deploy", "repl",
         "marketplace", "debug", "ide", "format", "notebook",
-        "compile", "fmt", "check",
+        "compile", "fmt", "check", "lsp",
         # Phase 11
         "install", "uninstall", "search", "packages",
         "pkg-info", "deps",
@@ -272,6 +272,19 @@ def main():
         sys.exit(0 if success else 1)
 
     # â”€â”€ Subcommands â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    # --- LSP server ---
+    # Dispatched before print_banner() below on purpose: editors spawn
+    # `nekova lsp` as a subprocess and read its stdout as the raw
+    # JSON-RPC wire protocol. Anything else written there -- the
+    # banner, a stray print, whatever -- corrupts every message after
+    # it. This is the one command that can never go through the
+    # normal print_banner() + dispatch path every other subcommand
+    # uses.
+    if args.get("command") == "lsp":
+        from nekova.lsp.server import main as lsp_main
+        lsp_main()
+        sys.exit(0)
 
     if args["command"]:
         print_banner()
