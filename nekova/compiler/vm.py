@@ -275,7 +275,7 @@ class VirtualMachine:
 
     def _import_module(self, name: str):
         """Import a stdlib module into the environment."""
-        from stdlib import load_module
+        from nekova.stdlib import load_module
         try:
             functions = load_module(name)
             for fname, func in functions.items():
