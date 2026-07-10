@@ -142,7 +142,17 @@ class TestDatabaseBugs(unittest.TestCase):
 
     def _fresh_db(self):
         tmpdir = tempfile.mkdtemp()
-        return tmpdir, os.path.join(tmpdir, "t.db")
+        # Forward slashes even on Windows: this path gets embedded
+        # directly into a NEKOVA string literal below (db_connect
+        # "{dbpath}"), and NEKOVA's own string lexer processes
+        # backslash escapes the same way Python's does. A raw Windows
+        # temp path like ...\Temp\tmp1234 turned \t into an actual
+        # tab character once lexed, corrupting the path entirely.
+        # sqlite3 (and Windows itself) both accept forward slashes
+        # in paths just fine, so this sidesteps the problem rather
+        # than trying to double-escape backslashes instead.
+        dbpath = os.path.join(tmpdir, "t.db").replace(os.sep, "/")
+        return tmpdir, dbpath
 
     def test_insert_key_value_syntax_stores_real_values(self):
         tmpdir, dbpath = self._fresh_db()
@@ -329,12 +339,12 @@ class TestStringInterpolation(unittest.TestCase):
 class TestDependenciesAndImports(unittest.TestCase):
 
     def test_gtts_declared_in_pyproject(self):
-        with open(os.path.join(REPO_ROOT, "pyproject.toml")) as f:
+        with open(os.path.join(REPO_ROOT, "pyproject.toml"), encoding="utf-8") as f:
             content = f.read()
         self.assertIn("gtts", content)
 
     def test_pytest_declared_in_pyproject(self):
-        with open(os.path.join(REPO_ROOT, "pyproject.toml")) as f:
+        with open(os.path.join(REPO_ROOT, "pyproject.toml"), encoding="utf-8") as f:
             content = f.read()
         self.assertIn("pytest", content)
 
@@ -349,7 +359,7 @@ class TestDependenciesAndImports(unittest.TestCase):
     def test_ide_server_no_longer_references_root_formatter(self):
         path = os.path.join(REPO_ROOT, "nekova", "web_ide",
                              "ide_server.py")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             content = f.read()
         # The actual old (buggy) import statement, not just any
         # mention of the phrase (which now also appears in an
@@ -380,7 +390,7 @@ class TestCliQuietFlagAndHelpText(unittest.TestCase):
             shutil.rmtree(tmpdir)
 
     def test_help_text_no_longer_says_python_main_py(self):
-        with open(os.path.join(REPO_ROOT, "main.py")) as f:
+        with open(os.path.join(REPO_ROOT, "main.py"), encoding="utf-8") as f:
             content = f.read()
         self.assertNotIn("python main.py", content)
 
