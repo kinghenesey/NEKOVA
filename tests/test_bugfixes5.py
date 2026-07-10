@@ -481,10 +481,17 @@ class TestEveryDoesNotBlock(unittest.TestCase):
     def test_infinite_every_does_not_block_subsequent_statements(self):
         """Previously `every N s:` (infinite form) started a real
         background thread but then immediately called t.join() on it
-        anyway, blocking the calling script forever."""
+        anyway, blocking the calling script forever.
+
+        Uses a long interval (not 5s) so the background daemon thread
+        this test spawns doesn't tick again mid-session and leak
+        stray "tick" output into a later, unrelated test's stdout
+        capture — it only needs to fire once, immediately, to prove
+        run() returns without blocking.
+        """
         import threading
         src = (
-            'every 5 s:\n'
+            'every 9999 s:\n'
             '    show "tick"\n'
             'show "reached after every"\n'
         )
