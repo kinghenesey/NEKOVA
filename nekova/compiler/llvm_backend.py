@@ -50,8 +50,8 @@ class LLVMCompiler:
         with open(source_path, "r", encoding="utf-8") as f:
             source = f.read()
 
-        from lexer import Lexer
-        from parser.parser import Parser
+        from nekova.lexer.lexer import Lexer
+        from nekova.parser.parser import Parser
 
         tokens  = Lexer(source).tokenize()
         program = Parser(tokens).parse()
@@ -215,6 +215,6 @@ class LLVMCompiler:
         Compile NEKOVA to a standalone Python script.
         Works for all NEKOVA features.
         """
-        from compiler.transpiler import NEKOVATranspiler
+        from nekova.compiler.transpiler import NEKOVATranspiler
         transpiler = NEKOVATranspiler()
         return transpiler.compile(source, output_path)
