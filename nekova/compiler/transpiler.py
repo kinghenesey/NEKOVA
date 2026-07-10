@@ -188,7 +188,7 @@ class NEKOVATranspiler:
         self.indent_level -= 1
 
     def _transpile_task(self, node):
-        params = ", ".join(node.params)
+        params = self._format_params(node.params)
         self._write("def " + node.name + "(" + params + "):")
         self.indent_level += 1
         if node.body:
@@ -197,6 +197,25 @@ class NEKOVATranspiler:
         else:
             self._write("pass")
         self.indent_level -= 1
+
+    def _format_params(self, params) -> str:
+        """
+        Render a task's params (list of (name, default, is_vararg)
+        tuples) as a valid Python parameter list. A previous version
+        did `", ".join(node.params)` directly on the tuples, which
+        always raised "expected str instance, tuple found" the moment
+        any task had parameters — every real-world NEKOVA program has
+        at least one.
+        """
+        parts = []
+        for (pname, default, is_vararg) in params:
+            if is_vararg:
+                parts.append("*" + pname)
+            elif default is not None:
+                parts.append(pname + "=" + self._transpile_expr(default))
+            else:
+                parts.append(pname)
+        return ", ".join(parts)
 
     def _transpile_return(self, node):
         if node.value:
@@ -277,7 +296,14 @@ class NEKOVATranspiler:
                 return "(not " + operand + ")"
             return "(" + node.operator + operand + ")"
         if isinstance(node, CallExpression):
-            args = ", ".join(self._transpile_expr(a) for a in node.args)
+            parts = [self._transpile_expr(a) for a in node.args]
+            # Keyword arguments were previously dropped entirely here —
+            # only node.args (positional) was ever transpiled, so any
+            # call using name=value syntax silently lost those
+            # arguments, producing a call with too few args at runtime.
+            for kw_name, kw_expr in node.kwargs.items():
+                parts.append(kw_name + "=" + self._transpile_expr(kw_expr))
+            args = ", ".join(parts)
             return node.name + "(" + args + ")"
         if isinstance(node, IndexExpression):
             col = self._transpile_expr(node.collection)
