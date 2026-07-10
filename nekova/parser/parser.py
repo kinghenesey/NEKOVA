@@ -1,4 +1,4 @@
-from nekova.lexer.token_types import TokenType
+from nekova.lexer.token_types import TokenType, KEYWORDS
 from nekova.lexer.token import Token
 from nekova.parser.nodes import (
     Program, IntegerLiteral, FloatLiteral, StringLiteral, FStringLiteral,
@@ -49,6 +49,14 @@ class ParseError(Exception):
         super().__init__(f"\n  Line {line}: {message}")
 
 
+# Token types for actual language keywords (if, show, task, model, ...).
+# Used by _parse_primary's last-resort "keyword as identifier" fallback
+# so it only ever fires for real keywords being reused as a name (e.g.
+# a task called `repeat`), not for punctuation/operators like a stray
+# ')' or ','. See that fallback for why this matters.
+_KEYWORD_TOKEN_TYPES = set(KEYWORDS.values())
+
+
 class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixin):
     """
     Converts a list of Tokens into an AST.
@@ -62,6 +70,13 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         # Filter out blank newlines at the start
         self.tokens  = tokens
         self.pos     = 0
+        # Phase 26: multi-error parser recovery. Collected here as
+        # parse() catches and resynchronizes past each ParseError
+        # instead of stopping at the first one. Most callers still
+        # get the exact same single-exception behavior as before (see
+        # parse() below) — this list exists for callers that want
+        # every error in one pass, like the LSP's diagnostics.
+        self.errors  = []
 
     def _stamp(self, node, line: int):
         """Stamp a source line number onto any AST node and return it."""
@@ -73,18 +88,59 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
     # ----------------------------------------------------------
 
     def parse(self) -> Program:
-        """Parse all tokens and return the root Program node."""
+        """
+        Parse all tokens and return the root Program node.
+
+        On a syntax error, previously this let the ParseError
+        propagate straight out of the while loop, so a file with
+        several unrelated mistakes only ever reported the first one 
+        — fix it, re-run, hit the next one, repeat. Now each error is
+        caught, resynchronized past (skip to the next likely
+        statement boundary), and parsing continues, so all of them
+        can be collected in self.errors in a single pass.
+
+        Every existing caller that does `Parser(tokens).parse()` and
+        expects a single ParseError exception on invalid input keeps
+        working exactly as before — if there were any errors, the
+        first one is still raised at the end, with the same message
+        and line it always had. It just now also carries
+        `.all_errors` (the full list) for callers that want more than
+        one, like the LSP's diagnostics.
+        """
         statements = []
 
         self._skip_newlines()
 
         while not self._at_end():
-            stmt = self._parse_statement()
-            if stmt is not None:
-                statements.append(stmt)
-            self._skip_newlines()
+            try:
+                stmt = self._parse_statement()
+                if stmt is not None:
+                    statements.append(stmt)
+                self._skip_newlines()
+            except ParseError as e:
+                self.errors.append(e)
+                self._synchronize()
+
+        if self.errors:
+            first = self.errors[0]
+            first.all_errors = list(self.errors)
+            raise first
 
         return Program(statements)
+
+    def _synchronize(self):
+        """
+        After a parse error, skip tokens up to the next likely
+        statement boundary (a NEWLINE, since top-level statements are
+        newline-terminated) so parse() can attempt the next statement
+        instead of stopping. A simple, standard recovery heuristic —
+        it won't always land in a perfectly sensible spot for badly
+        malformed input, but it's what lets a single pass surface
+        several independent errors instead of just the first.
+        """
+        while not self._at_end() and self._current().type != TokenType.NEWLINE:
+            self._advance()
+        self._skip_newlines()
 
     # ----------------------------------------------------------
     # Statement parsers
@@ -2347,11 +2403,23 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         if token.type == TokenType.IMAGINE:
             return self._parse_imagine_expr()
 
-        # Last-resort: treat any keyword as an identifier when used as an expression.
-        # This allows calling tasks whose names happen to be keywords
-        # (e.g. repeat("ha", 3) when repeat is a user-defined task via string.nk)
-        if token.type not in (TokenType.NEWLINE, TokenType.EOF,
-                               TokenType.DEDENT, TokenType.INDENT):
+        # Last-resort: treat an actual keyword as an identifier when
+        # used as an expression. This allows calling tasks whose
+        # names happen to be keywords (e.g. repeat("ha", 3) when
+        # repeat is a user-defined task).
+        #
+        # This used to check `token.type not in (NEWLINE, EOF,
+        # DEDENT, INDENT)` — a denylist that let through far more
+        # than keywords: any stray punctuation or operator token
+        # (a bare ')', a misplaced ',', etc.) that reached this point
+        # also matched, silently becoming Identifier(token.value)
+        # instead of the "Unexpected token" ParseError it should
+        # have raised. That meant some genuine syntax errors were
+        # never actually detected at all, not just poorly recovered
+        # from — a real problem for diagnostics that need to catch
+        # every mistake, not just the ones that happen to crash later.
+        # Now it's a proper allowlist of real keyword token types.
+        if token.type in _KEYWORD_TOKEN_TYPES:
             self._advance()  # consume the keyword token
             name = token.value
             expr = Identifier(name)
