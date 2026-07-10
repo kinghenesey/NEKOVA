@@ -81,7 +81,7 @@ class Debugger:
                         self.running):
                     self.running = False
                     print(f"\n{Color.YELLOW}"
-                          f"  ? Breakpoint hit at "
+                          f"  ⏸ Breakpoint hit at "
                           f"line {line_num}"
                           f"{Color.RESET}")
 
@@ -110,7 +110,7 @@ class Debugger:
 
                 except Exception as e:
                     print(f"\n{Color.RED}"
-                          f"  ? Error at line "
+                          f"  ✗ Error at line "
                           f"{line_num}: {e}"
                           f"{Color.RESET}\n")
                     action = self._get_action()
@@ -122,12 +122,12 @@ class Debugger:
                     continue
 
             print(f"\n{Color.GREEN}"
-                  f"  ? Program completed successfully!"
+                  f"  ✓ Program completed successfully!"
                   f"{Color.RESET}\n")
 
         except Exception as e:
             print(f"\n{Color.RED}"
-                  f"  ? Debug error: {e}"
+                  f"  ✗ Debug error: {e}"
                   f"{Color.RESET}\n")
 
     def _display_state(self, current_line: int):
@@ -136,7 +136,7 @@ class Debugger:
             return
 
         width = 50
-        print(f"\n{Color.DIM}{'?' * width}{Color.RESET}")
+        print(f"\n{Color.DIM}{chr(9472) * width}{Color.RESET}")
 
         # Show source with current line highlighted
         self._display_source(current_line)
@@ -148,7 +148,7 @@ class Debugger:
         if self.call_stack:
             self._display_call_stack()
 
-        print(f"{Color.DIM}{'?' * width}{Color.RESET}")
+        print(f"{Color.DIM}{chr(9472) * width}{Color.RESET}")
 
     def _display_source(self, current_line: int):
         """Show source code with current line marked."""
@@ -165,14 +165,14 @@ class Debugger:
 
             if line_num == current_line:
                 # Current line — highlight
-                print(f"  {Color.GREEN}?{Color.RESET} "
+                print(f"  {Color.GREEN}▶{Color.RESET} "
                       f"{Color.BOLD}"
                       f"{line_num:>3}{Color.RESET}  "
                       f"{Color.GREEN}{content}"
                       f"{Color.RESET}")
             elif line_num in self.breakpoints:
                 # Breakpoint line
-                print(f"  {Color.RED}?{Color.RESET} "
+                print(f"  {Color.RED}●{Color.RESET} "
                       f"{line_num:>3}  "
                       f"{Color.DIM}{content}"
                       f"{Color.RESET}")
@@ -205,7 +205,7 @@ class Debugger:
         """Display the call stack."""
         print(f"\n  {Color.CYAN}Call Stack:{Color.RESET}")
         for frame in reversed(self.call_stack):
-            print(f"  {Color.DIM}  ? {frame}"
+            print(f"  {Color.DIM}  → {frame}"
                   f"{Color.RESET}")
 
     def _get_action(self) -> str:
@@ -244,7 +244,7 @@ class Debugger:
                 line = int(choice.split()[1])
                 self.breakpoints.add(line)
                 print(f"  {Color.YELLOW}"
-                      f"? Breakpoint set at "
+                      f"✓ Breakpoint set at "
                       f"line {line}{Color.RESET}")
             except Exception:
                 pass
