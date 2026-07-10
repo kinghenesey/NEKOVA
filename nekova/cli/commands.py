@@ -121,19 +121,37 @@ def _write(path: str, content: str):
 # ── nekova test ───────────────────────────────────────────────────────────────
 
 def cmd_test():
-    """Run all NEKOVA test suites via pytest."""
+    """Run the current project's test suite (./tests/) via pytest.
+
+    Previously this resolved `root` from __file__ — the *installed
+    package's* location — rather than the directory the user actually
+    ran `nekova test` from. That meant it could never find a
+    scaffolded project's own tests/ folder (it was always looking
+    inside the package install dir instead), and even for the dev
+    repo itself the path math was off by one directory level.
+    """
     print()
     print(f"{Color.CYAN}{Color.BOLD}  NEKOVA Test Runner{Color.RESET}")
     print(f"  {Color.DIM}{chr(9472) * 40}{Color.RESET}")
     print()
 
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    project_root = os.getcwd()
+    tests_dir = os.path.join(project_root, "tests")
+
+    if not os.path.isdir(tests_dir):
+        print_error(
+            f"No 'tests/' directory found in '{project_root}'.\n"
+            f"  Run 'nekova test' from your project's root "
+            f"(the folder with nekova.toml), or scaffold a new "
+            f"project with 'nekova new'."
+        )
+        return False
 
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "tests/", "-q", "--tb=short"],
         capture_output=True,
         text=True,
-        cwd=root,
+        cwd=project_root,
         env={**os.environ, "PYTHONIOENCODING": "utf-8"},
     )
 
