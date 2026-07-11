@@ -78,6 +78,7 @@ from nekova.parser.parser import Parser
 from nekova.interpreter.interpreter import Interpreter
 from nekova.interpreter.exceptions import NEKOVARuntimeError
 from nekova.ai import memory_store
+import nekova.database.db_module as db_module
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -154,6 +155,20 @@ class TestDatabaseBugs(unittest.TestCase):
         dbpath = os.path.join(tmpdir, "t.db").replace(os.sep, "/")
         return tmpdir, dbpath
 
+    def _cleanup(self, tmpdir):
+        """
+        Close the DB connection before removing the temp dir it lives
+        in. On Linux, shutil.rmtree(tmpdir) alone was fine even with
+        the sqlite3 file still open — POSIX allows unlinking a file
+        that's still open, the data just stays around until the last
+        handle closes. Windows enforces the opposite: a file with an
+        open handle can't be deleted at all, so rmtree raised
+        PermissionError there every time, on every one of these
+        tests, none of which ever explicitly closed the connection.
+        """
+        db_module._db_close()
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
     def test_insert_key_value_syntax_stores_real_values(self):
         tmpdir, dbpath = self._fresh_db()
         try:
@@ -168,7 +183,7 @@ class TestDatabaseBugs(unittest.TestCase):
                 "SELECT * FROM t").fetchall()
             self.assertEqual(rows, [(1, "Alice", 30)])
         finally:
-            shutil.rmtree(tmpdir)
+            self._cleanup(tmpdir)
 
     def test_insert_positional_syntax_still_works(self):
         tmpdir, dbpath = self._fresh_db()
@@ -184,7 +199,7 @@ class TestDatabaseBugs(unittest.TestCase):
                 "SELECT * FROM t").fetchall()
             self.assertEqual(rows, [(1, "Bob", 25)])
         finally:
-            shutil.rmtree(tmpdir)
+            self._cleanup(tmpdir)
 
     def test_insert_mixed_syntax_rejected_not_corrupted(self):
         tmpdir, dbpath = self._fresh_db()
@@ -198,7 +213,7 @@ class TestDatabaseBugs(unittest.TestCase):
             with self.assertRaises(NEKOVARuntimeError):
                 run(src)
         finally:
-            shutil.rmtree(tmpdir)
+            self._cleanup(tmpdir)
 
     def test_find_empty_filter_means_all_not_a_crash(self):
         tmpdir, dbpath = self._fresh_db()
@@ -213,7 +228,7 @@ class TestDatabaseBugs(unittest.TestCase):
             output = run(src)
             self.assertIn("Alice", output)
         finally:
-            shutil.rmtree(tmpdir)
+            self._cleanup(tmpdir)
 
     def test_bad_where_clause_raises_clean_nekova_error_not_traceback(self):
         tmpdir, dbpath = self._fresh_db()
@@ -228,7 +243,7 @@ class TestDatabaseBugs(unittest.TestCase):
             with self.assertRaises(NEKOVARuntimeError):
                 run(src)
         finally:
-            shutil.rmtree(tmpdir)
+            self._cleanup(tmpdir)
 
     def test_documented_update_syntax_works(self):
         tmpdir, dbpath = self._fresh_db()
@@ -244,7 +259,7 @@ class TestDatabaseBugs(unittest.TestCase):
             output = run(src)
             self.assertIn("31", output)
         finally:
-            shutil.rmtree(tmpdir)
+            self._cleanup(tmpdir)
 
 
 # ── BUG-08: closures can't mutate enclosing scope ────────────────
