@@ -200,6 +200,11 @@
           "type": "boolean",
           "default": true,
           "description": "Show NEKOVA status bar item for .nk files."
+        },
+        "nekova.enableLanguageServer": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the NEKOVA language server (real inline errors, hover docs, and autocomplete). Requires reloading the window to take effect."
         }
       }
     },
@@ -223,5 +228,8 @@
   "devDependencies": {
     "@vscode/vsce": "^2.0.0"
   },
-  "license": "SEE LICENSE IN LICENSE"
+  "license": "SEE LICENSE IN LICENSE",
+  "dependencies": {
+    "vscode-languageclient": "^10.1.0"
+  }
 }
