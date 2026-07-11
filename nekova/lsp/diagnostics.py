@@ -73,10 +73,15 @@ def compute_diagnostics(source: str) -> list:
     try:
         tokens = Lexer(source).tokenize()
     except LexerError as e:
+        # LexerError.column is 1-indexed (confirmed against the
+        # lexer directly, not assumed) and points at approximately
+        # where the bad token starts — convert to LSP's 0-indexed
+        # convention.
+        col = max(0, e.column - 1)
         return [_diagnostic(
             e.line, str(e).strip().split(": ", 1)[-1],
-            column_start=max(0, e.column),
-            column_end=max(0, e.column) + 1,
+            column_start=col,
+            column_end=col + 1,
         )]
     except Exception as e:
         # Anything else unexpected from the lexer shouldn't crash the
