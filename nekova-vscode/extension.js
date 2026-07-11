@@ -10,8 +10,19 @@
 //   nekova.testFile                Run active file (executes test/expect blocks)
 //   nekova.debugFile                Debug active file
 //   nekova.newProject              Scaffold a new project
+//
+// All terminal commands below invoke `<python> -m nekova_cli ...`,
+// not `-m nekova`. The nekova/ package has no __main__.py, so
+// `python -m nekova` fails outright with "No module named
+// nekova.__main__" — meaning every single command in this extension
+// was non-functional as originally shipped. nekova_cli is the real
+// module the installed `nekova` console-script itself delegates to
+// (see nekova_cli.py), and invoking it via `-m` works reliably
+// regardless of whether that console script happens to be on PATH —
+// it only depends on the configured nekova.pythonPath setting.
 
 const vscode = require('vscode');
+const { LanguageClient, TransportKind } = require('vscode-languageclient/node');
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -59,7 +70,7 @@ function cmdRunFile() {
     if (!filepath) return;
     const py = getPython();
     const terminal = getOrCreateTerminal('NEKOVA Run');
-    terminal.sendText(`${py} -m nekova run ${quoteArg(filepath)}`);
+    terminal.sendText(`${py} -m nekova_cli run ${quoteArg(filepath)}`);
 }
 
 function cmdRunWatch() {
@@ -67,13 +78,13 @@ function cmdRunWatch() {
     if (!filepath) return;
     const py = getPython();
     const terminal = getOrCreateTerminal('NEKOVA Watch');
-    terminal.sendText(`${py} -m nekova run ${quoteArg(filepath)} --watch`);
+    terminal.sendText(`${py} -m nekova_cli run ${quoteArg(filepath)} --watch`);
 }
 
 function cmdOpenRepl() {
     const py = getPython();
     const terminal = getOrCreateTerminal('NEKOVA REPL');
-    terminal.sendText(`${py} -m nekova repl`);
+    terminal.sendText(`${py} -m nekova_cli repl`);
 }
 
 async function cmdFmtFile() {
@@ -88,7 +99,7 @@ async function cmdFmtFile() {
     await editor.document.save();
     const py = getPython();
     const terminal = getOrCreateTerminal('NEKOVA');
-    terminal.sendText(`${py} -m nekova fmt ${quoteArg(filepath)}`);
+    terminal.sendText(`${py} -m nekova_cli fmt ${quoteArg(filepath)}`);
 }
 
 function cmdCheckFile() {
@@ -96,7 +107,7 @@ function cmdCheckFile() {
     if (!filepath) return;
     const py = getPython();
     const terminal = getOrCreateTerminal('NEKOVA Check');
-    terminal.sendText(`${py} -m nekova check ${quoteArg(filepath)}`);
+    terminal.sendText(`${py} -m nekova_cli check ${quoteArg(filepath)}`);
 }
 
 function cmdTestFile() {
@@ -108,7 +119,7 @@ function cmdTestFile() {
     if (!filepath) return;
     const py = getPython();
     const terminal = getOrCreateTerminal('NEKOVA Test');
-    terminal.sendText(`${py} -m nekova run ${quoteArg(filepath)}`);
+    terminal.sendText(`${py} -m nekova_cli run ${quoteArg(filepath)}`);
 }
 
 function cmdDebugFile() {
@@ -116,7 +127,7 @@ function cmdDebugFile() {
     if (!filepath) return;
     const py = getPython();
     const terminal = getOrCreateTerminal('NEKOVA Debug');
-    terminal.sendText(`${py} -m nekova debug ${quoteArg(filepath)}`);
+    terminal.sendText(`${py} -m nekova_cli debug ${quoteArg(filepath)}`);
 }
 
 async function cmdNewProject() {
@@ -140,7 +151,7 @@ async function cmdNewProject() {
     const py = getPython();
     const terminal = getOrCreateTerminal('NEKOVA');
     terminal.sendText(
-        `${py} -m nekova new ${quoteArg(name)} --template ${template.label}`
+        `${py} -m nekova_cli new ${quoteArg(name)} --template ${template.label}`
     );
 
     vscode.window.showInformationMessage(
@@ -161,7 +172,7 @@ function registerFormatOnSave(context) {
         // For now, run fmt in terminal as a best-effort approach.
         const py = getPython();
         const terminal = getOrCreateTerminal('NEKOVA');
-        terminal.sendText(`${py} -m nekova fmt ${quoteArg(doc.fileName)}`);
+        terminal.sendText(`${py} -m nekova_cli fmt ${quoteArg(doc.fileName)}`);
     });
 }
 
@@ -194,10 +205,62 @@ function createStatusBar(context) {
     return statusBar;
 }
 
+// ── Language Server (Phase 26) ──────────────────────────────────────────────
+// Replaces syntax-highlighting-only support with real inline errors, hover
+// docs, and autocomplete — talking to `nekova lsp` (nekova/lsp/server.py)
+// over the standard LSP stdio transport.
+
+let client = null;
+
+function startLanguageClient(context) {
+    const config = vscode.workspace.getConfiguration('nekova');
+    if (!config.get('enableLanguageServer', true)) return;
+
+    const py = getPython();
+
+    // Same command form as every other terminal command in this file
+    // (see the note at the top of this file for why it's nekova_cli,
+    // not nekova, after -m) — except here it's spawned directly as a
+    // subprocess rather than sent to a terminal, since the language
+    // client needs to own its stdio to speak the LSP protocol.
+    const serverOptions = {
+        run: {
+            command: py,
+            args: ['-m', 'nekova_cli', 'lsp'],
+            transport: TransportKind.stdio,
+        },
+        debug: {
+            command: py,
+            args: ['-m', 'nekova_cli', 'lsp'],
+            transport: TransportKind.stdio,
+        },
+    };
+
+    const clientOptions = {
+        documentSelector: [{ scheme: 'file', language: 'nekova' }],
+        synchronize: {
+            fileEvents: vscode.workspace.createFileSystemWatcher('**/*.nk'),
+        },
+    };
+
+    client = new LanguageClient(
+        'nekovaLanguageServer',
+        'NEKOVA Language Server',
+        serverOptions,
+        clientOptions
+    );
+
+    client.start();
+    context.subscriptions.push(client);
+}
+
 // ── Activate ───────────────────────────────────────────────────────────────
 
 function activate(context) {
     console.log('NEKOVA Language extension v1.10.0 activated');
+
+    // Language server (real diagnostics, hover, autocomplete)
+    startLanguageClient(context);
 
     // Register commands
     const commands = [
@@ -241,6 +304,9 @@ function activate(context) {
     }
 }
 
-function deactivate() {}
+function deactivate() {
+    if (!client) return undefined;
+    return client.stop();
+}
 
 module.exports = { activate, deactivate };
