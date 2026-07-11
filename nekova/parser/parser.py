@@ -107,6 +107,36 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         `.all_errors` (the full list) for callers that want more than
         one, like the LSP's diagnostics.
         """
+        statements = self._parse_all_statements()
+
+        if self.errors:
+            first = self.errors[0]
+            first.all_errors = list(self.errors)
+            raise first
+
+        return Program(statements)
+
+    def parse_best_effort(self) -> Program:
+        """
+        Like parse(), but always returns a Program — every statement
+        successfully parsed before, between, and after any errors —
+        instead of raising. self.errors still gets populated exactly
+        the same way, for callers that want to know what went wrong.
+
+        For LSP features that need *something* to work with even on
+        a document that's currently invalid, which is the normal
+        state of a file while someone is actively typing: e.g.
+        autocomplete needs to see a task defined earlier in the file
+        even if the line the cursor is currently on doesn't parse
+        yet. parse() intentionally keeps its strict contract (raise
+        on any error) for every other caller — this is a separate,
+        explicit opt-in rather than a behavior change to the
+        existing method.
+        """
+        return Program(self._parse_all_statements())
+
+    def _parse_all_statements(self) -> list:
+        """Shared core loop for parse() and parse_best_effort()."""
         statements = []
 
         self._skip_newlines()
@@ -121,12 +151,7 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                 self.errors.append(e)
                 self._synchronize()
 
-        if self.errors:
-            first = self.errors[0]
-            first.all_errors = list(self.errors)
-            raise first
-
-        return Program(statements)
+        return statements
 
     def _synchronize(self):
         """
