@@ -16,7 +16,7 @@
 
 from nekova.lexer.lexer import Lexer, LexerError
 from nekova.lexer.token_types import TokenType, KEYWORDS
-from nekova.parser.parser import Parser, ParseError
+from nekova.parser.parser import Parser
 from nekova.parser.nodes import (
     TaskStatement, TypedTaskStatement, ClassDefinition,
     MethodDefinition, PromptStatement,
@@ -292,15 +292,17 @@ def compute_hover(source: str, line: int, character: int):
     #    show *their* definition, not the builtin's. Identifier
     #    tokens only, so e.g. a string literal that happens to
     #    contain a task's name doesn't false-positive.
-    try:
-        if token.type == TokenType.IDENTIFIER:
-            program = Parser(list(tokens)).parse()
-            for defn in _iter_bodies(program.statements):
-                if defn.name == name:
-                    contents = _hover_for_definition(defn)
-                    break
-    except ParseError:
-        pass  # fall through to keyword/builtin lookup below
+    #
+    #    parse_best_effort() (not parse()) so a task defined earlier
+    #    in the file is still found even if some *other*, unrelated
+    #    part of the document currently has a syntax error — very
+    #    much the normal state of a file while someone is mid-edit.
+    if token.type == TokenType.IDENTIFIER:
+        program = Parser(list(tokens)).parse_best_effort()
+        for defn in _iter_bodies(program.statements):
+            if defn.name == name:
+                contents = _hover_for_definition(defn)
+                break
 
     # 2. Keywords — only for tokens that are actually that keyword
     #    (checked against the real KEYWORDS mapping), not just any
