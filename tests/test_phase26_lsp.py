@@ -264,11 +264,12 @@ class TestLspDispatch(unittest.TestCase):
         self.assertEqual(responses[0]["id"], 5)
 
     def test_unknown_request_gets_method_not_found_error(self):
-        # textDocument/completion isn't wired up yet (a later Phase
-        # 26 piece) -- hover now is, so this had to move to a method
-        # that's still genuinely unimplemented.
+        # textDocument/definition isn't wired up (not part of Phase
+        # 26's scope) -- hover and completion now both are, so this
+        # had to move again to a method that's still genuinely
+        # unimplemented.
         _, responses = self._dispatch_and_capture({
-            "jsonrpc": "2.0", "id": 9, "method": "textDocument/completion",
+            "jsonrpc": "2.0", "id": 9, "method": "textDocument/definition",
             "params": {},
         })
         self.assertIn("error", responses[0])
@@ -426,6 +427,186 @@ class TestHoverServerIntegration(unittest.TestCase):
         out.seek(0)
         response = lsp_server.read_message(out)
         self.assertTrue(response["result"]["capabilities"]["hoverProvider"])
+
+
+# ── Completions ───────────────────────────────────────────────
+
+class TestCompletionsModule(unittest.TestCase):
+
+    def test_keyword_prefix_filtering(self):
+        from nekova.lsp.completions import compute_completions
+        r = compute_completions("sh", 0, 2)
+        labels = {i["label"] for i in r}
+        self.assertIn("show", labels)
+        self.assertIn("shape", labels)
+        self.assertNotIn("let", labels)  # doesn't match prefix "sh"
+
+    def test_builtin_completion(self):
+        from nekova.lsp.completions import compute_completions
+        r = compute_completions("len", 0, 3)
+        labels = {i["label"] for i in r}
+        self.assertIn("len", labels)
+        self.assertIn("length", labels)
+
+    def test_list_literal_narrows_method_completions(self):
+        from nekova.lsp.completions import compute_completions
+        src = "let data = [1, 2, 3]\ndata.\n"
+        r = compute_completions(src, 1, 5)
+        labels = {i["label"] for i in r}
+        self.assertIn("append", labels)
+        self.assertIn("sort", labels)
+        self.assertNotIn("upper", labels)  # a string-only method
+
+    def test_string_literal_narrows_method_completions(self):
+        from nekova.lsp.completions import compute_completions
+        src = 'let name = "hi"\nname.\n'
+        r = compute_completions(src, 1, 5)
+        labels = {i["label"] for i in r}
+        self.assertIn("upper", labels)
+        self.assertIn("split", labels)
+        self.assertNotIn("append", labels)  # a list-only method
+
+    def test_dict_literal_narrows_method_completions(self):
+        from nekova.lsp.completions import compute_completions
+        src = 'let config = {"a": 1}\nconfig.\n'
+        r = compute_completions(src, 1, 7)
+        labels = {i["label"] for i in r}
+        self.assertIn("keys", labels)
+        self.assertIn("values", labels)
+        self.assertNotIn("upper", labels)
+
+    def test_unknown_type_offers_union_not_nothing(self):
+        from nekova.lsp.completions import compute_completions
+        src = "let result = compute()\nresult.\n"
+        r = compute_completions(src, 1, 7)
+        labels = {i["label"] for i in r}
+        # Should include methods from all three tables, since the
+        # type genuinely can't be known without running the program.
+        self.assertIn("append", labels)   # list
+        self.assertIn("upper", labels)    # string
+        self.assertIn("keys", labels)     # dict
+
+    def test_user_defined_task_completion_on_mid_edit_document(self):
+        """The document as a whole doesn't parse (trailing 'gre' is
+        invalid) -- completion must still find the task defined
+        earlier, via parse_best_effort()."""
+        from nekova.lsp.completions import compute_completions
+        src = "task greet(name):\n    show name\ngre"
+        r = compute_completions(src, 2, 3)
+        labels = {i["label"] for i in r}
+        self.assertIn("greet", labels)
+
+    def test_variable_completion(self):
+        from nekova.lsp.completions import compute_completions
+        src = "let myvar = 5\nshow myv"
+        r = compute_completions(src, 1, 8)
+        labels = {i["label"] for i in r}
+        self.assertIn("myvar", labels)
+
+    def test_class_completion(self):
+        from nekova.lsp.completions import compute_completions
+        src = "class Point:\n    init(x, y):\n        self.x = x\nlet p = Poi"
+        r = compute_completions(src, 3, 11)
+        labels = {i["label"] for i in r}
+        self.assertIn("Point", labels)
+
+    def test_empty_prefix_still_returns_completions(self):
+        from nekova.lsp.completions import compute_completions
+        r = compute_completions("", 0, 0)
+        self.assertGreater(len(r), 0)
+
+    def test_completions_are_json_serializable(self):
+        import json
+        from nekova.lsp.completions import compute_completions
+        r = compute_completions("let data = [1]\ndata.", 1, 5)
+        json.dumps(r)  # must not raise
+
+
+class TestParseBestEffort(unittest.TestCase):
+
+    def test_returns_statements_parsed_before_the_error(self):
+        src = "task greet(name):\n    show name\ngre"
+        tokens = Lexer(src).tokenize()
+        program = Parser(tokens).parse_best_effort()
+        self.assertEqual(len(program.statements), 1)
+
+    def test_does_not_raise_on_invalid_input(self):
+        tokens = Lexer("let x = )\n").tokenize()
+        program = Parser(tokens).parse_best_effort()  # must not raise
+        self.assertEqual(program.statements, [])
+
+    def test_still_populates_errors_list(self):
+        tokens = Lexer("let x = )\n").tokenize()
+        parser = Parser(tokens)
+        parser.parse_best_effort()
+        self.assertEqual(len(parser.errors), 1)
+
+    def test_valid_input_returns_same_as_parse(self):
+        src = "let x = 5\nshow x\n"
+        tokens = Lexer(src).tokenize()
+        program = Parser(tokens).parse_best_effort()
+        self.assertEqual(len(program.statements), 2)
+
+
+class TestCompletionServerIntegration(unittest.TestCase):
+
+    def setUp(self):
+        lsp_server._open_documents.clear()
+
+    def test_completion_request_through_dispatch(self):
+        out = io.BytesIO()
+        lsp_server.dispatch(out, {
+            "jsonrpc": "2.0", "method": "textDocument/didOpen",
+            "params": {"textDocument": {
+                "uri": "file:///t.nk", "text": "let data = [1]\ndata.\n",
+            }},
+        })
+        out = io.BytesIO()
+        lsp_server.dispatch(out, {
+            "jsonrpc": "2.0", "id": 1, "method": "textDocument/completion",
+            "params": {
+                "textDocument": {"uri": "file:///t.nk"},
+                "position": {"line": 1, "character": 5},
+            },
+        })
+        out.seek(0)
+        response = lsp_server.read_message(out)
+        labels = {i["label"] for i in response["result"]}
+        self.assertIn("append", labels)
+
+    def test_completion_on_unopened_document_returns_empty_not_crash(self):
+        out = io.BytesIO()
+        lsp_server.dispatch(out, {
+            "jsonrpc": "2.0", "id": 1, "method": "textDocument/completion",
+            "params": {
+                "textDocument": {"uri": "file:///never-opened.nk"},
+                "position": {"line": 0, "character": 0},
+            },
+        })
+        out.seek(0)
+        response = lsp_server.read_message(out)
+        self.assertEqual(response["result"], [])
+
+    def test_malformed_completion_request_does_not_crash_server(self):
+        out = io.BytesIO()
+        lsp_server.dispatch(out, {
+            "jsonrpc": "2.0", "id": 1, "method": "textDocument/completion",
+            "params": {},
+        })
+        out.seek(0)
+        response = lsp_server.read_message(out)
+        self.assertEqual(response["result"], [])
+
+    def test_initialize_advertises_completion_provider(self):
+        out = io.BytesIO()
+        lsp_server.dispatch(out, {
+            "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {},
+        })
+        out.seek(0)
+        response = lsp_server.read_message(out)
+        caps = response["result"]["capabilities"]
+        self.assertIn("completionProvider", caps)
+        self.assertEqual(caps["completionProvider"]["triggerCharacters"], ["."])
 
 
 if __name__ == "__main__":
