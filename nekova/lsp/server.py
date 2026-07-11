@@ -27,6 +27,7 @@ import sys
 import json
 
 from nekova.lsp.diagnostics import compute_diagnostics
+from nekova.lsp.hover import compute_hover
 
 # uri -> current in-memory text of that open document. This is the
 # server's whole picture of "what's open" — LSP documents are synced
@@ -104,6 +105,7 @@ def _handle_initialize(stream, request_id, params):
             # and NEKOVA source files are small enough it doesn't
             # matter for latency.
             "textDocumentSync": 1,
+            "hoverProvider": True,
         },
         "serverInfo": {"name": "nekova-lsp", "version": "1"},
     })
@@ -138,6 +140,22 @@ def _handle_did_close(stream, params):
     })
 
 
+def _handle_hover(stream, request_id, params):
+    try:
+        uri = params["textDocument"]["uri"]
+        position = params["position"]
+        text = _open_documents.get(uri)
+        if text is None:
+            _respond(stream, request_id, None)
+            return
+        result = compute_hover(text, position["line"], position["character"])
+    except (KeyError, TypeError):
+        # Malformed request — respond with "no hover info" rather
+        # than crashing the whole server over one bad request.
+        result = None
+    _respond(stream, request_id, result)
+
+
 def dispatch(stream, message: dict) -> bool:
     """
     Handle one incoming message. Returns False when the server should
@@ -157,6 +175,8 @@ def dispatch(stream, message: dict) -> bool:
         _handle_did_change(stream, params)
     elif method == "textDocument/didClose":
         _handle_did_close(stream, params)
+    elif method == "textDocument/hover":
+        _handle_hover(stream, request_id, params)
     elif method == "shutdown":
         _respond(stream, request_id, None)
     elif method == "exit":
