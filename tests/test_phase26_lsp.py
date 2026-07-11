@@ -264,8 +264,11 @@ class TestLspDispatch(unittest.TestCase):
         self.assertEqual(responses[0]["id"], 5)
 
     def test_unknown_request_gets_method_not_found_error(self):
+        # textDocument/completion isn't wired up yet (a later Phase
+        # 26 piece) -- hover now is, so this had to move to a method
+        # that's still genuinely unimplemented.
         _, responses = self._dispatch_and_capture({
-            "jsonrpc": "2.0", "id": 9, "method": "textDocument/hover",
+            "jsonrpc": "2.0", "id": 9, "method": "textDocument/completion",
             "params": {},
         })
         self.assertIn("error", responses[0])
@@ -277,6 +280,152 @@ class TestLspDispatch(unittest.TestCase):
         })
         self.assertTrue(keep_running)
         self.assertEqual(responses, [])
+
+
+# ── Hover ─────────────────────────────────────────────────────
+
+class TestHoverModule(unittest.TestCase):
+
+    def test_keyword_hover(self):
+        from nekova.lsp.hover import compute_hover
+        r = compute_hover("let x = 5\n", 0, 0)
+        self.assertIsNotNone(r)
+        self.assertIn("variable", r["contents"]["value"])
+        self.assertEqual(r["range"]["start"], {"line": 0, "character": 0})
+        self.assertEqual(r["range"]["end"], {"line": 0, "character": 3})
+
+    def test_builtin_hover(self):
+        from nekova.lsp.hover import compute_hover
+        src = "let data = [3, 1, 2]\nlet r = data |> sort()\n"
+        # find the character position of "sort" on line 1
+        col = src.split("\n")[1].index("sort")
+        r = compute_hover(src, 1, col)
+        self.assertIsNotNone(r)
+        self.assertIn("sort(", r["contents"]["value"])
+
+    def test_user_defined_task_hover_shows_real_signature_and_docstring(self):
+        from nekova.lsp.hover import compute_hover
+        src = (
+            'task add(a, b):\n'
+            '    """Adds two numbers."""\n'
+            '    return a + b\n'
+            'show add(1, 2)\n'
+        )
+        col = src.split("\n")[0].index("add")
+        r = compute_hover(src, 0, col)
+        self.assertIsNotNone(r)
+        self.assertIn("add(a, b)", r["contents"]["value"])
+        self.assertIn("Adds two numbers.", r["contents"]["value"])
+
+    def test_hover_on_call_site_finds_definition(self):
+        from nekova.lsp.hover import compute_hover
+        src = (
+            'task add(a, b):\n'
+            '    return a + b\n'
+            'show add(1, 2)\n'
+        )
+        col = src.split("\n")[2].index("add")
+        r = compute_hover(src, 2, col)
+        self.assertIsNotNone(r)
+        self.assertIn("add(a, b)", r["contents"]["value"])
+
+    def test_nested_task_closure_hover_finds_definition(self):
+        """Hover should find task definitions nested inside another
+        task's body too (e.g. the counter-factory closure pattern),
+        not just top-level ones."""
+        from nekova.lsp.hover import compute_hover
+        src = (
+            'task make_counter():\n'
+            '    let count = 0\n'
+            '    task increment():\n'
+            '        count = count + 1\n'
+            '        return count\n'
+            '    return increment\n'
+        )
+        line3 = src.split("\n")[2]
+        col = line3.index("increment")
+        r = compute_hover(src, 2, col)
+        self.assertIsNotNone(r)
+        self.assertIn("increment()", r["contents"]["value"])
+
+    def test_no_hover_on_whitespace(self):
+        from nekova.lsp.hover import compute_hover
+        r = compute_hover("let x = 5\n", 0, 3)  # the space
+        self.assertIsNone(r)
+
+    def test_string_literal_does_not_false_positive_as_keyword(self):
+        from nekova.lsp.hover import compute_hover
+        src = 'show "let me explain"\n'
+        col = src.index("let")
+        r = compute_hover(src, 0, col)
+        self.assertIsNone(r)
+
+    def test_hover_tolerates_syntax_errors_elsewhere_in_document(self):
+        """A hover request over a keyword shouldn't fail just because
+        some other part of the same document has a syntax error --
+        keyword/builtin lookup only needs the token stream."""
+        from nekova.lsp.hover import compute_hover
+        src = "let x = )\nshow x\n"
+        r = compute_hover(src, 0, 0)  # hover over 'let'
+        self.assertIsNotNone(r)
+
+
+class TestHoverServerIntegration(unittest.TestCase):
+
+    def setUp(self):
+        lsp_server._open_documents.clear()
+
+    def test_hover_request_through_dispatch(self):
+        out = io.BytesIO()
+        lsp_server.dispatch(out, {
+            "jsonrpc": "2.0", "method": "textDocument/didOpen",
+            "params": {"textDocument": {
+                "uri": "file:///t.nk", "text": "let x = 5\n",
+            }},
+        })
+        out = io.BytesIO()
+        lsp_server.dispatch(out, {
+            "jsonrpc": "2.0", "id": 1, "method": "textDocument/hover",
+            "params": {
+                "textDocument": {"uri": "file:///t.nk"},
+                "position": {"line": 0, "character": 0},
+            },
+        })
+        out.seek(0)
+        response = lsp_server.read_message(out)
+        self.assertIsNotNone(response["result"])
+
+    def test_hover_on_unopened_document_returns_none_not_crash(self):
+        out = io.BytesIO()
+        lsp_server.dispatch(out, {
+            "jsonrpc": "2.0", "id": 1, "method": "textDocument/hover",
+            "params": {
+                "textDocument": {"uri": "file:///never-opened.nk"},
+                "position": {"line": 0, "character": 0},
+            },
+        })
+        out.seek(0)
+        response = lsp_server.read_message(out)
+        self.assertIsNone(response["result"])
+
+    def test_malformed_hover_request_does_not_crash_server(self):
+        out = io.BytesIO()
+        lsp_server.dispatch(out, {
+            "jsonrpc": "2.0", "id": 1, "method": "textDocument/hover",
+            "params": {},
+        })
+        out.seek(0)
+        response = lsp_server.read_message(out)
+        self.assertIsNone(response["result"])
+
+    def test_initialize_advertises_hover_provider(self):
+        out = io.BytesIO()
+        lsp_server.dispatch(out, {
+            "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {},
+        })
+        out.seek(0)
+        response = lsp_server.read_message(out)
+        self.assertTrue(response["result"]["capabilities"]["hoverProvider"])
 
 
 if __name__ == "__main__":
