@@ -2752,6 +2752,77 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # used. Reordering to data-first matches the pipe convention.
         self.globals.set("sort",      lambda x, reverse=False: sorted(x, reverse=reverse))
         self.globals.set("take",      lambda x, n: list(x)[:n])
+
+        def _expect_snapshot(value, name):
+            """
+            expect_snapshot(value, "name") — Phase 26 snapshot
+            testing, for AI-output tests where the exact expected
+            value isn't practical to write out by hand. On the first
+            run, whatever `value` currently is becomes the saved
+            baseline. On every run after that, the current value is
+            compared against the saved one — matches pass silently,
+            mismatches raise the same _ExpectFailed a regular
+            `expect` does, so it plugs directly into the existing
+            test-block pass/fail counting.
+
+            Snapshots live in a __snapshots__/ folder next to the
+            running .nk file (one JSON file per source file, matching
+            the well-established convention from Jest and similar
+            snapshot-testing tools), keyed by the enclosing test
+            block's label plus this call's `name`, so multiple
+            snapshot calls — even reusing the same `name` in
+            different tests — never collide.
+
+            Set the NEKOVA_UPDATE_SNAPSHOTS environment variable
+            (nekova run --update-snapshots) to intentionally accept
+            the current value as the new baseline instead of failing
+            on a mismatch.
+            """
+            import os
+            import json as _json
+            current_file = getattr(self, "_current_file", None) or "snapshot"
+            snap_dir = os.path.join(os.path.dirname(os.path.abspath(current_file)),
+                                     "__snapshots__")
+            base = os.path.splitext(os.path.basename(current_file))[0]
+            snap_path = os.path.join(snap_dir, f"{base}.snap.json")
+
+            test_label = getattr(self, "_current_test", None) or "_global"
+            key = f"{test_label}::{name}"
+
+            snapshots = {}
+            if os.path.exists(snap_path):
+                try:
+                    with open(snap_path, "r", encoding="utf-8") as f:
+                        snapshots = _json.load(f)
+                except (OSError, ValueError):
+                    snapshots = {}
+
+            serialized = _json.dumps(value, indent=2, sort_keys=True, default=str)
+            update_mode = bool(os.environ.get("NEKOVA_UPDATE_SNAPSHOTS"))
+            key_existed = key in snapshots
+
+            if not key_existed or update_mode:
+                os.makedirs(snap_dir, exist_ok=True)
+                snapshots[key] = _json.loads(serialized)
+                with open(snap_path, "w", encoding="utf-8") as f:
+                    _json.dump(snapshots, f, indent=2, sort_keys=True)
+                    f.write("\n")
+                verb = "Updated" if key_existed else "Created"
+                print(f"  \033[96m📸 {verb} snapshot '{name}'\033[0m")
+                return value
+
+            expected = _json.dumps(snapshots[key], indent=2, sort_keys=True)
+            if expected != serialized:
+                raise _ExpectFailed(
+                    f"expect_snapshot '{name}' failed — value changed:\n"
+                    f"       expected: {expected}\n"
+                    f"       actual:   {serialized}\n"
+                    f"       (run with --update-snapshots to accept the new value)"
+                )
+            return value
+
+        self.globals.set("expect_snapshot", _expect_snapshot)
+
         self.globals.set("any",       lambda x: any(x))
         self.globals.set("all",       lambda x: all(x))
         # Type checks
@@ -3563,8 +3634,17 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         for stmt in node.body:
             try:
                 self._execute_node(stmt)
-                # If we get here without ExpectFailed, it passed
+                # If we get here without ExpectFailed, it passed.
+                # expect_snapshot(...) is a bare function call
+                # (CallExpression), not dedicated ExpectStatement
+                # grammar like `expect x == y` — counted here too so
+                # a passing snapshot check isn't silently left out of
+                # the test block's own pass/fail tally, even though a
+                # *failing* one was already caught correctly below via
+                # the same _ExpectFailed every regular expect uses.
                 if isinstance(stmt, ExpectStatement):
+                    passed += 1
+                elif isinstance(stmt, CallExpression) and stmt.name == "expect_snapshot":
                     passed += 1
             except _ExpectFailed as e:
                 failed += 1
