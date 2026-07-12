@@ -34,7 +34,8 @@ class CloudDeployer:
         try:
             result = subprocess.run(
                 ["railway", "--version"],
-                capture_output=True, text=True
+                capture_output=True, text=True,
+                encoding="utf-8", errors="replace"
             )
             return result.returncode == 0
         except FileNotFoundError:
@@ -78,7 +79,8 @@ class CloudDeployer:
             result = subprocess.run(
                 ["railway", "init"],
                 cwd=bundle_dir,
-                capture_output=True, text=True
+                capture_output=True, text=True,
+                encoding="utf-8", errors="replace"
             )
 
             # Deploy
@@ -86,6 +88,7 @@ class CloudDeployer:
                 ["railway", "up"],
                 cwd=bundle_dir,
                 capture_output=True, text=True,
+                encoding="utf-8", errors="replace",
                 timeout=120
             )
 
