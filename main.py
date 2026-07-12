@@ -132,6 +132,10 @@ def parse_args(argv: list) -> dict:
 
     args["debug"]    = "--debug"    in argv_list
     args["debug_ai"] = "--debug-ai" in argv_list
+    # --why: explain which internal grammar rule or interpreter
+    # check actually raised an error, for anyone debugging NEKOVA
+    # itself or trying to understand its error taxonomy in depth.
+    args["why"] = "--why" in argv_list
     args["watch"]    = "--watch"    in argv_list
     args["sandbox"]  = "--sandbox"  in argv_list
     # --quiet/-q: skip the banner — makes the CLI usable in scripts,
@@ -187,7 +191,7 @@ def parse_args(argv: list) -> dict:
         "run", "test", "build", "new", "info", "clean",
         "export", "package", "publish", "deploy", "repl",
         "marketplace", "debug", "ide", "format", "notebook",
-        "compile", "fmt", "check", "lsp",
+        "compile", "fmt", "check", "lsp", "lock",
         # Phase 11
         "install", "uninstall", "search", "packages",
         "pkg-info", "deps",
@@ -294,7 +298,7 @@ def main():
         from nekova.cli.commands import (
             cmd_info, cmd_new, cmd_test,
             cmd_build, cmd_clean,
-            cmd_fmt, cmd_check,
+            cmd_fmt, cmd_check, cmd_lock,
         )
 
         if cmd == "info":
@@ -324,14 +328,33 @@ def main():
 
         if cmd == "fmt":
             dry_run = "--check" in argv or "--dry-run" in argv
-            success = cmd_fmt(arg, dry_run=dry_run)
+            show_diff = "--diff" in argv
+            # --diff shows what would change instead of writing it —
+            # matches the familiar convention from tools like Black's
+            # own --diff flag, rather than silently writing AND
+            # printing a diff, which nobody asked for.
+            if show_diff:
+                dry_run = True
+            success = cmd_fmt(arg, dry_run=dry_run, show_diff=show_diff)
             sys.exit(0 if success else 1)
 
         if cmd == "check":
             success = cmd_check(arg)
             sys.exit(0 if success else 1)
 
+        if cmd == "lock":
+            check_only = "--check" in argv
+            success = cmd_lock(arg or ".", check_only=check_only)
+            sys.exit(0 if success else 1)
+
         if cmd == "run":
+            if "--update-snapshots" in argv:
+                # Read by expect_snapshot() in the interpreter — lets
+                # a mismatch intentionally become the new accepted
+                # baseline instead of failing, the standard workflow
+                # for snapshot testing once a change is verified as
+                # correct rather than a regression.
+                os.environ["NEKOVA_UPDATE_SNAPSHOTS"] = "1"
             if args["watch"]:
                 from watcher import watch
                 # resolve filepath first (may come from toml)
@@ -369,11 +392,11 @@ def main():
                 arg = config.entry_path
                 runner = NEKOVARunner(filepath=arg, debug=args["debug"],
                                       strict_types=strict, debug_ai=args["debug_ai"],
-                                      script_args=args["script_args"])
+                                      script_args=args["script_args"], why=args["why"])
             else:
                 runner = NEKOVARunner(filepath=arg, debug=args["debug"],
                                       debug_ai=args["debug_ai"],
-                                      script_args=args["script_args"])
+                                      script_args=args["script_args"], why=args["why"])
             if args["sandbox"]:
                 # Run file in sandbox mode
                 mode = args.get("sandbox_mode", "strict")
@@ -555,7 +578,7 @@ def main():
                                debug=args["debug"],
                                debug_ai=args["debug_ai"],
                                compile_mode=args["compile"],
-                               script_args=args["script_args"])
+                               script_args=args["script_args"], why=args["why"])
         exit_code = runner.run()
         sys.exit(exit_code)
 
