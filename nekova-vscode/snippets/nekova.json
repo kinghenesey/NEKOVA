@@ -660,5 +660,12 @@
       "show ai_usage()"
     ],
     "description": "Show cumulative AI call/token usage (Phase 25)"
+  },
+  "Expect snapshot": {
+    "prefix": "expectsnap",
+    "body": [
+      "expect_snapshot(${1:value}, \"${2:snapshot name}\")"
+    ],
+    "description": "Snapshot testing — compares against a saved baseline, creating it on first run (Phase 26)"
   }
 }
