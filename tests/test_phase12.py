@@ -270,8 +270,14 @@ class TestCmdNewTemplate:
         assert result is False
 
     def test_cmd_new_no_name_returns_false(self):
+        """No project name now launches the interactive wizard
+        (Phase 26) instead of erroring immediately — simulate the
+        person just pressing Enter with nothing typed, which the
+        wizard itself rejects and cancels on."""
+        from unittest.mock import patch
         from nekova.cli.commands import cmd_new
-        result = cmd_new("")
+        with patch("builtins.input", return_value=""):
+            result = cmd_new("")
         assert result is False
 
 
