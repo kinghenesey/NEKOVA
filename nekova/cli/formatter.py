@@ -46,7 +46,17 @@ def fmt_file(filepath: str, dry_run: bool = False) -> tuple:
     if raw.startswith(b"\xef\xbb\xbf"):
         raw = raw[3:]
 
-    original  = raw.decode("utf-8")
+    original = raw.decode("utf-8")
+
+    # Normalize line endings before comparing/formatting. fmt_source()
+    # always outputs \n-only lines (splitlines() strips \r\n/\r, then
+    # "\n".join() puts back only \n) — so without this, any file with
+    # Windows-style \r\n endings (the default for many editors, and
+    # git's core.autocrlf) got compared against un-normalized text and
+    # came back "changed" even with zero real formatting differences,
+    # since changed just meant "had \r\n", not "actually different."
+    original = original.replace("\r\n", "\n").replace("\r", "\n")
+
     formatted = fmt_source(original)
 
     changed = formatted != original
