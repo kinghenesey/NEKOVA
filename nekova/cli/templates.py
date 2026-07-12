@@ -32,8 +32,8 @@ show "Built with NEKOVA {version} · {codename}"
 [project]
 name        = "{name}"
 version     = "0.1.0"
-author      = ""
-description = "A NEKOVA project"
+author      = "{author}"
+description = "{description}"
 entry       = "src/main.nk"
 
 [ai]
@@ -76,6 +76,13 @@ __pycache__/
 *.nkpkg
 dist/
 ''',
+    ".env.example": '''\
+# AI provider keys for {name} (used by the [ai] section in nekova.toml)
+# Set one of these if you use think/remember/recall:
+ANTHROPIC_API_KEY=
+GEMINI_API_KEY=
+OPENAI_API_KEY=
+''',
     "tests/.gitkeep": "",
 }
 
@@ -110,8 +117,8 @@ route GET "/api/version":
 [project]
 name        = "{name}"
 version     = "0.1.0"
-author      = ""
-description = "A NEKOVA web application"
+author      = "{author}"
+description = "{description}"
 entry       = "src/main.nk"
 
 [ai]
@@ -221,8 +228,8 @@ ask_ai("What is NEKOVA?")
 [project]
 name        = "{name}"
 version     = "0.1.0"
-author      = ""
-description = "A NEKOVA AI application"
+author      = "{author}"
+description = "{description}"
 entry       = "src/main.nk"
 
 [ai]
@@ -360,8 +367,8 @@ task classify(input_text: text):
 [project]
 name        = "{name}"
 version     = "0.1.0"
-author      = ""
-description = "A NEKOVA fullstack application"
+author      = "{author}"
+description = "{description}"
 entry       = "src/main.nk"
 
 [ai]
@@ -469,25 +476,49 @@ TEMPLATE_DESCRIPTIONS = {
     "fullstack": "Web + AI + SQLite database",
 }
 
+# The nekova.toml `description` field's default text if the wizard
+# (or a --description flag) doesn't override it — kept separate from
+# TEMPLATE_DESCRIPTIONS above (which is the CLI's own "here's what
+# this template is" listing text) so switching nekova.toml over to a
+# format-string placeholder didn't change what non-interactive
+# `nekova new` calls have always written into that field.
+_DEFAULT_TOML_DESCRIPTIONS = {
+    "default":   "A NEKOVA project",
+    "web":       "A NEKOVA web application",
+    "ai":        "A NEKOVA AI application",
+    "fullstack": "A NEKOVA fullstack application",
+}
+
 TEMPLATE_EXTRAS = {
-    "default":   [],
-    "web":       ["src/routes/"],
+    "default":   [".env.example"],
+    "web":       ["src/routes/", ".env.example"],
     "ai":        ["src/agent.nk", ".env.example"],
     "fullstack": ["src/db.nk", "src/ai.nk", ".env.example"],
 }
 
 
-def scaffold_project(project_name: str, template: str = "default") -> bool:
+def scaffold_project(project_name: str, template: str = "default",
+                      author: str = "", description: str = None) -> bool:
     """
     Create project directory tree from a template.
     Returns True on success.
+
+    author/description let `nekova new`'s interactive wizard (or a
+    future --author/--description flag) personalize the generated
+    nekova.toml. Non-interactive callers that don't pass them get
+    exactly the same defaults as before (empty author, the
+    template's own description).
     """
     template = template.lower()
     if template not in TEMPLATES:
         return False
 
+    if description is None:
+        description = _DEFAULT_TOML_DESCRIPTIONS.get(template, "A NEKOVA project")
+
     files = TEMPLATES[template]
-    ctx   = dict(name=project_name, version=NEKOVA_VERSION, codename=NEKOVA_CODENAME)
+    ctx   = dict(name=project_name, version=NEKOVA_VERSION, codename=NEKOVA_CODENAME,
+                 author=author, description=description)
 
     for rel_path, content in files.items():
         abs_path = os.path.join(project_name, rel_path)
