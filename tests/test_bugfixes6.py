@@ -123,7 +123,9 @@ class TestMultiFileImports(unittest.TestCase):
             result = subprocess.run(
                 [sys.executable, os.path.join(REPO_ROOT, "main.py"),
                  "run", "main.nk", "--quiet"],
-                capture_output=True, text=True, cwd=tmpdir,
+                capture_output=True, text=True, encoding="utf-8",
+                errors="replace", cwd=tmpdir,
+                env={**os.environ, "PYTHONIOENCODING": "utf-8"},
             )
             combined = result.stdout + result.stderr
             self.assertNotIn("has no attribute 'debug'", combined)
@@ -396,7 +398,9 @@ class TestCliQuietFlagAndHelpText(unittest.TestCase):
             result = subprocess.run(
                 [sys.executable, os.path.join(REPO_ROOT, "main.py"),
                  "run", "q.nk", "--quiet"],
-                capture_output=True, text=True, cwd=tmpdir,
+                capture_output=True, text=True, encoding="utf-8",
+                errors="replace", cwd=tmpdir,
+                env={**os.environ, "PYTHONIOENCODING": "utf-8"},
             )
             combined = result.stdout + result.stderr
             self.assertNotIn("SYNEKCOT", combined)
