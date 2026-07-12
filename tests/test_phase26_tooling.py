@@ -22,17 +22,54 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def _run_nekova(args, cwd, env_extra=None):
     env = dict(os.environ)
+    env["PYTHONIOENCODING"] = "utf-8"
     if env_extra:
         env.update(env_extra)
     return subprocess.run(
         [sys.executable, os.path.join(REPO_ROOT, "main.py")] + args,
-        capture_output=True, text=True, cwd=cwd, env=env,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=cwd, env=env,
     )
 
 
 # ── nekova fmt --diff ─────────────────────────────────────────
 
 class TestFmtDiff(unittest.TestCase):
+
+    def test_crlf_line_endings_alone_do_not_count_as_changed(self):
+        """fmt_source() always outputs \\n-only lines (splitlines()
+        strips \\r\\n/\\r, then "\\n".join() puts back only \\n) — a
+        file with Windows \\r\\n endings but otherwise-correct
+        formatting must not be reported as changed just because of
+        that, or every CRLF file (the Windows default for many
+        editors, and git's core.autocrlf) would falsely show as
+        needing a reformat."""
+        from nekova.cli.formatter import fmt_file
+        tmpdir = tempfile.mkdtemp()
+        try:
+            path = os.path.join(tmpdir, "f.nk")
+            with open(path, "wb") as f:
+                f.write(b"show 1 + 1\r\nshow 2 + 2\r\n")
+            changed, original, formatted = fmt_file(path, dry_run=True)
+            self.assertFalse(changed)
+            self.assertNotIn("\r", original)
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_crlf_file_with_real_change_still_detected(self):
+        """The CRLF fix must not mask genuine formatting differences
+        — only line-ending style alone should be ignored."""
+        from nekova.cli.formatter import fmt_file
+        tmpdir = tempfile.mkdtemp()
+        try:
+            path = os.path.join(tmpdir, "f.nk")
+            with open(path, "wb") as f:
+                f.write(b"show 1+1\r\n")
+            changed, original, formatted = fmt_file(path, dry_run=True)
+            self.assertTrue(changed)
+            self.assertEqual(formatted, "show 1 + 1\n")
+        finally:
+            shutil.rmtree(tmpdir)
 
     def test_diff_does_not_modify_the_file(self):
         tmpdir = tempfile.mkdtemp()
