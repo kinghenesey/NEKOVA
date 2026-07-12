@@ -174,6 +174,63 @@ catch e:
     show e["code"]      # → 408
 ```
 
+### Language Completeness II (Phase 24)
+
+```
+# Tuple-style destructuring — same semantics as the bracket form
+let pair = (1, 2)
+let (a, b) = pair
+show a   # → 1
+show b   # → 2
+
+# "Multiple return values" for free
+let (quotient, remainder) = divmod(10, 3)
+show quotient    # → 3
+show remainder   # → 1
+
+# Rest capture works in either form
+let (first, ...rest) = [1, 2, 3, 4]
+show first   # → 1
+show rest    # → [2, 3, 4]
+
+# Named/keyword arguments — mixed positional+keyword, gap-filling
+# with declared defaults
+task greet(name, greeting = "Hello"):
+    show greeting + ", " + name
+greet(name="Sam", greeting="Hi")   # → Hi, Sam
+
+# const — immutable once set; reassigning raises
+const MAX_RETRIES = 5
+show MAX_RETRIES   # → 5
+
+# Spread syntax — lists and dicts, mixed spread+literal items
+let combined = [...[1, 2], ...[3, 4]]
+show combined       # → [1, 2, 3, 4]
+
+let defaults  = {"color": "blue", "size": "M"}
+let overrides = {"size": "L"}
+show {...defaults, ...overrides}   # → {color: blue, size: L}
+
+# Optional chaining — short-circuits to null instead of raising
+let user = {"email": "a@b.com"}
+show user?.email        # → a@b.com
+
+let nothing = null
+show nothing?.email     # → null   (no error)
+
+# Enums — each member is its own name as a string
+enum Status: PENDING, ACTIVE, DONE
+show Status.ACTIVE                  # → ACTIVE
+show Status.ACTIVE == "ACTIVE"      # → true
+
+# Set type — disambiguated from a dict literal at parse time
+let a = {1, 2, 3}
+let b = {2, 3, 4}
+show set_union(a, b)          # → {1, 2, 3, 4}
+show set_intersection(a, b)   # → {2, 3}
+show set_difference(a, b)     # → {1}
+```
+
 ### AI — Built In
 
 ```
@@ -189,6 +246,43 @@ let name = recall "user"
 
 # Streaming
 stream think "Write a short story about Lagos" as text
+```
+
+### AI-Native Differentiators II (Phase 25)
+
+```
+# think "..." as <ShapeName> — builds an implicit schema from the
+# shape's own fields; the response comes back type-coerced and
+# tagged with the shape's name
+shape User:
+    name str
+    age  int
+
+let u = think "extract from: Ada, 30" as User
+show u["name"]         # → mock_name (a real API key returns "Ada")
+show u["age"]          # → 42 (a real API key returns 30)
+show u["__shape__"]    # → User
+
+# Cost/token tracking — raises if the estimated tokens exceed budget
+let result = think "summarize this" with budget: 500
+show ai_usage()    # → {calls: 2, tokens: 33} (running total so far)
+
+# Explicit model selection
+let selected = think "analyse this" using "claude-sonnet"
+
+# converse: blocks — multi-turn dialogue with automatic context.
+# Every think/listen inside automatically carries prior turns.
+let topic = "pricing"
+converse:
+    think f"ask a clarifying question about {topic}"
+    listen
+    think "respond based on what they said"
+
+# imagine "..." as file — cached on disk under
+# .nekova_cache/imagine/, so repeated calls during a dev loop don't
+# regenerate (or re-bill) the same image
+let image = imagine "a futuristic Lagos skyline at sunset" as file
+show image
 ```
 
 ### Prompt Blocks (Phase 21)
