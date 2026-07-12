@@ -5,6 +5,76 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.11.0] — 2026-07-12 · Phase 26 "Developer Experience"
+
+### Added
+
+- **A real Language Server Protocol implementation** — `nekova lsp`,
+  served over the standard JSON-RPC-over-stdio transport, hand-rolled
+  rather than built on a framework (consistent with the rest of the
+  toolchain). Replaces syntax-highlighting-only support in the VS
+  Code extension:
+  - **Diagnostics** — inline errors from the real lexer/parser, live
+    as you type.
+  - **Hover** — user-defined tasks/prompts/classes (from their actual
+    signature and docstring) take priority over keywords, which take
+    priority over builtins.
+  - **Completion** — keywords, builtins, and every declared
+    task/class/variable in the document; `obj.` triggers method
+    completions with lightweight type inference from the object's
+    last literal assignment.
+  - The VS Code extension now spawns `nekova lsp` and wires it up for
+    `.nk` files, toggleable via the new `nekova.enableLanguageServer`
+    setting.
+- **Multi-error parser recovery** — `Parser.parse()` catches each
+  syntax error, resynchronizes to the next likely statement boundary,
+  and keeps going, collecting every error in one pass instead of
+  stopping at the first (`.all_errors` on the raised exception). A
+  new `parse_best_effort()` always returns whatever was successfully
+  parsed rather than raising, for LSP features that need to work on a
+  document that's currently mid-edit and invalid elsewhere.
+- **`nekova fmt --diff`** — shows a unified diff of what would change
+  (single file or whole directory) without writing anything.
+- **Interactive `nekova new` wizard** — running `nekova new` with no
+  project name now prompts for name, template, and optional
+  author/description, instead of erroring out immediately.
+  Non-interactive usage is unchanged.
+- **`nekova.lock`** — a committed, reproducible snapshot of every
+  declared dependency's exact resolved version. `nekova lock --check`
+  detects drift for CI, without writing anything.
+- **`--why`** — walks the raised exception's traceback to name the
+  specific internal lexer/parser/interpreter function and line that
+  raised it, e.g. `raised in _exec_Identifier() at interpreter.py:2203`.
+  Opt-in, silent by default, works uniformly for any error type.
+- **`expect_snapshot(value, name)`** — snapshot testing for AI-output
+  tests. First run saves a baseline; later runs compare against it
+  and fail on drift. `nekova run --update-snapshots` accepts a
+  changed value as the new baseline. Counted in the same test-block
+  pass/fail tally as a regular `expect`.
+- **`.env.example` scaffolding** — every project template now
+  includes one; the `default` template didn't have one before this.
+
+### Fixed — found while building the above
+
+- The parser's "keyword as identifier" fallback (for cases like a
+  task named `repeat`) was a denylist broad enough to also swallow
+  genuine punctuation errors — a bare `)` silently became a bogus
+  empty identifier instead of raising. Narrowed to a proper keyword
+  allowlist.
+- `Token.column` is 1-indexed and points at the position *after* a
+  token ends, not its start — confirmed directly against the lexer.
+  Fixed the resulting off-by-token-width position math in hover and
+  diagnostics.
+- Every terminal command in the VS Code extension (Run, Format,
+  Check, Debug, REPL, New Project) was non-functional: they called
+  `python -m nekova`, but `nekova/` has no `__main__.py`. Switched to
+  `-m nekova_cli`, the module the installed console script itself
+  delegates to.
+- The extension's `package-lock.json` referenced a dependency version
+  no longer resolvable on the npm registry; regenerated from scratch.
+
+---
+
 ## [1.10.0] — 2026-07-06 · Phase 24b "Documentation Website" + Phase 25 "AI-Native Differentiators II"
 
 Both phases shipped together in this release, same as 1.9.9 before it —
