@@ -35,10 +35,12 @@ class NEKOVARunner:
 
     def __init__(self, filepath: str, debug: bool = False,
                  compile_mode: bool = False, strict_types: bool = False,
-                 script_args: dict = None, debug_ai: bool = False):
+                 script_args: dict = None, debug_ai: bool = False,
+                 why: bool = False):
         self.filepath     = filepath
         self.debug        = debug
         self.debug_ai     = debug_ai
+        self.why          = why
         self.compile_mode = compile_mode
         self.strict_types = strict_types
         self.script_args  = script_args or {}
@@ -100,6 +102,25 @@ class NEKOVARunner:
         """
         start = time.perf_counter()
 
+        def _display(error_type, message, exception=None, **kwargs):
+            """
+            Thin wrapper around display_error() that fills in the
+            fields every call site here repeats (source, filepath)
+            and threads self.why/the actual exception object through
+            uniformly — added once here rather than to all twelve
+            individual call sites below, so --why couldn't be missed
+            on any particular error path.
+            """
+            display_error(
+                error_type=error_type,
+                message=message,
+                source=self.source,
+                filepath=self.filepath,
+                why=self.why,
+                exception=exception,
+                **kwargs,
+            )
+
         if self.debug:
             print_separator()
             print_info("Source code:")
@@ -159,22 +180,20 @@ class NEKOVARunner:
                 )
 
         except LexerError as e:
-            display_error(
+            _display(
                 error_type="SyntaxError",
                 message=str(e),
-                source=self.source,
-                filepath=self.filepath,
+                exception=e,
                 line=getattr(e, "line", 0),
                 col=getattr(e, "column", 0),
             )
             return 1
 
         except ParseError as e:
-            display_error(
+            _display(
                 error_type="ParseError",
                 message=str(e),
-                source=self.source,
-                filepath=self.filepath,
+                exception=e,
                 line=getattr(e, "line", 0),
                 col=getattr(e, "column", 0),
             )
@@ -190,11 +209,10 @@ class NEKOVARunner:
                 }
             except Exception:
                 pass
-            display_error(
+            _display(
                 error_type="NameError",
                 message=str(e),
-                source=self.source,
-                filepath=self.filepath,
+                exception=e,
                 line=getattr(e, "line", 0),
                 col=getattr(e, "column", 0),
                 variables=variables,
@@ -202,69 +220,62 @@ class NEKOVARunner:
             return 1
 
         except NameError as e:
-            display_error(
+            _display(
                 error_type="NameError",
                 message=str(e),
-                source=self.source,
-                filepath=self.filepath,
+                exception=e,
             )
             return 1
 
         except NEKOVAImportError as e:
-            display_error(
+            _display(
                 error_type="ImportError",
                 message=str(e),
-                source=self.source,
-                filepath=self.filepath,
+                exception=e,
                 line=getattr(e, "line", 0),
             )
             return 1
 
         except TypeError as e:
-            display_error(
+            _display(
                 error_type="TypeError",
                 message=str(e),
-                source=self.source,
-                filepath=self.filepath,
+                exception=e,
                 line=getattr(e, "line", 0),
             )
             return 1
 
         except ZeroDivisionError as e:
-            display_error(
+            _display(
                 error_type="ZeroDivisionError",
                 message=str(e),
-                source=self.source,
-                filepath=self.filepath,
+                exception=e,
             )
             return 1
 
         except IndexError as e:
-            display_error(
+            _display(
                 error_type="IndexError",
                 message=str(e),
-                source=self.source,
-                filepath=self.filepath,
+                exception=e,
             )
             return 1
 
         except KeyError as e:
-            display_error(
+            _display(
                 error_type="KeyError",
                 message=str(e),
-                source=self.source,
-                filepath=self.filepath,
+                exception=e,
             )
             return 1
 
         except NEKOVARecursionError as e:
             # NEKOVA's own call-depth counter caught this — the depth
             # figure is exact, not a guess derived from Python's stack.
-            display_error(
+            _display(
                 error_type="RecursionError",
                 message=str(e),
-                source=self.source,
-                filepath=self.filepath,
+                exception=e,
                 line=getattr(e, "line", 0),
             )
             return 1
@@ -274,24 +285,21 @@ class NEKOVARunner:
             # MAX_CALL_DEPTH check did (e.g. recursion that doesn't go
             # through _call_task). We don't know the exact NEKOVA-level
             # depth here, so we say so rather than inventing a number.
-            display_error(
+            _display(
                 error_type="RecursionError",
                 message=(
                     "Python's stack limit was reached before NEKOVA's "
                     "own call-depth check could catch it. This usually "
                     "means very deep or unbounded recursion."
                 ),
-                source=self.source,
-                filepath=self.filepath,
             )
             return 1
 
         except NEKOVARuntimeError as e:
-            display_error(
+            _display(
                 error_type="RuntimeError",
                 message=str(e),
-                source=self.source,
-                filepath=self.filepath,
+                exception=e,
                 line=getattr(e, "line", 0),
             )
             return 1
