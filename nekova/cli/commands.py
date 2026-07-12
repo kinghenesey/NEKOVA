@@ -218,6 +218,8 @@ def cmd_test():
         [sys.executable, "-m", "pytest", "tests/", "-q", "--tb=short"],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         cwd=project_root,
         env={**os.environ, "PYTHONIOENCODING": "utf-8"},
     )
