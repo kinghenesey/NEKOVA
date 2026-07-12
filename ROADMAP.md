@@ -2,7 +2,7 @@
 
 **Version:** 1.10.0 · Genesis  
 **Tests:** 1,358 passing · 29 test phases  
-**Status:** Active development · Phase 25 complete · Phase 26 next  
+**Status:** Active development · Phase 26 complete · Phase 26b next  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
 ---
@@ -46,8 +46,8 @@ consistent meaning. Going forward:
 | 1.9.7 | — | ✅ NEKOVA Dark theme revised (grey removed), new NEKOVA Light theme, simplified `.nk` file icon |
 | **1.9.8** | 23a | ✅ Correctness & Trust Part 1 — recursion error accuracy, mock AI labeling, string+number type mismatch, near-miss variable suggestions (difflib), documented semver policy |
 | **1.9.9** | 23b + 24 | ✅ Correctness & Trust Part 2 + Language Completeness II — see "Phase 23b" and "Phase 24" sections below for the full list; combined into one release per publishing decision. |
-| **1.10.0** | 24b + 25 | ✅ Documentation Website + AI-Native Differentiators II — **current**. See "Phase 24b" and "Phase 25" sections below; combined into one release per publishing decision. |
-| **1.11.0** | 26 | Developer experience — Language Server Protocol (real autocomplete, inline errors, hover docs), `nekova fmt --diff`, multi-error parser recovery |
+| **1.10.0** | 24b + 25 | ✅ Documentation Website + AI-Native Differentiators II — see "Phase 24b" and "Phase 25" sections below; combined into one release per publishing decision. |
+| **1.11.0** | 26 | ✅ Developer experience — **current**. Language Server Protocol (real autocomplete, inline errors, hover docs), `nekova fmt --diff`, multi-error parser recovery, interactive `nekova new` wizard, `nekova.lock`, `--why`, `expect_snapshot(...)`, `.env.example` scaffolding |
 | **1.12.0** | 26b | Education layer — `nekova learn`, `nekova explain`, classroom/instructor mode, `--simple-errors` |
 | **2.0.0** | 27 | Parser in NEKOVA — self-hosting milestone 2. Includes a published formal grammar (EBNF) and a parser/lexer fuzz-testing harness in CI, both prerequisites for this phase, not just nice-to-haves |
 | **2.1.0** | 28 | Agent system, unified schema |
@@ -333,16 +333,89 @@ return would be a breaking change with no real semantic backing in
 the mock provider, and deserves proper design rather than a
 bolted-on field.
 
-### Phase 26 · Developer Experience — v1.11.0 📋
+### Phase 26 · Developer Experience ✅ — v1.11.0
 
-A real Language Server Protocol implementation — real autocomplete, inline
-errors, and hover docs, replacing syntax-highlighting-only support in the
-VS Code extension. Also: `nekova fmt --diff`, multi-error parser recovery
-(report several syntax errors per pass instead of halting at the first),
-an interactive `nekova new` wizard, a `nekova.lock` dependency lockfile,
-a `--why` flag explaining which grammar rule or interpreter check fired,
-snapshot testing (`expect_snapshot(...)`) for AI-output tests, and
-`.env.example` scaffolding in `nekova new`.
+```
+nekova fmt myfile.nk --diff
+nekova new                          # interactive wizard
+nekova lock                         # nekova.lock
+nekova run myfile.nk --why
+nekova run myfile.nk --update-snapshots
+```
+```nekova
+test "arithmetic":
+    expect_snapshot(compute_total(cart), "total")
+```
+
+1. ✅ **A real Language Server Protocol implementation** —
+   `nekova lsp`, a hand-rolled JSON-RPC-over-stdio server (no new
+   dependency, consistent with the rest of the toolchain being
+   hand-written). Diagnostics, hover, and completion all replace what
+   was previously syntax-highlighting-only support in the VS Code
+   extension:
+   - **Diagnostics** — real inline errors from the actual lexer/parser,
+     not a separate approximation.
+   - **Hover** — resolves the symbol under the cursor: user-defined
+     tasks/prompts/classes take priority (pulled from their real
+     signature and docstring), then keywords, then builtins.
+   - **Completion** — keywords, builtins, and every declared
+     task/class/variable in the document; right after `obj.`, method
+     completions with lightweight type inference from the object's
+     last literal assignment.
+   - **VS Code extension wiring** — the extension now spawns
+     `nekova lsp` and talks to it for `.nk` files, toggleable via
+     `nekova.enableLanguageServer`.
+2. ✅ **Multi-error parser recovery** — `Parser.parse()` now catches
+   each syntax error, resynchronizes to the next likely statement
+   boundary, and keeps going, so a file with several unrelated
+   mistakes reports all of them in one pass. Every existing caller
+   still gets the exact same single-exception behavior as before; the
+   full list rides along on `.all_errors`. A new `parse_best_effort()`
+   sibling always returns whatever was successfully parsed rather than
+   raising — needed by hover/completion, since the document is very
+   often mid-edit and momentarily invalid elsewhere.
+3. ✅ **`nekova fmt --diff`** — shows a unified diff of what would
+   change, on a single file or a whole directory, without writing
+   anything.
+4. ✅ **Interactive `nekova new` wizard** — running `nekova new` with
+   no project name now prompts for name, template, and optional
+   author/description one step at a time, instead of just erroring
+   out with a usage hint. Non-interactive usage (`nekova new name
+   --template x`) is unaffected.
+5. ✅ **`nekova.lock`** — a committed, reproducible snapshot of the
+   exact resolved version of every declared dependency. `nekova lock
+   --check` detects drift (for CI) without writing anything.
+6. ✅ **`--why`** — walks the actual exception's traceback to name the
+   specific internal lexer/parser/interpreter function and line that
+   raised it, e.g. `raised in _exec_Identifier() at interpreter.py:2203`.
+   Works uniformly for any error type, opt-in, silent by default.
+7. ✅ **`expect_snapshot(value, name)`** — snapshot testing for
+   AI-output tests where writing out the exact expected value by hand
+   isn't practical. First run saves the baseline; later runs compare
+   against it and fail on drift. `--update-snapshots` accepts a
+   changed value as the new baseline. Plugs into the same test-block
+   pass/fail counting as a regular `expect`.
+8. ✅ **`.env.example` scaffolding** — every template now includes
+   one; the `default` template didn't have one at all before this.
+
+**Bugs found along the way (fixed as part of this phase, not deferred):**
+- The parser's "keyword as identifier" fallback (meant for cases like
+  a task named `repeat`) was a denylist broad enough to also swallow
+  genuine punctuation errors — a bare `)` silently became a bogus
+  empty identifier instead of raising. Discovered while building
+  multi-error recovery; narrowed to a proper keyword allowlist.
+- `Token.column` is 1-indexed and points at the position *after* a
+  token ends, not its start — confirmed directly against the lexer
+  rather than assumed. Fixed the resulting off-by-token-width position
+  math in both hover and diagnostics.
+- Every terminal command in the VS Code extension (Run, Format, Check,
+  Debug, REPL, New Project — all of them) was non-functional: they
+  called `python -m nekova`, but `nekova/` has no `__main__.py`.
+  Switched to `-m nekova_cli`, the real module the installed console
+  script itself delegates to.
+- The extension's `package-lock.json` referenced a dependency version
+  that no longer resolves on the npm registry; regenerated from
+  scratch.
 
 ### Phase 26b · Education Layer — v1.12.0 📋
 
