@@ -104,7 +104,13 @@ class TestCmdNew(unittest.TestCase):
         self.assertIn("nekova run", readme)
 
     def test_new_fails_without_name(self):
-        result = cmd_new("")
+        """No project name now launches the interactive wizard
+        (Phase 26) instead of erroring immediately — simulate the
+        person just pressing Enter with nothing typed, which the
+        wizard itself rejects and cancels on."""
+        from unittest.mock import patch
+        with patch("builtins.input", return_value=""):
+            result = cmd_new("")
         self.assertFalse(result)
 
     def test_new_fails_on_existing_dir(self):
