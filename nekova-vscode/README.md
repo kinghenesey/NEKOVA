@@ -1,4 +1,4 @@
-﻿# NEKOVA VS Code Extension — v1.10.0
+﻿# NEKOVA VS Code Extension — v1.11.0
 
 Syntax highlighting, two branded color themes, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
@@ -9,11 +9,12 @@ Built by [SYNEKCOT Tech](https://github.com/kinghenesey/NEKOVA) 🇳🇬
 ## Features
 
 - **Syntax highlighting** for all NEKOVA keywords — `think`, `remember`, `recall`, `route`, `serve`, `connect`, `object`, `class`, `match`, `yield`, `error`, `shape`, `every`, `test`, `expect`, `imagine`, `speak`, `listen`, `watch`, `sandbox`, `prompt`, `retry`, `fallback`, `observe`, `mock`, `const`, `enum`, `converse`, and more — plus operators added in Phase 24: optional chaining (`?.`) and spread (`...`), correctly distinguished from the range operator (`..`), and Phase 25's `using`/`budget` soft keywords inside a `think` clause
+- **A real language server (Phase 26)** — `nekova lsp` now backs this extension, replacing what was previously syntax-highlighting-only support: live inline errors as you type (from the real lexer/parser, not a separate approximation), hover docs that resolve to a task/class's actual signature and docstring when it's user-defined, and autocomplete for keywords, builtins, and everything declared in the open file — including type-aware method suggestions right after `obj.`. Toggle via the `nekova.enableLanguageServer` setting
 - **`observe` blocks** and **`mock think`** highlighted and auto-indented correctly, plus the **`|>` pipe operator**
 - **Two color themes — NEKOVA Dark and NEKOVA Light** — both built from NEKOVA's brand palette of green and white only. AI-native keywords (`think`, `speak`, `listen`, `imagine`, `watch`, `every`) are highlighted in the brightest green in both themes, since that's the language's whole identity. True red/amber are reserved exclusively for actual errors and warnings, so diagnostics stay visually distinct from ordinary syntax in either theme. NEKOVA Light uses a genuine pure-white (`#FFFFFF`) background, not a lightened grey. Select either via `Preferences: Color Theme → NEKOVA Dark` / `NEKOVA Light`
 - **Branded `.nk` file icon** — a simplified "nk" mark on a small dark backing, designed to stay legible at actual file-icon size (16px), not just at logo size
 - **`prompt` blocks** highlighted as a declaration (like `task`/`class`) only when genuinely defining a prompt — `prompt name(...):` — while still working correctly as an ordinary variable name elsewhere, matching NEKOVA's own soft-keyword design
-- **81 snippets** — type `think`, `task`, `route`, `obj`, `class`, `match`, `pipeline`, `parallel`, `sandbox`, `taskgen`, `decorator`, `shape`, `every`, `test`, `prompt`, `retry`, `observe`, `mock`, `pipe`, `const`, `enum`, `lettuple`, `letlist`, `letdict`, `optchain`, `setlit`, `callkw`, `thinkerr`, `taskdoc`, `converse`, `thinkshape`, `thinkbudget`, `thinkmodel`, `imaginefile`, `aiusage`, and more
+- **82 snippets** — type `think`, `task`, `route`, `obj`, `class`, `match`, `pipeline`, `parallel`, `sandbox`, `taskgen`, `decorator`, `shape`, `every`, `test`, `prompt`, `retry`, `observe`, `mock`, `pipe`, `const`, `enum`, `lettuple`, `letlist`, `letdict`, `optchain`, `setlit`, `callkw`, `thinkerr`, `taskdoc`, `converse`, `thinkshape`, `thinkbudget`, `thinkmodel`, `imaginefile`, `aiusage`, `expectsnap`, and more
 - **Run file** — press `F5` to run the active `.nk` file
 - **Watch mode** — press `Ctrl+F5` to run with `--watch` (auto-reruns on save)
 - **Format file** — press `Shift+Alt+F` to run `nekova fmt`
@@ -113,6 +114,7 @@ pip install nekova-lang
 | `observe` | Tag and trace a block of execution |
 | `mock` | Stub `think` inside a test block |
 | `pipe` | Chain transformations with `\|>` |
+| `expectsnap` | Snapshot assertion inside a test block (Phase 26) |
 
 ---
 
@@ -124,6 +126,7 @@ pip install nekova-lang
 | `nekova.aiProvider` | `auto` | AI provider (auto/claude/gemini/openai/mock) |
 | `nekova.formatOnSave` | `false` | Auto-format on save |
 | `nekova.showStatusBar` | `true` | Show status bar item |
+| `nekova.enableLanguageServer` | `true` | Enable real inline errors, hover docs, and autocomplete (Phase 26) — requires reloading the window to take effect |
 
 ---
 
@@ -190,6 +193,10 @@ for x in count(5):
 test "math works":
     expect 1 + 1 == 2
 
+# Snapshot testing for AI outputs (Phase 26)
+test "greeting shape":
+    expect_snapshot(think "Say hi" as text, "greeting")
+
 # Sandbox — safe execution
 sandbox strict:
     show 2 + 2
@@ -210,6 +217,27 @@ match status:
 ---
 
 ## Release Notes
+
+### 1.11.0
+- **Real language server support** — this extension now spawns
+  `nekova lsp` (a hand-rolled JSON-RPC-over-stdio server, part of
+  NEKOVA core as of Phase 26) as a subprocess and wires it up for
+  `.nk` files: live inline errors from the actual lexer/parser
+  instead of nothing between manual `Check File` runs, hover docs
+  that resolve to a task/class's real signature and docstring when
+  it's user-defined, and autocomplete for keywords, builtins, and
+  everything declared in the open document — including type-aware
+  method suggestions right after `obj.`. New
+  `nekova.enableLanguageServer` setting (default on) to turn it off
+  if needed
+- 1 new snippet: `expectsnap` (`expect_snapshot`, Phase 26's snapshot
+  testing for AI outputs) — no new syntax-highlighting patterns were
+  needed for it, since it's an ordinary function call and already
+  matched by the extension's existing generic
+  `identifier(` highlighting rule, same as any other builtin
+- Welcome message and status bar now report `v1.11.0`: real inline
+  errors/hover/autocomplete, `nekova fmt --diff`, the interactive
+  `nekova new` wizard, `nekova.lock`, `--why`, and snapshot testing
 
 ### 1.10.0
 - Syntax highlighting for Phase 25's `converse` keyword, plus scoped
