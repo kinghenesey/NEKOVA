@@ -20,7 +20,9 @@
 #   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import re
+import os
 import difflib
+import traceback
 
 # ── NEKOVA brand colours (ANSI 256 approximations) ───────────
 # Pepper red  #C41E0E  → ANSI 196 / escape: \x1b[38;5;196m
@@ -135,6 +137,8 @@ def display_error(
     line:       int  = 0,
     col:        int  = 0,
     variables:  dict = None,
+    why:        bool = False,
+    exception:  Exception = None,
 ):
     """
     Render a Rust-style NEKOVA error to stdout.
@@ -148,6 +152,12 @@ def display_error(
     line        1-based line number of the error (0 = unknown)
     col         1-based column number (0 = unknown)
     variables   Dict of currently-defined variables (for did-you-mean)
+    why         If True (--why flag), append a section naming the
+                actual internal function/line that raised this —
+                which grammar rule or interpreter check fired.
+    exception   The original exception object, needed to walk its
+                traceback for the `why` section above. Ignored if
+                why=False.
     """
     info = _CATALOGUE.get(error_type, {
         "code":    "E000",
@@ -210,8 +220,46 @@ def display_error(
         print()
         print(f"  {_CYAN}🔧 {fix}{_RESET}")
 
+    # ── Why (--why flag) ───────────────────────────────────────
+    if why:
+        origin = _find_why_origin(exception) if exception is not None else None
+        print()
+        if origin:
+            print(f"  {_CYAN}💭 Why:{_RESET} {origin}")
+        else:
+            print(f"  {_CYAN}💭 Why:{_RESET} {_DIM}"
+                  f"No internal NEKOVA source frame found in the "
+                  f"traceback for this error.{_RESET}")
+
     _hr()
     print()
+
+
+def _find_why_origin(exception: Exception):
+    """
+    Walk the exception's traceback and find the deepest frame that's
+    inside NEKOVA's own lexer/parser/interpreter source — i.e. the
+    actual internal check or grammar rule that raised this error —
+    skipping generic Python-internal frames (argument unpacking,
+    site-packages, etc.). Returns a short "function() at file:line"
+    string, or None if no such frame is in the traceback at all.
+    """
+    tb = getattr(exception, "__traceback__", None)
+    if tb is None:
+        return None
+
+    frames = traceback.extract_tb(tb)
+    relevant = [
+        f for f in frames
+        if any(seg in f.filename.replace("\\", "/") for seg in
+               ("nekova/lexer/", "nekova/parser/", "nekova/interpreter/"))
+    ]
+    if not relevant:
+        return None
+
+    deepest = relevant[-1]
+    fname = os.path.basename(deepest.filename)
+    return f"raised in {deepest.name}() at {fname}:{deepest.lineno}"
 
 
 # ── Source renderer ───────────────────────────────────────────
