@@ -1,4 +1,4 @@
-# =============================================================
+﻿# =============================================================
 # NEKOVA Language â€” Notebook System
 # =============================================================
 # A Jupyter-like notebook for NEKOVA.
@@ -618,7 +618,7 @@ async function resetKernel() {
 }
 
 function handleKey(event, cellId) {
-    // Tab â†’ insert 4 spaces
+    // Tab → insert 4 spaces
     if (event.key === 'Tab') {
         event.preventDefault();
         const ta    = event.target;
@@ -627,7 +627,7 @@ function handleKey(event, cellId) {
                       '    ' + ta.value.substring(start);
         ta.selectionStart = ta.selectionEnd = start + 4;
     }
-    // Ctrl+Enter â†’ run cell
+    // Ctrl+Enter → run cell
     if (event.ctrlKey && event.key === 'Enter') {
         event.preventDefault();
         runCell(cellId);
