@@ -8,6 +8,14 @@ lede: The highlights of each recent release. For the complete, unabridged histor
 This page summarizes recent releases. Every release since the project began is documented in <a href="https://github.com/kinghenesey/NEKOVA/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> on GitHub.
 </div>
 
+## 1.11.0 — Developer Experience
+
+A real Language Server Protocol implementation (`nekova lsp`) replaces syntax-highlighting-only support in the VS Code extension with live diagnostics, hover docs, and autocomplete — including method completion on `obj.` with lightweight type inference. The parser now recovers from multiple syntax errors in a single pass instead of stopping at the first. Also new: `nekova fmt --diff`, an interactive `nekova new` wizard, `nekova.lock` for reproducible dependencies, a `--why` flag that names the exact internal function that raised an error, `expect_snapshot(...)` for AI-output snapshot testing, and `.env.example` scaffolding for every project template.
+
+## 1.10.0 — Documentation Website + AI-Native Differentiators II
+
+Two phases in one release. The documentation site you're reading now shipped — 28 pages generated from plain markdown, every code example verified against the real interpreter before publishing. Alongside it: `think "..." as <ShapeName>` for typed AI output from a defined shape, cost/token tracking via `with budget:` and `ai_usage()`, explicit model selection with `using`, multi-turn `converse:` blocks, `--debug-ai` for inspecting exact prompts, a prompt-injection guard for `sandbox` blocks, `imagine ... as file` with local disk caching, and visible retry/backoff for `think` calls.
+
 ## 1.9.9 — Correctness & Trust Part 2 + Language Completeness II
 
 Two phases shipped together in one release. On the correctness side: indentation errors now report the exact valid depths instead of guessing, and every built-in function (`int()`, `len()`, `range()`, and the rest) was audited so a bad argument can no longer leak a raw Python traceback. On the language side: tuple-style destructuring, keyword arguments, `const` bindings, spread syntax (`[...a, ...b]`), optional chaining (`?.`), enums, and a new `Set` type all landed.
