@@ -1436,8 +1436,18 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         allowed and is parsed as an interpolation template (reusing
         _parse_fstring so {var} placeholders resolve against the
         prompt's own parameters, even without an `f` prefix).
+
+        Single-line body (fix, matching _parse_block): e.g.
+        `prompt greet(name): "Hello, {name}!"`.
         """
         statements = []
+
+        if self._current().type not in (TokenType.NEWLINE, TokenType.INDENT):
+            if self._current().type == TokenType.STRING:
+                tok = self._advance()
+                return [self._parse_fstring(tok.value)]
+            stmt = self._parse_statement()
+            return [stmt] if stmt is not None else []
 
         self._skip_newlines()
 
@@ -2034,9 +2044,20 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         a leading bare string can only be documentation.
 
         Returns (docstring_text_or_None, body_statements).
+
+        Single-line body (fix, matching _parse_block): if the body
+        is written directly on the same line as the ':' — e.g.
+        `task add(a, b): return a + b` — there's obviously no
+        INDENT/DEDENT pair, and no possibility of a docstring either
+        (a docstring only makes sense as its own line at the top of
+        a real block), so it's just one inline statement.
         """
         docstring = None
         statements = []
+
+        if self._current().type not in (TokenType.NEWLINE, TokenType.INDENT):
+            stmt = self._parse_statement()
+            return None, ([stmt] if stmt is not None else [])
 
         self._skip_newlines()          # consume NEWLINE after ':'
 
@@ -2070,9 +2091,28 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
     def _parse_block(self) -> list:
         """
-        Parse an indented block of statements.
-        Blocks start with INDENT and end with DEDENT.
+        Parse a block of statements following a ':' — either a
+        normal indented multi-line block, or (fix) a single
+        statement written directly on the same line as the ':',
+        e.g. `if true: show "yes"` or `task add(a, b): return a + b`.
+        This never actually worked (confirmed against the real
+        1.10.0 release, not assumed to be a new regression) — there
+        was no branch anywhere that recognized "content follows the
+        ':' directly, no NEWLINE/INDENT involved at all" as anything
+        other than a malformed block.
+
+        Some callers consume the NEWLINE right after ':' themselves
+        (via _expect_newline_or_eof) before calling this; others
+        don't. Both are handled the same way here: if the current
+        token is neither NEWLINE nor INDENT, there was never a
+        newline at all — the whole body is inline — so parse exactly
+        one statement instead of expecting an INDENT/DEDENT pair
+        that will never come.
         """
+        if self._current().type not in (TokenType.NEWLINE, TokenType.INDENT):
+            stmt = self._parse_statement()
+            return [stmt] if stmt is not None else []
+
         statements = []
 
         self._skip_newlines()          # consume NEWLINE after ':'
