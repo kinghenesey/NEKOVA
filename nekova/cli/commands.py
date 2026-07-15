@@ -229,12 +229,20 @@ def cmd_test():
         print(f"  {line}")
 
     print()
+    # pytest's own exit codes: 0 = all passed, 1 = some failed,
+    # 5 = no tests were collected at all. That last one was being
+    # treated the same as a real failure ("Some tests failed."),
+    # which is misleading for CI: a 0 passed / 0 failed run isn't a
+    # failure, it's an empty test suite (e.g. a fresh project's
+    # tests/ still only has a .gitkeep in it).
     if result.returncode == 0:
         print_success("All tests passed.")
+    elif result.returncode == 5:
+        print_warning("No tests found in tests/.")
     else:
         print_error("Some tests failed.")
     print()
-    return result.returncode == 0
+    return result.returncode in (0, 5)
 
 
 # ── nekova build ──────────────────────────────────────────────────────────────
