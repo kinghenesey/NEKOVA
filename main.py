@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # =============================================================
 # NEKOVA Language â€” Main Entry Point
 # =============================================================
@@ -564,7 +564,7 @@ def main():
             print_info(f"Compiling '{arg}'...")
             try:
                 output = compiler.compile(arg)
-                print_success(f"Compiled â†’ {output}")
+                print_success(f"Compiled → {output}")
             except Exception as e:
                 print_error(f"Compile error: {e}")
                 sys.exit(1)
