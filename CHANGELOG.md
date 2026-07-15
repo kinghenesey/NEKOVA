@@ -642,7 +642,7 @@ All self-hosting blockers cleared. Phase 20 begins: write the NEKOVA lexer in NE
 - Tasks now use lexical closure scoping â€” close over variables from their definition scope
 - `_call_task` parents local environment to `closure_env` instead of always `self.globals`
 - `_global_names` properly saved and restored per task call â€” no bleed between nested calls
-- Version bumped: `1.3.0` â†’ `1.3.1`
+- Version bumped: `1.3.0` → `1.3.1`
 
 ---
 
@@ -675,7 +675,7 @@ All self-hosting blockers cleared. Phase 20 begins: write the NEKOVA lexer in NE
 - New module: `watcher.py`
 
 #### 12D â€” Version & Release Prep
-- Version bumped: `1.2.0` â†’ `1.3.0`
+- Version bumped: `1.2.0` → `1.3.0`
 - Codename: `Genesis` (unchanged)
 - `CHANGELOG.md` added
 - `pyproject.toml` version updated
