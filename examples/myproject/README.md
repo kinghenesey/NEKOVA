@@ -1,4 +1,4 @@
-﻿# myproject
+# myproject
 
 An NEKOVA language project.
 

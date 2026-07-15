@@ -1624,8 +1624,20 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # Built-in Python function
         if callable(callee) and not isinstance(callee, (TaskStatement, TypedTaskStatement)):
             builtin_name = node.name if isinstance(node.name, str) else "<builtin>"
+            # Evaluate and pass through keyword arguments too. This
+            # branch used to return via callee(*args) alone — args
+            # being only node.args, the positional ones — before
+            # node.kwargs was ever looked at at all (that only
+            # happened further down, for NEKOVA task calls). Any
+            # builtin called with keyword syntax, e.g.
+            # round(x, digits=2), sorted(x, key=fn), enumerate(x,
+            # start=1), silently had that keyword dropped entirely —
+            # not an error, just quietly ignored, which is worse than
+            # a crash since the wrong-looking result gives no hint
+            # anything was wrong.
+            kwargs = {k: self._execute_node(v) for k, v in node.kwargs.items()}
             try:
-                return callee(*args)
+                return callee(*args, **kwargs)
             except NEKOVARuntimeError:
                 raise
             except (ValueError, TypeError, OverflowError, AttributeError,
@@ -2553,7 +2565,24 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         self.globals.set("min",      lambda *a: min(*a) if len(a) > 1 else min(a[0]))
         self.globals.set("max",      lambda *a: max(*a) if len(a) > 1 else max(a[0]))
         self.globals.set("sum",      lambda x: sum(x))
-        self.globals.set("sorted",   lambda x, **kw: sorted(x, **kw))
+        def _sorted(x, key=None, **kw):
+            """
+            sorted(x, key=fn, reverse=true). key= previously went
+            straight through to Python's own sorted(key=...), which
+            calls key(item) with Python's native () syntax — but a
+            NEKOVA task reference (TaskStatement/TypedTaskStatement)
+            isn't directly callable that way, so any real task passed
+            as key= crashed with "object is not callable" once
+            keyword arguments actually reached builtins at all (see
+            the kwargs-dropping fix above this needed first). Routed
+            through _invoke_callable, same as map/filter's predicate,
+            so a NEKOVA task works as a sort key too.
+            """
+            if key is not None:
+                kw["key"] = lambda item: _invoke_callable(key, item)
+            return sorted(x, **kw)
+
+        self.globals.set("sorted",   _sorted)
         self.globals.set("reversed", lambda x: list(reversed(x)))
         self.globals.set("list",     lambda x: list(x))
         self.globals.set("dict",     lambda: {})
@@ -2726,8 +2755,22 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             straight into Python's builtin map()/filter() raised
             "'TaskStatement' object is not callable" the moment a real
             task was used as the predicate/mapper.
+
+            Plain TaskStatement and TypedTaskStatement are NOT
+            interchangeable here: TaskStatement.params is a list of
+            3-tuples (name, default, is_vararg), but
+            TypedTaskStatement.params is 4-tuples (name, type_hint,
+            default, is_vararg) — and _call_task's own internal
+            unpacking is hardcoded to 3-tuples. Routing every task
+            through _call_task (as a previous version of this
+            function did) worked for plain tasks but broke on any
+            typed one with "too many values to unpack (expected 3)",
+            since _call_typed_task — the method actually built for
+            TypedTaskStatement's param shape — was never reached.
             """
-            if isinstance(f, (TaskStatement, TypedTaskStatement)):
+            if isinstance(f, TypedTaskStatement):
+                return self._call_typed_task(f, [arg])
+            if isinstance(f, TaskStatement):
                 return self._call_task(f, [arg])
             return f(arg)
 
