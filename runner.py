@@ -1,4 +1,4 @@
-# =============================================================
+﻿# =============================================================
 # NEKOVA Language â€” File Runner
 # =============================================================
 # Loads .nk files and passes them through the pipeline.
@@ -36,11 +36,12 @@ class NEKOVARunner:
     def __init__(self, filepath: str, debug: bool = False,
                  compile_mode: bool = False, strict_types: bool = False,
                  script_args: dict = None, debug_ai: bool = False,
-                 why: bool = False):
+                 why: bool = False, simple_errors: bool = False):
         self.filepath     = filepath
         self.debug        = debug
         self.debug_ai     = debug_ai
         self.why          = why
+        self.simple_errors = simple_errors
         self.compile_mode = compile_mode
         self.strict_types = strict_types
         self.script_args  = script_args or {}
@@ -118,6 +119,7 @@ class NEKOVARunner:
                 filepath=self.filepath,
                 why=self.why,
                 exception=exception,
+                simple=self.simple_errors,
                 **kwargs,
             )
 
