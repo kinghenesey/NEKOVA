@@ -1,4 +1,4 @@
-# =============================================================
+﻿# =============================================================
 # NEKOVA Language — Visual Debugger
 # =============================================================
 # Step through NEKOVA code line by line.
@@ -10,6 +10,51 @@
 import os
 import sys
 from nekova.config import Color, NEKOVA_VERSION
+
+
+def render_call_stack_ascii(frames: list) -> str:
+    """
+    Render a call stack as stacked ASCII boxes, most-recently-called
+    frame on top (matching how `frames` is stored — call_stack.append()
+    on entry, so the last element is the innermost/current frame).
+
+    Pure function, no I/O — kept separate from _display_call_stack()
+    specifically so it's unit-testable without a live debug session.
+
+    >>> print(render_call_stack_ascii(["main", "compute(x=5)"]))
+      ┌──────────────┐
+      │ compute(x=5)  │  ← current
+      └───────┬──────┘
+              │ called from
+      ┌───────┴──────┐
+      │ main          │
+      └──────────────┘
+    """
+    if not frames:
+        return "  (no active call stack — running at top level)"
+
+    ordered = list(reversed(frames))  # innermost first
+    width = max(len(f) for f in ordered) + 2  # 1 space padding each side
+
+    lines = []
+    for i, frame in enumerate(ordered):
+        label = f" {frame} ".ljust(width)
+        if i == 0:
+            lines.append(f"  ┌{'─' * width}┐")
+            lines.append(f"  │{label}│  ← current")
+            if len(ordered) > 1:
+                lines.append(f"  └{'─' * (width // 2)}┬{'─' * (width - width // 2 - 1)}┘")
+            else:
+                lines.append(f"  └{'─' * width}┘")
+        else:
+            lines.append(f"  {' ' * (width // 2)}│ called from")
+            lines.append(f"  ┌{'─' * (width // 2)}┴{'─' * (width - width // 2 - 1)}┐")
+            lines.append(f"  │{label}│")
+            if i < len(ordered) - 1:
+                lines.append(f"  └{'─' * (width // 2)}┬{'─' * (width - width // 2 - 1)}┘")
+            else:
+                lines.append(f"  └{'─' * width}┘")
+    return "\n".join(lines)
 
 
 class Debugger:
@@ -202,11 +247,9 @@ class Debugger:
                   f"{Color.RESET}")
 
     def _display_call_stack(self):
-        """Display the call stack."""
+        """Display the call stack as ASCII boxes (Phase 26b)."""
         print(f"\n  {Color.CYAN}Call Stack:{Color.RESET}")
-        for frame in reversed(self.call_stack):
-            print(f"  {Color.DIM}  → {frame}"
-                  f"{Color.RESET}")
+        print(render_call_stack_ascii(self.call_stack))
 
     def _get_action(self) -> str:
         """
