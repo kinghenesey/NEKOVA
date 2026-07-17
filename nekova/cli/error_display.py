@@ -139,6 +139,7 @@ def display_error(
     variables:  dict = None,
     why:        bool = False,
     exception:  Exception = None,
+    simple:     bool = False,
 ):
     """
     Render a Rust-style NEKOVA error to stdout.
@@ -158,7 +159,19 @@ def display_error(
     exception   The original exception object, needed to walk its
                 traceback for the `why` section above. Ignored if
                 why=False.
+    simple      If True (--simple-errors flag, Phase 26b), strips
+                jargon entirely: no error code, no "E005"-style
+                catalogue label, no "--> file:line" arrow, no --why
+                section even if why=True. Just the source line, a
+                caret, and the hint in plain sentences — aimed at
+                a classroom/beginner audience who don't need (and
+                are often confused by) the full Rust-style card.
     """
+    if simple:
+        _display_error_simple(error_type, message, source, filepath,
+                               line, col, variables)
+        return
+
     info = _CATALOGUE.get(error_type, {
         "code":    "E000",
         "title":   error_type,
@@ -232,6 +245,48 @@ def display_error(
                   f"traceback for this error.{_RESET}")
 
     _hr()
+    print()
+
+
+def _display_error_simple(error_type, message, source, filepath,
+                          line, col, variables):
+    """
+    The --simple-errors rendering: plain sentences, no jargon.
+    Deliberately does not reuse the Rust-style card layout at all
+    (no box-drawing header, no error code) rather than just
+    trimming pieces of it, since a beginner's first reaction to a
+    wall of red box-drawing characters is often "I broke something
+    badly" even when the underlying issue is a one-word typo.
+    """
+    info = _CATALOGUE.get(error_type, {
+        "title": error_type,
+        "hint":  "Something went wrong.",
+    })
+
+    if not line:
+        line, col = _extract_location(message)
+
+    print()
+    print(f"{_RED}{_BOLD}Problem: {info['title']}{_RESET}")
+
+    if source and line:
+        lines = source.splitlines()
+        if 0 < line <= len(lines):
+            print(f"{_DIM}Line {line}:{_RESET}  {lines[line - 1].strip()}")
+
+    clean = _clean(message)
+    print()
+    print(f"  {clean}")
+
+    if variables:
+        var = _extract_token(message)
+        if var:
+            suggestions = _did_you_mean(var, list(variables.keys()))
+            if suggestions:
+                print(f"  Did you mean: {', '.join(suggestions)}?")
+
+    print()
+    print(f"  {info['hint']}")
     print()
 
 
