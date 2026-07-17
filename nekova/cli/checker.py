@@ -14,6 +14,8 @@
 #   W007 — keyword used as task/variable name
 #   W008 — think called without use ai (reminder)
 #   W009 — non-exhaustive match (no else arm)
+#   W010 — comparing to a boolean literal (Phase 26b)
+#   W011 — equality check between floats (Phase 26b)
 #   E011 — reserved keyword used as identifier
 # =============================================================
 
@@ -28,6 +30,7 @@ from nekova.parser.nodes   import (
     TaskStatement, ReturnStatement, UseStatement,
     CallExpression, Identifier, ThinkStatement,
     ThinkAsStatement, MatchStatement,
+    BinaryOp, BooleanLiteral, FloatLiteral,
 )
 from nekova.lexer.token_types import KEYWORDS
 
@@ -184,6 +187,11 @@ class _Analyser:
         self.scope    = _Scope()
         self._uses_ai = False
         self._after_return = False
+        # Fallback line tracker — BinaryOp (and a few other expression
+        # nodes) aren't line-stamped by the parser, so checks that need
+        # a line number for a BinaryOp fall back to the most recent
+        # line-stamped ancestor/sibling instead of reporting line 0.
+        self._current_line = 0
 
         # Pre-seed global scope with stdlib names
         for name in _BUILTINS:
@@ -217,6 +225,10 @@ class _Analyser:
             return
 
         node_type = type(node).__name__
+
+        line = getattr(node, "line", 0)
+        if line:
+            self._current_line = line
 
         # Unreachable code after return
         if self._after_return and node_type not in (
@@ -395,6 +407,33 @@ class _Analyser:
             if hasattr(arm, "body"):
                 for stmt in (arm.body or []):
                     self._visit(stmt)
+
+    def _visit_BinaryOp(self, node):
+        line = getattr(node, "line", 0) or self._current_line
+
+        if node.operator in ("==", "!="):
+            for side, other in ((node.left, node.right),
+                                (node.right, node.left)):
+                if isinstance(side, BooleanLiteral):
+                    lit = "true" if side.value else "false"
+                    self.warn("W010", line,
+                              f"Comparing directly to '{lit}' is "
+                              f"usually unnecessary.",
+                              f"The value is already true or false — "
+                              f"write the condition itself instead of "
+                              f"comparing it to '{lit}'.")
+                    break
+            if isinstance(node.left, FloatLiteral) or \
+                    isinstance(node.right, FloatLiteral):
+                self.warn("W011", line,
+                          "Comparing floats with '==' can fail due to "
+                          "rounding — two numbers that look identical "
+                          "may differ in their last decimal digits.",
+                          "Compare the difference to a small tolerance "
+                          "instead, e.g. 'abs(a - b) < 0.0001'.")
+
+        self._visit(node.left)
+        self._visit(node.right)
 
     def _visit_generic(self, node):
         """Visit children of any node we don't have a specific handler for."""
