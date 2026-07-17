@@ -1,8 +1,8 @@
-# NEKOVA Programming Language
+﻿# NEKOVA Programming Language
 
 ### The AI-Native Programming Language by SYNEKCOT Tech
 
-![Version](https://img.shields.io/badge/version-1.11.0-C41E0E?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.12.0-C41E0E?style=flat-square)
 ![PyPI](https://img.shields.io/pypi/v/nekova-lang?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.10+-blue?style=flat-square)
 ![License](https://img.shields.io/badge/license-BUSL--1.1-blue?style=flat-square)
@@ -507,6 +507,43 @@ nekova run app.nk --why
 nekova lock
 nekova lock --check       # detect drift, e.g. in CI
 ```
+
+---
+
+### Education Layer (Phase 26b)
+
+NEKOVA's own origin story is helping classmates who were tripped up
+learning Python — this is that idea built directly into the toolchain.
+
+```
+# A guided, interactive tutorial — checks your real code against
+# the real interpreter, not a string match against your input
+nekova learn
+
+# Explain why a file errored, in plain language
+nekova explain app.nk
+nekova explain app.nk --no-ai    # skip the AI-generated addition
+
+# Best-effort Python -> NEKOVA translation
+nekova translate script.py
+
+# Batch-grade a folder of student submissions against a reference
+# solution.nk (or a plain expected.txt)
+nekova classroom assignment/
+
+# A keyword/builtin glossary — same lookup on the CLI and in the REPL
+nekova help think
+nekova> help task
+
+# Strip error output down to plain sentences — no error code, no
+# box-drawing header — for a beginner/classroom audience
+nekova run app.nk --simple-errors
+```
+
+`nekova check` also gained two new proactive warnings: comparing
+directly to a boolean literal (`if x == true:` instead of `if x:`),
+and equality comparisons between floats, which can silently fail
+due to rounding.
 
 ---
 
