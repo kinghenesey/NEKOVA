@@ -1,4 +1,4 @@
-# =============================================================
+﻿# =============================================================
 # NEKOVA Language — Interactive REPL  (Phase 12B)
 # =============================================================
 # Improvements over v1.2.0:
@@ -216,6 +216,17 @@ class REPL:
 
         if cmd == "clear":
             os.system("cls" if os.name == "nt" else "clear")
+            return True
+
+        # help <topic>  — glossary lookup (Phase 26b), checked before
+        # the bare "help" command below since both start with "help".
+        # Reachable either directly ("help think") or via the "?"
+        # shortcut above, which turns "?help think" into "help think"
+        # before cmd is computed here.
+        if cmd.startswith("help "):
+            topic = raw.split(None, 1)[1]
+            from nekova.cli.glossary import format_topic
+            print(format_topic(topic))
             return True
 
         if cmd in ("help", "?"):
