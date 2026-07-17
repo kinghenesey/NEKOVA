@@ -69,6 +69,15 @@ v{NEKOVA_VERSION} · {NEKOVA_CODENAME}
   nekova format <file.nk>        Format code style
   nekova format --check <file>     Check formatting
 
+{Color.BOLD}Learning tools:{Color.RESET}
+  nekova learn                     Interactive guided tutorial
+  nekova explain <file.nk>       Explain an error in plain language
+  nekova explain <file> --no-ai  Explain without the AI addition
+  nekova translate <file.py>     Translate Python to NEKOVA
+  nekova classroom <dir>           Batch-grade student submissions
+  nekova help <topic>              Look up a keyword (e.g. think)
+  nekova run <file> --simple-errors  Plain-language error output
+
 {Color.BOLD}Deployment:{Color.RESET}
   nekova compile <file.nk>      Compile to native/Python
   nekova export <file.nk>       Export to HTML/script
@@ -136,6 +145,11 @@ def parse_args(argv: list) -> dict:
     # check actually raised an error, for anyone debugging NEKOVA
     # itself or trying to understand its error taxonomy in depth.
     args["why"] = "--why" in argv_list
+    # --simple-errors: strips jargon from error output entirely —
+    # no error codes, no "--> file:line" arrows, plain sentences.
+    # Aimed at Phase 26b's beginner/classroom audience, distinct
+    # from --why which adds detail rather than removing it.
+    args["simple_errors"] = "--simple-errors" in argv_list
     args["watch"]    = "--watch"    in argv_list
     args["sandbox"]  = "--sandbox"  in argv_list
     # --quiet/-q: skip the banner — makes the CLI usable in scripts,
@@ -197,6 +211,8 @@ def parse_args(argv: list) -> dict:
         "pkg-info", "deps",
         # Phase 12
         "watch",
+        # Phase 26b — Education Layer
+        "explain", "learn", "translate", "classroom", "help",
     }
     if values and values[0] in commands:
         args["command"] = values[0]
@@ -392,11 +408,13 @@ def main():
                 arg = config.entry_path
                 runner = NEKOVARunner(filepath=arg, debug=args["debug"],
                                       strict_types=strict, debug_ai=args["debug_ai"],
-                                      script_args=args["script_args"], why=args["why"])
+                                      script_args=args["script_args"], why=args["why"],
+                                      simple_errors=args["simple_errors"])
             else:
                 runner = NEKOVARunner(filepath=arg, debug=args["debug"],
                                       debug_ai=args["debug_ai"],
-                                      script_args=args["script_args"], why=args["why"])
+                                      script_args=args["script_args"], why=args["why"],
+                                      simple_errors=args["simple_errors"])
             if args["sandbox"]:
                 # Run file in sandbox mode
                 mode = args.get("sandbox_mode", "strict")
@@ -552,6 +570,52 @@ def main():
                 success = cmd_deploy(arg)
             sys.exit(0 if success else 1)
         
+        if cmd == "explain":
+            if not arg:
+                print_error(
+                    "Please provide a file to explain.\n"
+                    "  Usage: nekova explain app.nk"
+                )
+                sys.exit(1)
+            from nekova.cli.explain import cmd_explain
+            use_ai = "--no-ai" not in argv
+            success = cmd_explain(arg, use_ai=use_ai)
+            sys.exit(0 if success else 1)
+
+        if cmd == "learn":
+            from nekova.cli.learn import cmd_learn
+            cmd_learn()
+            sys.exit(0)
+
+        if cmd == "translate":
+            if not arg:
+                print_error(
+                    "Please provide a Python file to translate.\n"
+                    "  Usage: nekova translate script.py"
+                )
+                sys.exit(1)
+            from nekova.cli.translate import cmd_translate
+            success = cmd_translate(arg)
+            sys.exit(0 if success else 1)
+
+        if cmd == "classroom":
+            from nekova.cli.classroom import cmd_classroom
+            success = cmd_classroom(arg or ".")
+            sys.exit(0 if success else 1)
+
+        if cmd == "help":
+            # Multi-word topics ("async task", "think as", "with
+            # budget") need every positional arg after "help", not
+            # just the first — args["arg"] only ever holds values[1].
+            values = [a for a in argv if not a.startswith("--")]
+            topic = " ".join(values[1:]) if len(values) > 1 else ""
+            from nekova.cli.glossary import format_topic, format_topic_list
+            if topic:
+                print(format_topic(topic))
+            else:
+                print(format_topic_list())
+            sys.exit(0)
+
         if cmd == "compile":
             if not arg:
                 print_error(
@@ -578,7 +642,8 @@ def main():
                                debug=args["debug"],
                                debug_ai=args["debug_ai"],
                                compile_mode=args["compile"],
-                               script_args=args["script_args"], why=args["why"])
+                               script_args=args["script_args"], why=args["why"],
+                               simple_errors=args["simple_errors"])
         exit_code = runner.run()
         sys.exit(exit_code)
 
