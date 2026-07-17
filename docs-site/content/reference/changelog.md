@@ -8,6 +8,10 @@ lede: The highlights of each recent release. For the complete, unabridged histor
 This page summarizes recent releases. Every release since the project began is documented in <a href="https://github.com/kinghenesey/NEKOVA/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> on GitHub.
 </div>
 
+## 1.12.0 — Education Layer
+
+`nekova learn` is a guided terminal tutorial that checks your actual code against the real interpreter, not string-matching. `nekova explain file.nk` walks through why an error happened in plain language. `nekova translate script.py` does best-effort Python-to-NEKOVA translation. `nekova classroom` batch-grades a folder of student submissions against a reference solution. A new `nekova help <topic>` glossary works both from the command line and inside the REPL, and `--simple-errors` strips error output down to plain sentences for a beginner audience.
+
 ## 1.11.0 — Developer Experience
 
 A real Language Server Protocol implementation (`nekova lsp`) replaces syntax-highlighting-only support in the VS Code extension with live diagnostics, hover docs, and autocomplete — including method completion on `obj.` with lightweight type inference. The parser now recovers from multiple syntax errors in a single pass instead of stopping at the first. Also new: `nekova fmt --diff`, an interactive `nekova new` wizard, `nekova.lock` for reproducible dependencies, a `--why` flag that names the exact internal function that raised an error, `expect_snapshot(...)` for AI-output snapshot testing, and `.env.example` scaffolding for every project template.
