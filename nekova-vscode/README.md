@@ -1,4 +1,4 @@
-# NEKOVA VS Code Extension — v1.11.0
+﻿# NEKOVA VS Code Extension — v1.12.0
 
 Syntax highlighting, two branded color themes, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
@@ -217,6 +217,17 @@ match status:
 ---
 
 ## Release Notes
+
+### 1.12.0
+- Version bump for consistency with NEKOVA core v1.12.0 (Phase 26b,
+  Education Layer). No editor-facing changes in this release — the
+  new tools (`nekova learn`, `nekova explain`, `nekova translate`,
+  `nekova classroom`, `nekova help`) are CLI-only. `nekova check`'s
+  two new warnings (comparing to a boolean literal, float equality)
+  surface through the extension's existing `Check File` command,
+  same as any other checker warning — they are not part of the live
+  LSP diagnostics-as-you-type, which cover syntax errors only
+- Welcome message and status bar now report `v1.12.0`
 
 ### 1.11.0
 - **Real language server support** — this extension now spawns
