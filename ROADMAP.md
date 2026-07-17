@@ -1,8 +1,8 @@
 # NEKOVA Language — Official Roadmap
 
-**Version:** 1.10.0 · Genesis  
-**Tests:** 1,358 passing · 29 test phases  
-**Status:** Active development · Phase 26 complete · Phase 26b next  
+**Version:** 1.12.0 · Genesis  
+**Tests:** 1,581 passing · 30 test phases  
+**Status:** Active development · Phase 26b complete · Phase 27 next  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
 ---
@@ -48,7 +48,7 @@ consistent meaning. Going forward:
 | **1.9.9** | 23b + 24 | ✅ Correctness & Trust Part 2 + Language Completeness II — see "Phase 23b" and "Phase 24" sections below for the full list; combined into one release per publishing decision. |
 | **1.10.0** | 24b + 25 | ✅ Documentation Website + AI-Native Differentiators II — see "Phase 24b" and "Phase 25" sections below; combined into one release per publishing decision. |
 | **1.11.0** | 26 | ✅ Developer experience — **current**. Language Server Protocol (real autocomplete, inline errors, hover docs), `nekova fmt --diff`, multi-error parser recovery, interactive `nekova new` wizard, `nekova.lock`, `--why`, `expect_snapshot(...)`, `.env.example` scaffolding |
-| **1.12.0** | 26b | Education layer — `nekova learn`, `nekova explain`, classroom/instructor mode, `--simple-errors` |
+| **1.12.0** | 26b | ✅ Education layer — `nekova learn`, `nekova explain`, `nekova translate`, `nekova classroom`, `nekova help` glossary, `--simple-errors` |
 | **2.0.0** | 27 | Parser in NEKOVA — self-hosting milestone 2. Includes a published formal grammar (EBNF) and a parser/lexer fuzz-testing harness in CI, both prerequisites for this phase, not just nice-to-haves |
 | **2.1.0** | 28 | Agent system, unified schema |
 | **2.2.0** | 29 | Sandbox commercial API, `nekova teach`, deployment targets, WebSocket + middleware support in the web router |
@@ -417,7 +417,7 @@ test "arithmetic":
   that no longer resolves on the npm registry; regenerated from
   scratch.
 
-### Phase 26b · Education Layer — v1.12.0 📋
+### Phase 26b · Education Layer — v1.12.0 ✅
 
 ```
 $ nekova explain err.nk
@@ -427,13 +427,22 @@ $ nekova learn
 This is NEKOVA's actual differentiator versus every other "AI-native
 language" claim — the project's own origin story is helping classmates who
 were tripped up learning Python. `nekova explain` walks through why an
-error happened in plain language (itself using `think` — on-brand).
-`nekova learn` is a guided, interactive tutorial mode in the terminal. Also:
-a companion visualization for step-through execution (even simple ASCII
-call-stack rendering), proactive common-mistake detection in `nekova check`,
-a `nekova translate script.py` mode producing idiomatic `.nk`, an in-REPL
-`nekova help think`-style glossary, a `--simple-errors` verbosity flag that
-strips jargon entirely, and classroom/instructor batch-grading mode.
+error happened in plain language: a deterministic template per error type,
+plus an optional one-sentence addition from `think` itself (on-brand —
+gracefully omitted if that fails, never blocking the deterministic part).
+`nekova learn` is a guided, interactive tutorial mode in the terminal —
+five lessons, each checked by running the learner's real code against the
+real interpreter. Also shipped: the visual debugger's call-stack view now
+renders as stacked ASCII boxes instead of a flat arrow list; two new
+proactive `nekova check` warnings (W010 — comparing to a boolean literal,
+W011 — float equality); `nekova translate script.py`, a best-effort
+Python-to-NEKOVA translator built on Python's own `ast` module, with
+unsupported constructs flagged inline rather than silently dropped; a
+`nekova help <topic>` glossary reachable both from the CLI and inside the
+REPL; a `--simple-errors` flag that strips error output to plain sentences
+with no error code or box-drawing header; and `nekova classroom <dir>`,
+which batch-grades student submissions against a reference solution with
+a timeout backstop per submission.
 
 ### Phase 27 · NEKOVA Parser in NEKOVA — v2.0.0 📋
 
