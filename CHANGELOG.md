@@ -3,6 +3,48 @@
 All notable changes to NEKOVA are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.12.0] — Education Layer
+
+NEKOVA started as a way to help classmates who got tripped up learning
+Python — this phase leans back into that directly.
+
+### Added
+
+- **`nekova learn`** — a guided, interactive terminal tutorial. Five
+  lessons (variables, printing, conditionals, tasks, `think`), each
+  checked by running the learner's actual code against the real
+  interpreter rather than string-matching their input.
+- **`nekova explain <file.nk>`** — runs a file and, if it errors,
+  explains why in plain language: a deterministic, template-based
+  walkthrough for every error type in the catalogue, plus an optional
+  one-sentence AI-generated addition (via `think` itself). Pass
+  `--no-ai` to skip the AI addition.
+- **`nekova translate <script.py>`** — best-effort Python-to-NEKOVA
+  translation using Python's own `ast` module. Handles assignments,
+  functions, conditionals, loops, f-strings, `print()`, and more;
+  anything unsupported is flagged with a `# TODO(translate)` comment
+  naming exactly what and why, rather than silently dropped or guessed.
+- **`nekova classroom <dir>`** — batch-grades a directory of student
+  `.nk` submissions against a reference `solution.nk` (or a plain
+  `expected.txt`), running each submission in-process with a timeout
+  backstop so one runaway submission can't hang the whole grading run.
+- **`nekova help <topic>`** and in-REPL **`help <topic>`** — a
+  keyword/builtin glossary (~25 entries) with a real code example for
+  each, backed by the same lookup on both surfaces. Forgiving of
+  near-misses ("function" → task, "print" → show) and typos.
+- **`--simple-errors`** flag for `nekova run` — strips error output
+  down to plain sentences: no error code, no box-drawing header, just
+  the source line and what went wrong. Aimed at a classroom/beginner
+  audience, distinct from `--why` (which adds detail rather than
+  removing it).
+- Two new proactive `nekova check` warnings: **W010** (comparing
+  directly to a boolean literal — `if x == true:` instead of
+  `if x:`) and **W011** (equality comparison between floats, which
+  can silently fail due to rounding).
+- The visual debugger's call-stack view now renders as stacked ASCII
+  boxes instead of a flat arrow list, making nested calls easier to
+  read at a glance.
+
 ---
 
 ## [1.11.0] — 2026-07-12 · Phase 26 "Developer Experience"
