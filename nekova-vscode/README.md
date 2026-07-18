@@ -1,4 +1,4 @@
-﻿# NEKOVA VS Code Extension — v1.12.0
+﻿# NEKOVA VS Code Extension — v1.13.0
 
 Syntax highlighting, two branded color themes, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
@@ -217,6 +217,18 @@ match status:
 ---
 
 ## Release Notes
+
+### 1.13.0
+- Version bump for consistency with NEKOVA core v1.13.0 (Phase 26c, AI-Native
+  Differentiators III). No editor-facing changes in this release — all six
+  new features (typed shape validation, probabilistic testing, dollar
+  budgets, model fallback chains, `--record-ai`/`--replay-ai`,
+  capability-scoped sandboxing, `think_stream`) are language/CLI-level.
+  One known gap: the new `$0.01` money-literal syntax isn't yet
+  highlighted specially by the TextMate grammar — it still runs and
+  parses correctly, it just renders as plain text rather than a colored
+  number token. Tracked for a future syntax-highlighting update
+- Welcome message and status bar now report `v1.13.0`
 
 ### 1.12.0
 - Version bump for consistency with NEKOVA core v1.12.0 (Phase 26b,
