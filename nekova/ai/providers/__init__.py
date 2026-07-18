@@ -24,6 +24,36 @@ PROVIDERS = [
 # None means auto-detect from available API keys
 _active_provider = None
 
+# Phase 26c — cassette record/replay state. None means disabled
+# (normal behavior). Set via enable_cassette_recording/_replay,
+# read by get_provider() to transparently wrap whatever provider
+# it would have returned anyway.
+_cassette_mode = None   # "record" | "replay" | None
+_cassette_path = None
+
+
+def enable_cassette_recording(path: str):
+    """Every real .ask() call from here on is made normally and
+    saved to `path`. See nekova/ai/cassette.py."""
+    global _cassette_mode, _cassette_path
+    _cassette_mode = "record"
+    _cassette_path = path
+
+
+def enable_cassette_replay(path: str):
+    """Every .ask() call from here on is served from `path`
+    instead of reaching a real provider. See nekova/ai/cassette.py."""
+    global _cassette_mode, _cassette_path
+    _cassette_mode = "replay"
+    _cassette_path = path
+
+
+def disable_cassette():
+    """Return to normal (non-cassette) provider behavior."""
+    global _cassette_mode, _cassette_path
+    _cassette_mode = None
+    _cassette_path = None
+
 
 def get_provider():
     """
@@ -31,16 +61,30 @@ def get_provider():
     If the user has called `model "..."`, use that.
     Otherwise auto-detect from available API keys:
       Gemini → Claude → OpenAI → Mock
+
+    Phase 26c: if cassette record/replay mode is enabled, the
+    provider that would normally be returned gets wrapped in a
+    CassetteProvider transparently — every other call site in the
+    interpreter keeps working exactly as before, unaware it's
+    talking to a cassette instead of a live provider.
     """
     if _active_provider is not None:
-        return get_provider_by_name(_active_provider)
+        provider = get_provider_by_name(_active_provider)
+    else:
+        provider = None
+        for ProviderClass in PROVIDERS:
+            candidate = ProviderClass()
+            if candidate.is_available:
+                provider = candidate
+                break
+        if provider is None:
+            provider = MockProvider()
 
-    for ProviderClass in PROVIDERS:
-        provider = ProviderClass()
-        if provider.is_available:
-            return provider
+    if _cassette_mode is not None:
+        from nekova.ai.cassette import CassetteProvider
+        return CassetteProvider(provider, _cassette_path, mode=_cassette_mode)
 
-    return MockProvider()
+    return provider
 
 
 def set_provider(name: str):
