@@ -78,6 +78,16 @@ v{NEKOVA_VERSION} · {NEKOVA_CODENAME}
   nekova help <topic>              Look up a keyword (e.g. think)
   nekova run <file> --simple-errors  Plain-language error output
 
+{Color.BOLD}AI-native tooling:{Color.RESET}
+  nekova run <file> --record-ai <cassette.json>  Record real AI calls
+  nekova run <file> --replay-ai <cassette.json>  Replay without an API key
+  think "..." as User                              Typed + validated + re-prompted
+  think "..." with budget: $0.01                   Dollar-denominated budget
+  think "..." using ["a", "b", "local"]           Model fallback chain
+  for chunk in think_stream("..."):                 Lazy streaming
+  sandbox strict allow: [task_a, task_b]:          Capability-scoped agent
+  test "x" repeat 10 times, expect at least 8 passes:  Probabilistic testing
+
 {Color.BOLD}Deployment:{Color.RESET}
   nekova compile <file.nk>      Compile to native/Python
   nekova export <file.nk>       Export to HTML/script
@@ -150,6 +160,17 @@ def parse_args(argv: list) -> dict:
     # Aimed at Phase 26b's beginner/classroom audience, distinct
     # from --why which adds detail rather than removing it.
     args["simple_errors"] = "--simple-errors" in argv_list
+    # Phase 26c — cassette record/replay for deterministic AI testing
+    args["record_ai"] = None
+    args["replay_ai"] = None
+    if "--record-ai" in argv_list:
+        idx = argv_list.index("--record-ai")
+        if idx + 1 < len(argv_list):
+            args["record_ai"] = argv_list[idx + 1]
+    if "--replay-ai" in argv_list:
+        idx = argv_list.index("--replay-ai")
+        if idx + 1 < len(argv_list):
+            args["replay_ai"] = argv_list[idx + 1]
     args["watch"]    = "--watch"    in argv_list
     args["sandbox"]  = "--sandbox"  in argv_list
     # --quiet/-q: skip the banner — makes the CLI usable in scripts,
@@ -409,12 +430,14 @@ def main():
                 runner = NEKOVARunner(filepath=arg, debug=args["debug"],
                                       strict_types=strict, debug_ai=args["debug_ai"],
                                       script_args=args["script_args"], why=args["why"],
-                                      simple_errors=args["simple_errors"])
+                                      simple_errors=args["simple_errors"],
+                                      record_ai=args["record_ai"], replay_ai=args["replay_ai"])
             else:
                 runner = NEKOVARunner(filepath=arg, debug=args["debug"],
                                       debug_ai=args["debug_ai"],
                                       script_args=args["script_args"], why=args["why"],
-                                      simple_errors=args["simple_errors"])
+                                      simple_errors=args["simple_errors"],
+                                      record_ai=args["record_ai"], replay_ai=args["replay_ai"])
             if args["sandbox"]:
                 # Run file in sandbox mode
                 mode = args.get("sandbox_mode", "strict")
@@ -643,7 +666,8 @@ def main():
                                debug_ai=args["debug_ai"],
                                compile_mode=args["compile"],
                                script_args=args["script_args"], why=args["why"],
-                               simple_errors=args["simple_errors"])
+                               simple_errors=args["simple_errors"],
+                               record_ai=args["record_ai"], replay_ai=args["replay_ai"])
         exit_code = runner.run()
         sys.exit(exit_code)
 
