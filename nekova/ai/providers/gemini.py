@@ -112,7 +112,7 @@ class GeminiProvider(BaseProvider):
         from google import genai
         client   = self._get_client()
         response = client.models.generate_content(
-            model=self.MODEL,
+            model=self.model or self.MODEL,
             contents=full_prompt
         )
         if self.memory_enabled:
@@ -140,7 +140,7 @@ class GeminiProvider(BaseProvider):
             print("\033[96m", end="", flush=True)
 
             response = client.models.generate_content_stream(
-                model=self.MODEL,
+                model=self.model or self.MODEL,
                 contents=prompt
             )
 
