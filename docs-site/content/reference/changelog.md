@@ -8,6 +8,10 @@ lede: The highlights of each recent release. For the complete, unabridged histor
 This page summarizes recent releases. Every release since the project began is documented in <a href="https://github.com/kinghenesey/NEKOVA/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> on GitHub.
 </div>
 
+## 1.13.0 — AI-Native Differentiators III
+
+Six features built specifically around AI being a first-class citizen in the language, not bolted on. `think "..." as User` now validates the response against the shape and automatically re-prompts on a mismatch instead of silently accepting bad data. `test "label" repeat 10 times, expect at least 8 passes:` is a new probabilistic test form for AI-backed behavior where a single run isn't a meaningful signal. Budgets can be dollar amounts (`with budget: $0.01`) as well as token counts, and `using ["model-a", "model-b"]` gives a model fallback chain. `nekova run app.nk --record-ai cassette.json` / `--replay-ai` gives deterministic, API-key-free replay of AI calls for testing. `sandbox strict allow: [search_web]:` scopes exactly which tasks a sandboxed block may call. And `for chunk in think_stream("..."):` is genuinely lazy streaming.
+
 ## 1.12.0 — Education Layer
 
 `nekova learn` is a guided terminal tutorial that checks your actual code against the real interpreter, not string-matching. `nekova explain file.nk` walks through why an error happened in plain language. `nekova translate script.py` does best-effort Python-to-NEKOVA translation. `nekova classroom` batch-grades a folder of student submissions against a reference solution. A new `nekova help <topic>` glossary works both from the command line and inside the REPL, and `--simple-errors` strips error output down to plain sentences for a beginner audience.
