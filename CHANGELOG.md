@@ -3,6 +3,62 @@
 All notable changes to NEKOVA are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.13.0] — AI-Native Differentiators III
+
+Six features aimed specifically at "a language where AI is a first-class
+citizen" rather than generic language features with an AI label on them.
+
+### Added
+
+- **Typed AI output validation + re-prompt.** `think "..." as User` already
+  coerced a response's field types against a shape — it now actually
+  *validates* against the shape (missing required fields, wrong types) and,
+  if validation fails, automatically re-prompts the AI with the specific
+  problems named, up to 2 additional attempts, before raising a clear error.
+  Previously a missing required field just silently became `None`.
+- **Probabilistic testing.**
+  `test "label" repeat 10 times, expect at least 8 passes:` — a test block
+  that runs its body N times and only requires a minimum number of runs to
+  fully pass, for testing AI-backed behavior where a single run's outcome
+  isn't a meaningful signal on its own. `repeat N times` with no explicit
+  `expect at least` still requires all N to pass (no silent tolerance).
+- **Dollar-denominated think budgets.** `think "..." with budget: $0.01`
+  — budgets can now be a cost estimate, not just a token count. `$` money
+  literals are a new lexer/parser primitive; the estimate uses a single
+  blended cost-per-1000-tokens constant since NEKOVA can't keep a live,
+  per-provider pricing table in sync with every provider's rate card.
+  Token-count budgets (`with budget: 500`) are unchanged.
+- **Model fallback chains.** `think "..." using ["model-a", "model-b",
+  "local-model"]` — tries each model in order, falling to the next only
+  once an attempt (with its own transient-failure retries) is fully
+  exhausted. Fixed a real gap found while building this: real providers
+  (Anthropic, OpenAI, Gemini) were hardcoding their default model and
+  silently ignoring `using` entirely — they now respect a per-call
+  override, falling back to their default when none is given.
+- **Deterministic AI-call replay ("cassettes").**
+  `nekova run app.nk --record-ai cassette.json` runs for real and saves
+  every prompt/response pair; `--replay-ai cassette.json` serves recorded
+  responses instead of calling a provider at all — no API key, no spend,
+  same output every run. A cassette miss fails immediately with a clear
+  message rather than burning through retry backoff on something that can
+  never succeed.
+- **Capability-scoped agent sandboxing.**
+  `sandbox strict allow: [search_web, send_email]:` — an explicit list of
+  task names the block may call, enforced by the interpreter at every
+  call site, not by convention. Only restricts calls to actual
+  user-defined tasks; ordinary builtins (`len`, `filter`, ...) stay
+  unrestricted since they're not "capabilities" an agent is being granted.
+  Nested sandboxes intersect allow-lists rather than the inner one
+  overriding the outer.
+- **Streaming as a first-class construct.**
+  `for chunk in think_stream("..."):` — genuinely lazy: the loop body
+  processes each chunk as it's produced rather than waiting for the whole
+  response first (verified with a `break` after 2 of 5 chunks pulling
+  exactly 2, not all 5). Providers get a default word-chunking
+  `stream_chunks()` built on their existing `ask()`; a provider wanting
+  true token-by-token streaming from its underlying API can override it
+  directly.
+
 ## [1.12.0] — Education Layer
 
 NEKOVA started as a way to help classmates who got tripped up learning
