@@ -116,7 +116,7 @@ class OpenAIProvider(BaseProvider):
         """Perform the actual blocking HTTP call to the OpenAI API."""
         client   = self._get_client()
         response = client.chat.completions.create(
-            model=self.MODEL,
+            model=self.model or self.MODEL,
             max_tokens=self.MAX_TOKENS,
             messages=[
                 {"role": "user", "content": full_prompt}
@@ -151,7 +151,7 @@ class OpenAIProvider(BaseProvider):
 
             full_response = []
             stream = client.chat.completions.create(
-                model=self.MODEL,
+                model=self.model or self.MODEL,
                 max_tokens=self.MAX_TOKENS,
                 messages=[
                     {"role": "user", "content": full_prompt}
