@@ -47,6 +47,38 @@ from nekova.interpreter.class_interpreter import ClassInterpreterMixin
 _NO_MOCK = object()
 
 
+class _DollarAmount(float):
+    """
+    Phase 26c — a float that remembers it came from a $ literal
+    (MoneyLiteral), so _check_think_budget can tell 'with budget:
+    500' (tokens) apart from 'with budget: $0.01' (dollars) just by
+    checking isinstance() on the already-evaluated budget value,
+    without threading an extra flag through ThinkStatement /
+    ThinkAsStatement's constructor and every call site that builds
+    one.
+    """
+    pass
+
+
+class _NEKOVAStreamChunks:
+    """
+    Phase 26c — wraps the generator behind think_stream(...) so
+    _exec_ForStatement can recognize it specifically and iterate it
+    lazily (one chunk pulled per loop iteration) instead of
+    draining the whole thing into a list before the loop body ever
+    runs — see _exec_ForStatement for why this needs to be its own
+    type rather than a generic 'has __next__' check.
+    """
+    def __init__(self, generator):
+        self._generator = generator
+
+    def __iter__(self):
+        return self._generator
+
+    def __next__(self):
+        return next(self._generator)
+
+
 class NEKOVAEnum:
     """
     Runtime value for a Phase 24 'enum' definition.
@@ -140,6 +172,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # When True, AI/IO keywords raise a blocked error instead of executing
         self._sandbox_mode:       str  = ""    # "" | "strict" | "relaxed"
         self._sandbox_violations: list = []
+        # Phase 26c — capability-scoped agent tool access: when set,
+        # a list of task names the current sandbox block may call.
+        # None means no restriction beyond whatever the mode itself
+        # blocks. See _exec_SandboxStatement / _exec_CallExpression.
+        self._sandbox_allow = None
 
         # Built-in functions available everywhere in NEKOVA
         self._register_builtins()
@@ -399,20 +436,46 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         self._ai_usage["tokens"] += tokens
         return tokens
 
+    # Phase 26c: a rough, blended estimate for converting a dollar
+    # budget into a token-count comparison. Real per-token pricing
+    # varies a lot by provider and model (and changes over time) —
+    # this is deliberately a single conservative constant rather
+    # than a live pricing table NEKOVA would have to keep in sync
+    # with every provider's rate card. Good enough to catch "this
+    # call ballooned way past what I expected to spend", not meant
+    # to be an exact bill.
+    _ESTIMATED_COST_PER_1K_TOKENS = 0.003
+
     def _check_think_budget(self, node, prompt: str, response) -> int:
         """
         Phase 25: think "..." with budget: <n> — a hard cap on the
         estimated tokens (prompt + response) for a single think call.
-        Checked after the call completes (NEKOVA has no way to tell
-        an arbitrary provider to stop generating early), so a budget
-        catches an overly long response rather than preventing one —
-        it's a cost/usage guardrail, not a generation-length limiter.
+        Phase 26c: budget can also be a dollar amount — think "..."
+        with budget: $0.01 — checked against an estimated cost
+        (tokens / 1000 * _ESTIMATED_COST_PER_1K_TOKENS) instead of a
+        raw token count. Same "checked after the call completes"
+        caveat applies either way: NEKOVA has no way to tell an
+        arbitrary provider to stop generating early, so a budget
+        catches an overly expensive response rather than preventing
+        one.
         Returns the estimated token count either way, for ai_usage().
         """
         tokens = self._estimate_tokens(prompt) + self._estimate_tokens(response)
         if node.budget is not None:
             budget_value = self._execute_node(node.budget)
-            if tokens > budget_value:
+            if isinstance(budget_value, _DollarAmount):
+                estimated_cost = (tokens / 1000) * self._ESTIMATED_COST_PER_1K_TOKENS
+                if estimated_cost > budget_value:
+                    raise NEKOVARuntimeError(
+                        f"think exceeded its cost budget: used ~{tokens} "
+                        f"tokens (~${estimated_cost:.4f} estimated), "
+                        f"budget was ${budget_value:.4f}.\n"
+                        f"  Shorten the prompt, expect a shorter "
+                        f"response, or raise the budget. (Cost is a "
+                        f"rough estimate, not your provider's actual "
+                        f"bill.)"
+                    )
+            elif tokens > budget_value:
                 raise NEKOVARuntimeError(
                     f"think exceeded its token budget: used ~{tokens} "
                     f"tokens, budget was {budget_value}.\n"
@@ -473,11 +536,19 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         """
         import time as _time
         import sys as _sys
+        from nekova.ai.cassette import CassetteMissError
         backoffs = [0.3, 0.6][:max_retries]
         last_exc = None
         for attempt, _ in enumerate([None] + backoffs, start=1):
             try:
                 return fn()
+            except CassetteMissError:
+                # Deterministic — will never succeed on retry, so
+                # don't waste attempts/backoff on it. Let it
+                # propagate straight to the normal think error path
+                # (on_error clause, or the "[think error: ...]"
+                # fallback), same as any other failure.
+                raise
             except Exception as e:
                 last_exc = e
                 if attempt > len(backoffs):
@@ -496,6 +567,55 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 )
                 _time.sleep(delay)
         raise last_exc
+
+    def _call_with_model_chain(self, provider, model_value, call_fn):
+        """
+        Phase 26c: think "..." using ["model-a", "model-b", "local"]
+        — a fallback chain as a language primitive, not something
+        every AI app hand-rolls itself. Tries each model in order;
+        each attempt still gets its own transient-failure retries
+        via _call_ai_with_visible_retry, so a chain of 3 models with
+        network hiccups isn't the same as "give up after 1 try per
+        model". Moves to the next model only when an attempt is
+        fully exhausted, not on the first blip.
+
+        model_value: whatever `using <expr>` evaluated to — a
+        single model-name string (or None, meaning "use the
+        provider's default"), OR a list of model names for a chain.
+        call_fn: zero-arg callable that performs the actual AI call
+        using provider.model as currently set (this helper sets it
+        before each attempt).
+
+        Raises the last model's error if every model in the chain
+        fails — the caller's existing except-block handles that the
+        same way a single-model failure always has.
+        """
+        if isinstance(model_value, list):
+            if not model_value:
+                raise NEKOVARuntimeError(
+                    "'using' was given an empty model list — "
+                    "provide at least one model to try."
+                )
+            last_error = None
+            for i, model_name in enumerate(model_value):
+                provider.model = model_name
+                try:
+                    return self._call_ai_with_visible_retry(call_fn)
+                except Exception as e:
+                    last_error = e
+                    if i < len(model_value) - 1:
+                        import sys as _sys
+                        print(
+                            f"[think] model '{model_name}' failed "
+                            f"({e}) — falling back to "
+                            f"'{model_value[i + 1]}'...",
+                            file=_sys.stderr,
+                        )
+            raise last_error
+
+        if model_value is not None:
+            provider.model = model_value
+        return self._call_ai_with_visible_retry(call_fn)
 
     def _exec_ThinkStatement(self, node):
         """Execute a think statement — calls the active AI provider."""
@@ -526,8 +646,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             )
             provider = get_provider()
             provider.timeout = self._get_think_timeout()
-            if node.model is not None:
-                provider.model = self._execute_node(node.model)
+            model_value = self._execute_node(node.model) if node.model is not None else None
             # Same conversation-history behavior 'think ... as <format>'
             # already had via ask_structured — extended here so plain
             # 'think' inside a converse: block (or anywhere else) also
@@ -535,8 +654,8 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             full_prompt = conversation_context() + prompt
             if self._debug_ai:
                 print(f"{Fore.YELLOW}[debug-ai] prompt sent: {full_prompt!r}{Style.RESET_ALL}")
-            response = self._call_ai_with_visible_retry(
-                lambda: provider.ask(full_prompt)
+            response = self._call_with_model_chain(
+                provider, model_value, lambda: provider.ask(full_prompt)
             )
             add_to_conversation("user", prompt)
             add_to_conversation("assistant", response)
@@ -842,6 +961,20 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # the previous value too, since sandbox blocks can nest.
         prev_sandbox_mode = self._sandbox_mode
         self._sandbox_mode = mode
+        prev_sandbox_allow = self._sandbox_allow
+        # Phase 26c: nested sandboxes intersect allow-lists rather
+        # than the inner one simply overriding the outer — a task
+        # not permitted by an outer sandbox shouldn't become
+        # callable just because an inner block re-lists it, or the
+        # capability restriction wouldn't actually be enforced
+        # end-to-end for nested agent calls.
+        if node.allow is not None and prev_sandbox_allow is not None:
+            self._sandbox_allow = [n for n in node.allow
+                                   if n in prev_sandbox_allow]
+        elif node.allow is not None:
+            self._sandbox_allow = node.allow
+        else:
+            self._sandbox_allow = prev_sandbox_allow
 
         result = {
             "output": "", "error": None, "safe": True,
@@ -861,6 +994,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         finally:
             self.env = prev_env
             self._sandbox_mode = prev_sandbox_mode
+            self._sandbox_allow = prev_sandbox_allow
             builtins.open = original_open
             sys.stdout = old_stdout
 
@@ -1316,6 +1450,20 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             items = iterable
         elif isinstance(iterable, range):
             items = list(iterable)
+        elif isinstance(iterable, _NEKOVAStreamChunks):
+            # Phase 26c: think_stream(...) specifically stays lazy —
+            # items is the live generator itself, so the trailing
+            # `for item in items:` below pulls and processes one
+            # chunk at a time as it arrives, rather than the loop
+            # body only starting once the whole response has
+            # finished. Scoped to this one new type rather than
+            # every __next__-having object: broadening it to
+            # _NEKOVAGenerator (NEKOVA `task`s with yield) as well
+            # was tried and reverted — it changed existing,
+            # already-tested generator-consumption behavior in ways
+            # that broke real tests, and fixing that interaction
+            # properly is out of scope for adding streaming.
+            items = iterable
         elif hasattr(iterable, "__iter__"):
             # Covers _NEKOVAGenerator and any other iterable
             items = list(iterable)
@@ -1618,6 +1766,31 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         else:
             callee = self._execute_node(node.name)
 
+        # Phase 26c: capability-scoped sandbox enforcement. Only
+        # applies to calling actual user-defined tasks (TaskStatement
+        # / TypedTaskStatement) — builtins used for ordinary
+        # expression work (len(), str(), filter(), ...) inside a
+        # sandboxed block aren't "capabilities" an agent is being
+        # granted or denied, they're just how NEKOVA expressions
+        # work, so restricting them would break nearly everything
+        # rather than actually scoping the agent's real actions.
+        if (self._sandbox_allow is not None
+                and isinstance(node.name, str)
+                and isinstance(callee, (TaskStatement, TypedTaskStatement))
+                and node.name not in self._sandbox_allow):
+            self._sandbox_violations.append({
+                "operation": f"call:{node.name}",
+                "mode": self._sandbox_mode,
+                "reason": "not in this sandbox's capability allow-list",
+            })
+            raise NEKOVARuntimeError(
+                f"[sandbox:{self._sandbox_mode}] '{node.name}' is not in "
+                f"this sandbox's allowed capability list "
+                f"({', '.join(self._sandbox_allow) or '(none)'}).\n"
+                f"  Add it to 'allow: [...]' on the sandbox statement "
+                f"if this call should be permitted."
+            )
+
         # Evaluate all arguments
         args = [self._execute_node(arg) for arg in node.args]
 
@@ -1814,6 +1987,9 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
     def _exec_FloatLiteral(self, node: FloatLiteral):
         return node.value
+
+    def _exec_MoneyLiteral(self, node):
+        return _DollarAmount(node.value)
 
     def _exec_StringLiteral(self, node: StringLiteral):
         """
@@ -2614,6 +2790,26 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             return dict(self._ai_usage)
         self.globals.set("ai_usage", _ai_usage)
 
+        # ── Phase 26c: streaming as a first-class construct ──────
+        def _think_stream(prompt):
+            """
+            think_stream("...") — used as:
+                for chunk in think_stream("..."):
+                    show chunk
+            Returns a live generator (wrapped so _exec_ForStatement
+            recognizes it and iterates lazily — see
+            _NEKOVAStreamChunks), not a materialized list. Each
+            chunk becomes available to the loop body as soon as the
+            provider produces it, same sandbox/timeout treatment as
+            a regular think call.
+            """
+            self._sandbox_guard("think")
+            from nekova.ai.providers import get_provider
+            provider = get_provider()
+            provider.timeout = self._get_think_timeout()
+            return _NEKOVAStreamChunks(provider.stream_chunks(str(prompt)))
+        self.globals.set("think_stream", _think_stream)
+
         # ── Phase 24: set operations ─────────────────────────────
         def _as_set(x, fn_name):
             if isinstance(x, set):
@@ -3051,6 +3247,48 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
     # ----------------------------------------------------------
 
+    # ── Phase 26c: shape validation for typed AI outputs ────────
+
+    _SHAPE_TYPE_CHECKERS = {
+        "str":   lambda v: isinstance(v, str),
+        "int":   lambda v: isinstance(v, int) and not isinstance(v, bool),
+        "float": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+        "bool":  lambda v: isinstance(v, bool),
+        "list":  lambda v: isinstance(v, list),
+        "dict":  lambda v: isinstance(v, dict),
+        "any":   lambda v: True,
+    }
+
+    def _validate_shape_fields(self, data, fields: list) -> list:
+        """
+        Check an AI-produced dict against a shape's field list
+        (the same [(name, type_str, default)] list the shape's own
+        constructor uses). Returns a list of human-readable problem
+        descriptions — empty list means it validates cleanly.
+
+        A field with no default is required: missing or None fails
+        validation rather than silently becoming None (which is
+        what plain _coerce_schema alone would do). This is what
+        actually makes 'think ... as ShapeName' typed rather than
+        just type-hinted — see _exec_ThinkAsStatement's re-prompt
+        loop below for what happens when this finds problems.
+        """
+        if not isinstance(data, dict):
+            return [f"expected a JSON object, got {type(data).__name__}"]
+
+        errors = []
+        for fname, ftype, fdefault in fields:
+            if fname not in data or data[fname] is None:
+                if fdefault is None:
+                    errors.append(f"missing required field '{fname}' "
+                                  f"({ftype})")
+                continue
+            checker = self._SHAPE_TYPE_CHECKERS.get(ftype)
+            if checker is not None and not checker(data[fname]):
+                errors.append(f"field '{fname}' should be {ftype}, got "
+                              f"{type(data[fname]).__name__}")
+        return errors
+
     def _exec_ThinkAsStatement(self, node):
         """
         Execute:
@@ -3121,14 +3359,54 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         try:
             provider = get_provider()
-            if node.model is not None:
-                provider.model = self._execute_node(node.model)
-            result   = self._call_ai_with_visible_retry(lambda: ask_structured(
-                provider, prompt, fmt,
-                schema=schema,
-                timeout=self._get_think_timeout(),
-                debug=self._debug_ai,
-            ))
+            model_value = self._execute_node(node.model) if node.model is not None else None
+            result   = self._call_with_model_chain(
+                provider, model_value, lambda: ask_structured(
+                    provider, prompt, fmt,
+                    schema=schema,
+                    timeout=self._get_think_timeout(),
+                    debug=self._debug_ai,
+                )
+            )
+
+            # Phase 26c: a shape isn't really "typed" if a response
+            # that's missing a required field or has the wrong type
+            # just gets silently accepted with the raw/None value —
+            # that's what _coerce_schema alone gives you. Validate
+            # against the shape's actual field list and, if it
+            # doesn't hold up, re-prompt with the specific problems
+            # named, same as a human reviewer would ask for a fix
+            # rather than accepting bad data. Bounded attempts so a
+            # provider that can never produce a valid shape doesn't
+            # loop forever — surfaces as a clear error instead.
+            if shape_name_matched is not None:
+                max_shape_attempts = 2
+                for attempt in range(max_shape_attempts + 1):
+                    errors = self._validate_shape_fields(result, shape_fields)
+                    if not errors:
+                        break
+                    if attempt == max_shape_attempts:
+                        raise NEKOVARuntimeError(
+                            f"AI response for shape '{shape_name_matched}' "
+                            f"still didn't validate after "
+                            f"{max_shape_attempts} re-prompt attempt(s): "
+                            f"{'; '.join(errors)}"
+                        )
+                    correction = (
+                        f"{prompt}\n\nYour previous response didn't match "
+                        f"the required shape. Problems: "
+                        f"{'; '.join(errors)}. Respond again with a "
+                        f"complete, corrected JSON object with every "
+                        f"field."
+                    )
+                    result = self._call_ai_with_visible_retry(
+                        lambda: ask_structured(
+                            provider, correction, "schema", schema=schema,
+                            timeout=self._get_think_timeout(),
+                            debug=self._debug_ai,
+                        )
+                    )
+
             # ask_structured's _coerce_schema already type-coerced every
             # field against the schema built from the shape above — no
             # need to re-run it through the shape's own constructor
@@ -3664,7 +3942,16 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         test "label":
             expect expr == val
         Runs all expect statements, collects results, prints summary.
+
+        Phase 26c: if node.repeat_count is set, delegates to
+        _exec_probabilistic_test instead — running the whole body
+        N times and requiring only a minimum number of *runs* to
+        fully pass, for testing AI-backed behavior where a single
+        run isn't a meaningful signal on its own.
         """
+        if node.repeat_count is not None:
+            return self._exec_probabilistic_test(node)
+
         passed = 0
         failed = 0
         errors = []
@@ -3712,6 +3999,84 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         self._test_totals["failed"] += failed
 
         return {"passed": passed, "failed": failed}
+
+    def _exec_probabilistic_test(self, node: TestBlock):
+        """
+        Phase 26c: test "label" repeat N times, expect at least K
+        passes: — runs the whole body N times; each run counts as
+        ONE pass if every expect/expect_snapshot in it succeeds, one
+        fail otherwise (first failure in a run stops that run, same
+        as an uncaught error would). Overall test passes if
+        run_passes >= min_passes.
+
+        This is deliberately a coarser granularity than the plain
+        test block's per-expect tally — a probabilistic test exists
+        because a *single AI call's* outcome is the unit of interest
+        ("did this run behave correctly, overall"), not each
+        individual assertion within one run.
+        """
+        times = self._execute_node(node.repeat_count)
+        try:
+            times = int(times)
+        except (TypeError, ValueError):
+            raise NEKOVARuntimeError(
+                f"'repeat ... times' expects a number, got "
+                f"{type(times).__name__}."
+            )
+        if times < 1:
+            raise NEKOVARuntimeError(
+                f"'repeat ... times' needs at least 1 run — got {times}."
+            )
+
+        if node.min_passes is not None:
+            min_passes = self._execute_node(node.min_passes)
+            try:
+                min_passes = int(min_passes)
+            except (TypeError, ValueError):
+                raise NEKOVARuntimeError(
+                    f"'expect at least ... passes' expects a number, "
+                    f"got {type(min_passes).__name__}."
+                )
+        else:
+            min_passes = times  # no tolerance specified -> all must pass
+
+        prev_test = getattr(self, "_current_test", None)
+        self._current_test = node.label
+        prev_mock = getattr(self, "_think_mock", _NO_MOCK)
+
+        run_passes = 0
+        run_failures = []
+        for run_index in range(1, times + 1):
+            try:
+                for stmt in node.body:
+                    self._execute_node(stmt)
+                run_passes += 1
+            except _ExpectFailed as e:
+                run_failures.append(f"run {run_index}: {e}")
+            except Exception as e:
+                run_failures.append(f"run {run_index}: Error: {e}")
+
+        self._current_test = prev_test
+        self._think_mock = prev_mock
+
+        overall_passed = run_passes >= min_passes
+        status = "✓ PASS" if overall_passed else "✗ FAIL"
+        print(f"  {status}  {node.label}  "
+              f"({run_passes}/{times} runs, needed ≥{min_passes})")
+        if not overall_passed:
+            for failure in run_failures:
+                print(f"       └─ {failure}")
+
+        if not hasattr(self, "_test_totals"):
+            self._test_totals = {"passed": 0, "failed": 0}
+        if overall_passed:
+            self._test_totals["passed"] += 1
+        else:
+            self._test_totals["failed"] += 1
+
+        return {"passed": run_passes, "failed": times - run_passes,
+                "runs": times, "min_passes": min_passes,
+                "overall_passed": overall_passed}
 
     def _exec_ExpectStatement(self, node: ExpectStatement):
         """expect <expr>  — must evaluate to truthy, else raises _ExpectFailed."""
