@@ -2,7 +2,7 @@
 
 ### The AI-Native Programming Language by SYNEKCOT Tech
 
-![Version](https://img.shields.io/badge/version-1.12.0-C41E0E?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.13.0-C41E0E?style=flat-square)
 ![PyPI](https://img.shields.io/pypi/v/nekova-lang?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.10+-blue?style=flat-square)
 ![License](https://img.shields.io/badge/license-BUSL--1.1-blue?style=flat-square)
@@ -544,6 +544,59 @@ nekova run app.nk --simple-errors
 directly to a boolean literal (`if x == true:` instead of `if x:`),
 and equality comparisons between floats, which can silently fail
 due to rounding.
+
+---
+
+### AI-Native Differentiators III (Phase 26c)
+
+Six features chosen specifically for being differentiators of "AI as a
+first-class language citizen," not generic language features with an
+AI label stuck on.
+
+```nekova
+# Typed AI output that's actually validated — a missing required
+# field or wrong type triggers an automatic re-prompt naming the
+# specific problem, not a silent None
+shape User:
+    name str
+    age int
+
+let u = think "Extract: Ada, age 30" as User
+
+# Probabilistic testing — for behavior that isn't meaningfully
+# pass/fail on a single run
+test "classifies sentiment" repeat 10 times, expect at least 8 passes:
+    let result = think "Is this positive?" as bool
+    expect result == true
+
+# Budgets in dollars, not just tokens
+think "..." as text with budget: $0.01
+
+# A model fallback chain as grammar, not app logic
+think "..." using ["claude-sonnet", "gpt-4", "local-model"]
+
+# Streaming, genuinely lazy — the loop body runs per chunk as it
+# arrives, not after the whole response finishes
+for chunk in think_stream("Tell me a story"):
+    show chunk
+
+# Capability-scoped agent sandboxing — this block may only call
+# the named tasks, enforced by the interpreter
+sandbox strict allow: [search_web, send_email]:
+    search_web("nekova language")
+```
+
+```
+# Deterministic AI-call replay — record real responses once,
+# replay them in CI with no API key and no spend
+nekova run agent.nk --record-ai calls.json
+nekova run agent.nk --replay-ai calls.json
+```
+
+Building the fallback chain also surfaced and fixed a real gap: the
+real providers (Anthropic, OpenAI, Gemini) were hardcoding their
+default model and silently ignoring `using` entirely. They now
+respect a per-call override.
 
 ---
 
