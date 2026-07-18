@@ -108,6 +108,11 @@ class Lexer:
                 self._read_string(char)
             return
 
+        # ── Money literals: $0.01  (Phase 26c think budgets) ───
+        if char == "$" and self._peek().isdigit():
+            self._read_money()
+            return
+
         # ── Numbers ───────────────────────────────────────────
         if char.isdigit():
             self._read_number()
@@ -463,6 +468,29 @@ class Lexer:
             self._add_token(TokenType.FLOAT, float(raw))
         else:
             self._add_token(TokenType.INTEGER, int(raw))
+
+    def _read_money(self):
+        """
+        Read a dollar-amount literal (Phase 26c):
+            $0.01   $5   $12.50
+        Deliberately simpler than _read_number — no hex, no
+        underscores, no scientific notation. A cost budget is
+        always a plain decimal amount someone typed by hand.
+        """
+        self._advance()  # consume '$'
+        value = []
+        while not self._at_end() and self._current().isdigit():
+            value.append(self._current())
+            self._advance()
+        if (not self._at_end() and self._current() == "."
+                and self._peek().isdigit()):
+            value.append(".")
+            self._advance()
+            while not self._at_end() and self._current().isdigit():
+                value.append(self._current())
+                self._advance()
+        raw = "".join(value)
+        self._add_token(TokenType.MONEY, float(raw))
 
     def _read_identifier(self):
         """Read an identifier or keyword."""
