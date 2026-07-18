@@ -1,8 +1,8 @@
 # NEKOVA Language — Official Roadmap
 
-**Version:** 1.12.0 · Genesis  
-**Tests:** 1,581 passing · 30 test phases  
-**Status:** Active development · Phase 26b complete · Phase 27 next  
+**Version:** 1.13.0 · Genesis  
+**Tests:** 1,646 passing · 31 test phases  
+**Status:** Active development · Phase 26c complete · Phase 27 next  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
 ---
@@ -49,6 +49,7 @@ consistent meaning. Going forward:
 | **1.10.0** | 24b + 25 | ✅ Documentation Website + AI-Native Differentiators II — see "Phase 24b" and "Phase 25" sections below; combined into one release per publishing decision. |
 | **1.11.0** | 26 | ✅ Developer experience — **current**. Language Server Protocol (real autocomplete, inline errors, hover docs), `nekova fmt --diff`, multi-error parser recovery, interactive `nekova new` wizard, `nekova.lock`, `--why`, `expect_snapshot(...)`, `.env.example` scaffolding |
 | **1.12.0** | 26b | ✅ Education layer — `nekova learn`, `nekova explain`, `nekova translate`, `nekova classroom`, `nekova help` glossary, `--simple-errors` |
+| **1.13.0** | 26c | ✅ AI-Native Differentiators III — typed AI output validation + re-prompt, probabilistic testing, dollar-denominated think budgets, model fallback chains, deterministic AI-call replay (cassettes), capability-scoped agent sandboxing, `think_stream` |
 | **2.0.0** | 27 | Parser in NEKOVA — self-hosting milestone 2. Includes a published formal grammar (EBNF) and a parser/lexer fuzz-testing harness in CI, both prerequisites for this phase, not just nice-to-haves |
 | **2.1.0** | 28 | Agent system, unified schema |
 | **2.2.0** | 29 | Sandbox commercial API, `nekova teach`, deployment targets, WebSocket + middleware support in the web router |
@@ -443,6 +444,39 @@ REPL; a `--simple-errors` flag that strips error output to plain sentences
 with no error code or box-drawing header; and `nekova classroom <dir>`,
 which batch-grades student submissions against a reference solution with
 a timeout backstop per submission.
+
+### Phase 26c · AI-Native Differentiators III — v1.13.0 ✅
+
+```
+$ nekova run agent.nk --record-ai calls.json
+$ nekova run agent.nk --replay-ai calls.json
+```
+
+Six features chosen specifically for being differentiators of "AI as a
+first-class language citizen" rather than generic features with an AI
+label stuck on. `think "..." as User` now actually validates the AI's
+response against the shape (missing required fields, wrong types) and
+re-prompts with the specific problems named before giving up — previously
+a missing field just silently became `None`. `test "label" repeat 10
+times, expect at least 8 passes:` is a new test-block form for behavior
+that isn't meaningfully pass/fail on a single run, which no mainstream
+language has as a built-in construct. Budgets can be dollar amounts
+(`with budget: $0.01`) as well as token counts, and
+`using ["model-a", "model-b", "local-model"]` gives a fallback chain as
+grammar rather than something every AI app hand-rolls — building this
+also surfaced and fixed a real gap where the real providers were
+hardcoding their model and silently ignoring `using` entirely.
+`--record-ai` / `--replay-ai` formalizes the existing mock-provider idea
+into genuine deterministic replay: record real responses once, replay
+them in CI with no API key and no spend, failing fast (not retrying) on
+a cassette miss since that's deterministic, not transient.
+`sandbox strict allow: [search_web, send_email]:` extends the sandbox
+infrastructure from Phase 19/25 to per-call capability scoping — an
+agent's blast radius provably limited by the grammar, not by convention.
+And `for chunk in think_stream("..."):` is genuinely lazy — the loop body
+processes each chunk as it arrives rather than waiting for the full
+response, verified by breaking after 2 of 5 chunks and confirming only
+2 were ever pulled from the underlying generator.
 
 ### Phase 27 · NEKOVA Parser in NEKOVA — v2.0.0 📋
 
