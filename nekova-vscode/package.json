@@ -2,7 +2,7 @@
   "name": "nekova-lang",
   "displayName": "NEKOVA - AI Native Programming Language",
   "description": "NEKOVA: AI-native syntax highlighting, snippets, sandbox, and tooling for the NEKOVA programming language — where think is a keyword",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "publisher": "SYNEKCOTTech",
   "engines": {
     "vscode": "^1.75.0"
