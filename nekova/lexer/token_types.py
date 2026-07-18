@@ -9,6 +9,7 @@ class TokenType(Enum):
     # ── Literals ──────────────────────────────────────────────
     INTEGER     = auto()
     FLOAT       = auto()
+    MONEY       = auto()   # $0.01 — Phase 26c think budgets in dollars
     STRING      = auto()
     F_STRING    = auto()
     BOOLEAN     = auto()
