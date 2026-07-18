@@ -119,7 +119,7 @@ class AnthropicProvider(BaseProvider):
         """Perform the actual blocking HTTP call to the Anthropic API."""
         client  = self._get_client()
         message = client.messages.create(
-            model=self.MODEL,
+            model=self.model or self.MODEL,
             max_tokens=self.MAX_TOKENS,
             messages=[
                 {"role": "user", "content": full_prompt}
@@ -154,7 +154,7 @@ class AnthropicProvider(BaseProvider):
 
             full_response = []
             with client.messages.stream(
-                model=self.MODEL,
+                model=self.model or self.MODEL,
                 max_tokens=self.MAX_TOKENS,
                 messages=[
                     {"role": "user", "content": full_prompt}
