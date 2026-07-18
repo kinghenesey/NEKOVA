@@ -91,6 +91,26 @@ class BaseProvider(ABC):
     def stream(self, prompt: str) -> str:
         return self.ask(prompt)
 
+    def stream_chunks(self, prompt: str):
+        """
+        Phase 26c — the actual generator behind think_stream(...),
+        used with `for chunk in think_stream(...):`. Default
+        implementation: get the full response via ask() (a real
+        provider still only supports one call per prompt here) and
+        yield it back out word by word, so a caller can already
+        write real, working chat-shaped code against this today.
+
+        A provider wanting genuine token-by-token streaming from
+        its underlying API (e.g. an SSE response) overrides this
+        method directly — the interpreter and `for` loop don't care
+        which one it's doing, both are just "a generator of text
+        chunks" from their point of view.
+        """
+        response = self.ask(prompt)
+        words = response.split(" ")
+        for i, word in enumerate(words):
+            yield word if i == len(words) - 1 else word + " "
+
     def generate_image(self, prompt: str,
                        filename: str = "generated_image.png") -> str:
         """Generate an image from a text prompt."""
