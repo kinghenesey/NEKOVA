@@ -1,7 +1,7 @@
 from nekova.lexer.token_types import TokenType, KEYWORDS
 from nekova.lexer.token import Token
 from nekova.parser.nodes import (
-    Program, IntegerLiteral, FloatLiteral, StringLiteral, FStringLiteral,
+    Program, IntegerLiteral, FloatLiteral, MoneyLiteral, StringLiteral, FStringLiteral,
     BooleanLiteral, NullLiteral, ListLiteral, TupleLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, AssignStatement,
     ShowStatement, ThinkStatement, PipelineStatement, ModelStatement, ParallelStatement, MemoryStatement,
@@ -466,17 +466,76 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             test "label":
                 expect expr == val
                 expect other == val
+
+        Phase 26c — probabilistic form:
+            test "label" repeat 10 times, expect at least 8 passes:
+                let result = think "..." as bool
+                expect result == true
+
+        "repeat", "times", "expect", "at", "least", "passes" are all
+        contextual (soft) keywords here, matched by identifier value
+        rather than reserved token types — same convention _parse_retry
+        already uses for "times"/"backoff", so none of these words are
+        taken away from use as ordinary variable names elsewhere.
         """
         line = self._current().line
         self._consume(TokenType.TEST)
         # label — must be a string literal
         label_tok = self._consume(TokenType.STRING)
         label = label_tok.value
+
+        repeat_count = None
+        min_passes = None
+
+        if self._current().type == TokenType.REPEAT:
+            self._advance()
+            repeat_count = self._parse_expression()
+            if (self._current().type == TokenType.IDENTIFIER
+                    and self._current().value == "times"):
+                self._advance()
+
+            if self._current().type == TokenType.COMMA:
+                self._advance()
+                # "expect at least <n> passes"
+                if self._current().type != TokenType.EXPECT:
+                    raise ParseError(
+                        "Expected 'expect at least <n> passes' after "
+                        "'repeat <n> times,' in a test block.\n"
+                        "  Example:  test \"label\" repeat 10 times, "
+                        "expect at least 8 passes:",
+                        line=self._current().line,
+                    )
+                self._advance()  # 'expect'
+                if not (self._current().type == TokenType.IDENTIFIER
+                        and self._current().value == "at"):
+                    raise ParseError(
+                        "Expected 'at least <n> passes'.\n"
+                        "  Example:  expect at least 8 passes",
+                        line=self._current().line,
+                    )
+                self._advance()  # 'at'
+                if not (self._current().type == TokenType.IDENTIFIER
+                        and self._current().value == "least"):
+                    raise ParseError(
+                        "Expected 'least <n> passes'.\n"
+                        "  Example:  expect at least 8 passes",
+                        line=self._current().line,
+                    )
+                self._advance()  # 'least'
+                min_passes = self._parse_expression()
+                if (self._current().type == TokenType.IDENTIFIER
+                        and self._current().value == "passes"):
+                    self._advance()
+
         self._consume(TokenType.COLON)
         self._expect_newline_or_eof()
         self._skip_newlines()
         body = self._parse_block()
-        return self._stamp(TestBlock(label, body, line=line), line)
+        return self._stamp(
+            TestBlock(label, body, line=line,
+                      repeat_count=repeat_count, min_passes=min_passes),
+            line,
+        )
 
     def _parse_expect(self):
         """Parse:  expect <expression>"""
@@ -1034,6 +1093,16 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                 <body>
             sandbox relaxed:
                 <body>
+
+        Phase 26c — capability-scoped form:
+            sandbox strict allow: [search_web, send_email]:
+                <body>
+
+        The allow-list is a bracketed list of bare task-name
+        identifiers (not general expressions) — these are
+        capability names being declared, not values being
+        computed, so they're captured directly as strings at parse
+        time rather than going through the expression evaluator.
         """
         line = self._current().line
         self._consume(TokenType.SANDBOX)
@@ -1053,11 +1122,25 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                 mode_token.line
             )
 
+        allow = None
+        if (self._current().type == TokenType.IDENTIFIER
+                and self._current().value == "allow"):
+            self._advance()  # consume 'allow'
+            self._consume(TokenType.COLON)
+            self._consume(TokenType.LBRACKET)
+            allow = []
+            while self._current().type != TokenType.RBRACKET:
+                name_tok = self._consume(TokenType.IDENTIFIER)
+                allow.append(name_tok.value)
+                if self._current().type == TokenType.COMMA:
+                    self._advance()
+            self._consume(TokenType.RBRACKET)
+
         self._consume(TokenType.COLON)
         self._expect_newline_or_eof()
         self._skip_newlines()
         body = self._parse_block()
-        return SandboxStatement(mode=mode, body=body, line=line)
+        return SandboxStatement(mode=mode, body=body, line=line, allow=allow)
     
     def _parse_pipeline_def(self):
         """
@@ -2306,6 +2389,10 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         if token.type == TokenType.FLOAT:
             self._advance()
             return FloatLiteral(token.value)
+
+        if token.type == TokenType.MONEY:
+            self._advance()
+            return MoneyLiteral(token.value)
 
         if token.type == TokenType.STRING:
             self._advance()
