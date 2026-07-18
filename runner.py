@@ -36,12 +36,15 @@ class NEKOVARunner:
     def __init__(self, filepath: str, debug: bool = False,
                  compile_mode: bool = False, strict_types: bool = False,
                  script_args: dict = None, debug_ai: bool = False,
-                 why: bool = False, simple_errors: bool = False):
+                 why: bool = False, simple_errors: bool = False,
+                 record_ai: str = None, replay_ai: str = None):
         self.filepath     = filepath
         self.debug        = debug
         self.debug_ai     = debug_ai
         self.why          = why
         self.simple_errors = simple_errors
+        self.record_ai    = record_ai
+        self.replay_ai    = replay_ai
         self.compile_mode = compile_mode
         self.strict_types = strict_types
         self.script_args  = script_args or {}
@@ -53,6 +56,24 @@ class NEKOVARunner:
             return 1
         if not self._load_source():
             return 1
+
+        # Phase 26c — cassette record/replay, scoped to just this run
+        # so it can never leak into a later NEKOVARunner instance
+        # (e.g. across tests, or nekova watch's repeated re-runs).
+        if self.record_ai or self.replay_ai:
+            from nekova.ai.providers import (
+                enable_cassette_recording, enable_cassette_replay,
+                disable_cassette,
+            )
+            if self.record_ai:
+                enable_cassette_recording(self.record_ai)
+            else:
+                enable_cassette_replay(self.replay_ai)
+            try:
+                return self._execute()
+            finally:
+                disable_cassette()
+
         return self._execute()
 
     def _validate_file(self) -> bool:
