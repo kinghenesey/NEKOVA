@@ -40,6 +40,19 @@ class FloatLiteral(Node):
         return f"Float({self.value})"
 
 
+class MoneyLiteral(Node):
+    """
+    A dollar-amount literal like $0.01 (Phase 26c) — used in a
+    think budget clause to cap estimated spend rather than raw
+    token count: `think "..." with budget: $0.01`.
+    """
+    def __init__(self, value: float):
+        self.value = value
+
+    def __repr__(self):
+        return f"Money(${self.value})"
+
+
 class StringLiteral(Node):
     """A string like "Hello"."""
     def __init__(self, value: str):
@@ -479,12 +492,26 @@ class SandboxStatement(Node):
             use files
             data = read_file("input.txt")
 
+    Phase 26c — capability-scoped agent tool access: an explicit
+    allow-list of task names the block may call, enforced by the
+    interpreter rather than by convention. This is the same idea
+    as strict/relaxed mode taken further — instead of a fixed set
+    of operation *categories* being blocked, a specific agent gets
+    a specific, named set of tools and nothing else:
+        sandbox strict allow: [search_web, send_email]:
+            think "..."   # still blocked by strict mode itself
+            search_web("query")   # allowed — it's on the list
+            delete_database()     # blocked — not on the list
+
     'mode' is either "strict" or "relaxed".
     'body' is the list of statements to run sandboxed.
+    'allow' is a list of allowed task-name strings, or None for no
+    capability restriction beyond whatever the mode itself blocks.
     """
     mode: str
     body: list
     line: int = 0
+    allow: list = None
 
 @dataclass
 class PipelineDefStatement(Node):
@@ -1171,13 +1198,30 @@ class TestBlock(Node):
         test "adds numbers":
             expect add(1, 2) == 3
             expect add(0, 0) == 0
+
+    Phase 26c — probabilistic form, for testing non-deterministic
+    (AI-backed) behavior where a single pass/fail isn't meaningful:
+        test "ai classifies sentiment" repeat 10 times, expect at least 8 passes:
+            let result = think "Is this positive?" as bool
+            expect result == true
+
+    repeat_count / min_passes are Node expressions (or None for the
+    plain, single-run form above). When repeat_count is set and
+    min_passes isn't, min_passes defaults to repeat_count — i.e.
+    "repeat 5 times" alone still means all 5 must pass, same as
+    running the body 5 times with no tolerance for flakiness.
     """
-    def __init__(self, label: str, body: list, line: int = 0):
+    def __init__(self, label: str, body: list, line: int = 0,
+                 repeat_count=None, min_passes=None):
         self.label = label
         self.body  = body
         self.line  = line
+        self.repeat_count = repeat_count
+        self.min_passes   = min_passes
 
     def __repr__(self):
+        if self.repeat_count is not None:
+            return f"Test({self.label!r}, repeat={self.repeat_count})"
         return f"Test({self.label!r})"
 
 
