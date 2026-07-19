@@ -52,4 +52,14 @@ include = ["nekova*"]
 exclude = ["venv*", "tests*", "dist*", "build*", "*.egg-info*", "nekova-vscode*"]
 
 [tool.setuptools]
+include-package-data = true
 py-modules = ["main", "runner", "nekova_cli", "repl", "debugger", "notebook", "formatter"]
+
+[tool.setuptools.package-data]
+# Without this, setuptools only auto-includes .py files for discovered
+# packages. The .nk stdlib source files (nekova/stdlib/nk/*.nk) are data,
+# not Python source, so they were silently excluded from the built wheel —
+# meaning `use math`/`use string`/`use date`/etc. fail via any pip-installed
+# nekova-lang, even though the interpreter's nk_loader.py correctly finds
+# them when run from a source checkout (e.g. under pytest).
+nekova = ["stdlib/nk/*.nk"]

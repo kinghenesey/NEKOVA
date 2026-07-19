@@ -156,17 +156,46 @@ class AsyncInterpreterMixin:
                 "Install it: pip install anthropic"
             )
 
-        client = anthropic.AsyncAnthropic()
+        # Fail fast with a clear, correctly-categorized error rather than
+        # letting the raw SDK exception (a bare TypeError, in this SDK's
+        # case, for missing credentials) leak through uncaught — that gets
+        # mis-classified as a Type Error by the CLI's error catalogue,
+        # since it never gets the chance to be recognized as what it
+        # actually is: a missing/invalid credential. Same check the
+        # synchronous provider (nekova/ai/providers/anthropic.py) already
+        # performs correctly before calling the SDK.
+        import os
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            raise NEKOVARuntimeError(
+                "No Anthropic API key found.\n"
+                "  Add ANTHROPIC_API_KEY to your .env file.\n"
+                "  Get a key at: https://console.anthropic.com"
+            )
 
-        async with client.messages.stream(
-            model="claude-sonnet-4-6",
-            max_tokens=1024,
-            messages=[{"role": "user", "content": str(prompt_value)}],
-        ) as stream:
-            async for chunk_text in stream.text_stream:
-                # Bind the chunk variable and run the body
-                self.env[node.chunk_var] = chunk_text
-                await self.execute_block_async(node.body, dict(self.env))
+        try:
+            client = anthropic.AsyncAnthropic()
+
+            async with client.messages.stream(
+                model="claude-sonnet-4-6",
+                max_tokens=1024,
+                messages=[{"role": "user", "content": str(prompt_value)}],
+            ) as stream:
+                async for chunk_text in stream.text_stream:
+                    # Bind the chunk variable and run the body
+                    self.env[node.chunk_var] = chunk_text
+                    await self.execute_block_async(node.body, dict(self.env))
+        except NEKOVARuntimeError:
+            raise  # already a clean NEKOVA-level error, re-raise as-is
+        except Exception as e:
+            # Anything else from the SDK (network errors, rate limits,
+            # unexpected response shapes, etc.) — same treatment as the
+            # synchronous provider: wrap so it's classified as a Runtime
+            # Error, not whatever incidental Python exception type the
+            # SDK happened to raise.
+            raise NEKOVARuntimeError(
+                f"Claude API error: {str(e)}\n"
+                f"  Check your API key and internet connection."
+            )
 
     def visit_stream_think(self, node: StreamThinkNode):
         return self._run_sync(self._stream_think_async(node))

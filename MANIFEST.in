@@ -9,6 +9,11 @@ recursive-include interpreter *.py
 recursive-include compiler *.py
 recursive-include runtime *.py
 recursive-include stdlib *.py
+# .nk stdlib source files were never included in the sdist/wheel — this is
+# the fix for "use math"/"use string"/"use date"/etc. failing via any
+# pip-installed nekova-lang. See nekova/stdlib/nk_loader.py, which looks
+# for these files relative to the installed package at runtime.
+recursive-include nekova/stdlib/nk *.nk
 recursive-include ai *.py
 recursive-include web *.py
 recursive-include database *.py
