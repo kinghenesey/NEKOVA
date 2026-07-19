@@ -55,6 +55,7 @@ v{NEKOVA_VERSION} · {NEKOVA_CODENAME}
   nekova <file.nk> --debug-ai   Print the exact prompt every think call sends
   nekova <file.nk> --compile    Run using the compiler
   nekova run <file.nk>          Run an NEKOVA file
+  nekova run <file.nk> --quiet   Suppress the startup banner (-q also works)
   nekova repl                     Start interactive shell
 
 {Color.BOLD}Developer tools:{Color.RESET}

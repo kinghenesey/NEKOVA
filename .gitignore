@@ -52,3 +52,11 @@ diff_target.nk
 nk_tokens.nk
 # Phase 25: imagine local cache
 .nekova_cache/
+
+# docs-site/output/ is built fresh by .github/workflows/deploy-docs.yml
+# on every push and deployed straight to GitHub Pages as an ephemeral
+# artifact — it was never meant to be committed. A stale committed copy
+# here was the actual root cause of "the changelog looks out of date"
+# reports across multiple sessions even when docs-site/content/ (the
+# real source) was current — see CHANGELOG.md 1.13.0 entry.
+docs-site/output/
