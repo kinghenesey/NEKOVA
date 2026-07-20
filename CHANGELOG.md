@@ -3,6 +3,47 @@
 All notable changes to NEKOVA are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased] — Phase 27 prerequisites
+
+Infrastructure only — no version bump, since nothing user-facing shipped.
+These two items were explicit prerequisites for Phase 27 (NEKOVA Parser
+in NEKOVA, the second self-hosting milestone) rather than afterthoughts,
+so they're done before any self-hosted-parser code gets written.
+
+### Added
+
+- **`GRAMMAR.md`** — a formal EBNF grammar for the whole language,
+  written directly against the live `parser.py` and its mixin files
+  (`async_parser.py`, `class_parser.py`, `match_parser.py`,
+  `web_parser.py`), not from memory or the docs site. Covers every
+  statement form, the full expression precedence chain, and the
+  lexical grammar (including the `$` money literal from Phase 26c).
+- **`tools/check_grammar_coverage.py`** — cross-checks every parse
+  method in the codebase against an explicit mapping to `GRAMMAR.md`
+  rule names, failing on either direction of drift: a new parse method
+  with no grammar entry, or a mapping pointing at a rule that no
+  longer exists. Wired into CI as a required job.
+- **`tools/fuzz/`** — a dependency-free fuzz-testing harness:
+  `generator.py` produces grammar-informed (but often deliberately
+  invalid) NEKOVA source, `mutator.py` applies realistic corruptions
+  (truncation, bracket/quote unbalancing, indentation corruption,
+  unicode/null-byte injection, deep nesting, huge identifiers, and
+  more), and `harness.py` feeds the result through the real
+  lexer/parser, classifying every result and saving any ungraceful
+  crash as a permanent regression file. Wired into
+  `.github/workflows/fuzz.yml` (fast budget on push/PR, longer
+  nightly run) and replayed on every normal test run via
+  `tests/test_fuzz_regressions.py`.
+
+### Fixed
+
+- Found by the fuzzer before any self-hosted-parser work even started:
+  deeply nested expressions (hundreds of parentheses in something like
+  `let x = ((((...))))`) crashed with a raw Python `RecursionError`
+  instead of a clean NEKOVA error. Now raises an ordinary `ParseError`
+  with a message suggesting the fix (break the expression into smaller
+  pieces with intermediate variables).
+
 ## [1.13.0] — AI-Native Differentiators III
 
 Six features aimed specifically at "a language where AI is a first-class
