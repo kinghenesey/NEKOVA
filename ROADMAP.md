@@ -1,8 +1,8 @@
 # NEKOVA Language — Official Roadmap
 
 **Version:** 1.13.0 · Genesis  
-**Tests:** 1,646 passing · 31 test phases  
-**Status:** Active development · Phase 26c complete · Phase 27 next  
+**Tests:** 1,665 passing (1 skipped — no fuzz regressions saved yet) · 32 test phases  
+**Status:** Active development · Phase 26c complete · Phase 27 prerequisites complete, self-hosted parser work next  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
 ---
@@ -481,11 +481,30 @@ response, verified by breaking after 2 of 5 chunks and confirming only
 ### Phase 27 · NEKOVA Parser in NEKOVA — v2.0.0 📋
 
 Self-hosting milestone 2. The parser is recursive descent — more complex
-than the lexer. Two prerequisites, not afterthoughts: a **published formal
-grammar (EBNF)** as the stable reference this phase implements against, and
-a **fuzz-testing harness** feeding malformed input through the lexer/parser
-in CI, so this phase surfaces crashes on bad input before it ships rather
-than after. When Phase 27 ships, v2.0 commits to backward compatibility.
+than the lexer.
+
+**Prerequisites — ✅ complete:**
+- **`GRAMMAR.md`** — a formal EBNF grammar written directly against the
+  live `parser.py` and its mixins (not from memory), covering every
+  statement form, the full expression precedence chain, and the lexical
+  grammar. `tools/check_grammar_coverage.py` cross-checks every parse
+  method in the codebase against it and fails CI on drift.
+- **Fuzz-testing harness** (`tools/fuzz/`) — a dependency-free
+  grammar-informed generator + mutator feeding the real lexer/parser,
+  wired into `.github/workflows/fuzz.yml` (fast budget on every push/PR,
+  a longer nightly run, grammar-coverage check as a required job).
+  Already found and fixed a real bug before this phase's actual parser
+  work even started: deeply nested expressions (e.g. hundreds of
+  parentheses in `let x = ((((...))))`) crashed with a raw Python
+  `RecursionError` instead of a clean NEKOVA error — now converted to
+  an ordinary `ParseError` with a helpful message. Every crash the
+  fuzzer ever finds is saved as a permanent regression file, replayed
+  on every normal test run via `tests/test_fuzz_regressions.py`.
+
+With both prerequisites in place, the actual self-hosting work — writing
+NEKOVA's parser in NEKOVA, implementing against `GRAMMAR.md` as the
+stable spec — is next. When Phase 27 ships, v2.0 commits to backward
+compatibility.
 
 ### Phase 28 · Agent System + Unified Schema — v2.1.0 📋
 
