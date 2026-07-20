@@ -76,7 +76,8 @@ KEYWORDS = {
     "expect": "EXPECT", "imagine": "IMAGINE", "shape": "SHAPE",
     "watch": "WATCH",
     "retry": "RETRY", "fallback": "FALLBACK",
-    "observe": "OBSERVE", "mock": "MOCK"
+    "observe": "OBSERVE", "mock": "MOCK",
+    "const": "CONST", "enum": "ENUM", "converse": "CONVERSE"
 }
 
 # ── Lexer state ───────────────────────────────────────────────
@@ -400,6 +401,27 @@ task read_number(state):
     else:
         add_token(state, "INTEGER", int(raw))
 
+# ── Money literals: $0.01  (Phase 26c think budgets) ─────────
+# Mirrors nekova/lexer/lexer.py::_read_money — deliberately
+# simpler than read_number: no hex, no underscores, no
+# scientific notation, since a cost budget is always a plain
+# decimal amount someone typed by hand.
+
+task read_money(state):
+    advance(state)  # consume '$'
+    chars = []
+    while not at_end(state) and is_digit(current(state)):
+        chars.append(current(state))
+        advance(state)
+    if not at_end(state) and current(state) == "." and is_digit(peek(state)):
+        chars.append(".")
+        advance(state)
+        while not at_end(state) and is_digit(current(state)):
+            chars.append(current(state))
+            advance(state)
+    raw = "".join(chars)
+    add_token(state, "MONEY", float(raw))
+
 # ── Identifiers & keywords ───────────────────────────────────
 
 task read_identifier(state):
@@ -549,6 +571,10 @@ task scan_token(state):
             read_triple_string(state, ch)
         else:
             read_string(state, ch)
+        return
+
+    if ch == "$" and is_digit(peek(state)):
+        read_money(state)
         return
 
     if is_digit(ch):
