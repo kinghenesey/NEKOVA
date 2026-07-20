@@ -106,8 +106,28 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         and line it always had. It just now also carries
         `.all_errors` (the full list) for callers that want more than
         one, like the LSP's diagnostics.
+
+        Phase 27 prerequisite (fuzz harness): deeply nested
+        expressions — e.g. hundreds of parentheses in
+        `let x = ((((...))))` — used to blow Python's own recursion
+        limit and crash with a raw RecursionError instead of a clean
+        NEKOVA error. Recursive-descent parsing is inherently
+        recursion-depth-bound; the real fix (an explicit, iterative
+        expression parser) is Phase 27 work, but a program a person
+        could plausibly generate by mistake shouldn't crash
+        ungracefully in the meantime, so this converts that specific
+        failure into an ordinary ParseError.
         """
-        statements = self._parse_all_statements()
+        try:
+            statements = self._parse_all_statements()
+        except RecursionError:
+            raise ParseError(
+                "This expression is nested too deeply for NEKOVA's "
+                "parser to handle (too many levels of parentheses, "
+                "brackets, or nested blocks). Try breaking it into "
+                "smaller pieces with intermediate variables.",
+                line=self._current().line if self.pos < len(self.tokens) else 0,
+            )
 
         if self.errors:
             first = self.errors[0]
