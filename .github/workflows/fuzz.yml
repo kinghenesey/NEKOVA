@@ -1,0 +1,84 @@
+name: Fuzz Lexer/Parser
+
+# Phase 27 prerequisite: feeds malformed/random input through the
+# lexer and parser on every push and PR, so crashes on bad input
+# surface in CI before Phase 27's self-hosted parser replaces the
+# current one — not after. Also runs the grammar coverage checker,
+# the other Phase 27 prerequisite (GRAMMAR.md staying in sync with
+# the real parser).
+#
+# A crash saves the exact input as a permanent regression file
+# under tools/fuzz/regressions/, committed back to the repo by this
+# workflow so the *next* run (and tests/test_fuzz_regressions.py in
+# the normal test suite) catch it forever after, not just once.
+
+"on":
+  push:
+    branches: [main]
+    paths:
+      - "nekova/lexer/**"
+      - "nekova/parser/**"
+      - "tools/fuzz/**"
+      - "tools/check_grammar_coverage.py"
+      - "GRAMMAR.md"
+      - ".github/workflows/fuzz.yml"
+  pull_request:
+    paths:
+      - "nekova/lexer/**"
+      - "nekova/parser/**"
+      - "tools/fuzz/**"
+      - "tools/check_grammar_coverage.py"
+      - "GRAMMAR.md"
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: "Fuzz campaign duration (seconds)"
+        default: "120"
+        required: false
+  schedule:
+    # A longer nightly run catches rarer crashes the fast per-push
+    # budget below wouldn't have time to find.
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  grammar-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check GRAMMAR.md matches the live parser
+        run: python3 tools/check_grammar_coverage.py
+
+  fuzz:
+    runs-on: ubuntu-latest
+    needs: grammar-coverage
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install NEKOVA
+        run: pip install -e . --break-system-packages -q
+      - name: Replay existing regressions first
+        run: python3 tools/fuzz/harness.py --replay-regressions
+      - name: Run fuzz campaign (push/PR — fast budget)
+        if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
+        run: python3 tools/fuzz/harness.py --seconds 60
+      - name: Run fuzz campaign (scheduled/manual — longer budget)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: >
+          python3 tools/fuzz/harness.py
+          --seconds ${{ github.event.inputs.seconds || '600' }}
+      - name: Commit any new regression files
+        if: failure()
+        run: |
+          git config user.name "nekova-fuzz-bot"
+          git config user.email "actions@github.com"
+          git add tools/fuzz/regressions/
+          git diff --cached --quiet || git commit -m "fuzz: save new crash regression(s)"
+          git push || true
