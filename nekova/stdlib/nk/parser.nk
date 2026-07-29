@@ -1,0 +1,1078 @@
+# ═══════════════════════════════════════════════════════════════
+# NEKOVA Standard Library — parser.nk
+# Phase 27, Layer 1: core statement/expression grammar.
+#
+# Self-hosted port of nekova/parser/parser.py, written directly
+# against GRAMMAR.md and the live Python parser — same relationship
+# lexer.nk (Phase 20) has to nekova/lexer/lexer.py. Consumes the
+# token dicts produced by lexer.nk's tokenize(source).
+#
+# AST shape: every node is a dict with a "type" field matching the
+# Python Node class name 1:1 (e.g. "IntegerLiteral", "BinaryOp",
+# "IfStatement"), plus a "line" field, plus whatever fields that
+# node needs. This mirrors the token-dict convention lexer.nk uses,
+# so NEKOVA never has to lean on classes it doesn't have yet while
+# bootstrapping its own parser.
+#
+# Layer 1 scope (agreed before writing any code — see session notes):
+#   - Full expression precedence chain (pipe -> ternary -> or -> and
+#     -> comparison -> addition -> multiplication -> unary -> primary),
+#     including literals, identifiers, calls, index/slice, property
+#     and method access, optional chaining, list/dict/set/tuple
+#     literals with spread, f-strings, and grouped/tuple parens.
+#   - let / const / global / unpack (incl. list/tuple/dict destructure)
+#   - if/elif/else, while, repeat, for, try/catch/finally
+#   - task definitions (typed + untyped params, return type, varargs,
+#     docstrings)
+#   - return / break / continue / pass / show
+#   - identifier statements: assignment, augmented assignment,
+#     index assignment, call statements, dot-chain statements
+#
+# Explicitly DEFERRED to Layer 2 (AI-native: think/prompt/pipeline/
+# sandbox/converse/agents/etc., plus enum/shape/error/route/serve/
+# match/import/use/assert/raise/yield/decorator) and Layer 3
+# (classes, async, self/new). Encountering one of those constructs
+# raises a clear "not yet supported" ParseError rather than
+# mis-parsing or crashing — see parse_statement's final dispatch
+# branches.
+#
+# Entry point:  parse(source) -> list of statement-node dicts
+#               (tokenizes internally via lexer.nk's tokenize())
+# ═══════════════════════════════════════════════════════════════
+
+use lexer
+
+# ── Deferred-construct keyword sets ─────────────────────────────
+# Anything landing here gets a clear "deferred to a later layer"
+# error instead of silently mis-parsing. Kept as a set-shaped dict
+# (value unused) so membership checks read the same way as a real
+# set would.
+
+DEFERRED_AI_NATIVE_STATEMENT_TYPES = {
+    "THINK": true, "MODEL": true, "AUTONOMOUS": true, "MEMORY": true,
+    "SANDBOX": true, "PIPELINE_DEF": true, "RUN": true, "REMEMBER": true,
+    "RECALL": true, "FORGET": true, "CONVERSE": true, "SPEAK": true,
+    "LISTEN": true, "EVERY": true, "TEST": true, "EXPECT": true,
+    "IMAGINE": true, "SHAPE": true, "WATCH": true, "MATCH": true,
+    "ROUTE": true, "SERVE": true, "ENUM": true, "ERROR_TYPE": true,
+    "YIELD": true, "AT": true, "USE": true, "IMPORT": true,
+    "FETCH": true, "AWAIT": true, "ASYNC": true
+}
+
+DEFERRED_CLASS_TYPES = {
+    "CLASS": true, "OBJECT": true, "NEW": true, "SELF": true
+}
+
+# ── Parser state ─────────────────────────────────────────────────
+
+task new_parser_state(tokens):
+    return {
+        "tokens": tokens,
+        "pos": 0
+    }
+
+task current(state):
+    return state["tokens"][state["pos"]]
+
+task peek_type(state, offset):
+    idx = state["pos"] + offset
+    if idx < len(state["tokens"]):
+        return state["tokens"][idx]["type"]
+    return "EOF"
+
+task at_end(state):
+    return current(state)["type"] == "EOF"
+
+task advance(state):
+    tok = state["tokens"][state["pos"]]
+    if state["pos"] < len(state["tokens"]) - 1:
+        state["pos"] = state["pos"] + 1
+    return tok
+
+task consume(state, expected):
+    tok = current(state)
+    if tok["type"] != expected:
+        raise ("Expected '" + expected + "' but got '" + tok["type"] +
+               "' ('" + str(tok["value"]) + "') at line " + str(tok["line"]) + ".")
+    return advance(state)
+
+task skip_newlines(state):
+    while not at_end(state) and current(state)["type"] == "NEWLINE":
+        advance(state)
+
+task expect_newline_or_eof(state):
+    if current(state)["type"] == "NEWLINE":
+        advance(state)
+    # anything else: leave it — the next parse attempt surfaces the error
+
+task stamp(node, line):
+    node["line"] = line
+    return node
+
+# ── Entry point ───────────────────────────────────────────────────
+
+task parse(source):
+    tokens = tokenize(source)
+    state = new_parser_state(tokens)
+    statements = []
+
+    skip_newlines(state)
+    while not at_end(state):
+        stmt = parse_statement(state)
+        if stmt != null:
+            statements.append(stmt)
+        skip_newlines(state)
+
+    return statements
+
+# ── Statement dispatch ────────────────────────────────────────────
+
+task parse_statement(state):
+    token = current(state)
+    t = token["type"]
+
+    if t == "SHOW":
+        return parse_show(state)
+    if t == "LET":
+        return parse_let(state)
+    if t == "CONST":
+        return parse_const(state)
+    if t == "GLOBAL":
+        return parse_global(state)
+    if t == "IF":
+        return parse_if(state)
+    if t == "WHILE":
+        return parse_while(state)
+    if t == "TRY":
+        return parse_try(state)
+    if t == "FOR":
+        return parse_for(state)
+    if t == "TASK":
+        return parse_task(state)
+    if t == "RETURN":
+        return parse_return(state)
+    if t == "BREAK":
+        line = token["line"]
+        advance(state)
+        expect_newline_or_eof(state)
+        return stamp({"type": "BreakStatement"}, line)
+    if t == "CONTINUE":
+        line = token["line"]
+        advance(state)
+        expect_newline_or_eof(state)
+        return stamp({"type": "ContinueStatement"}, line)
+
+    if t == "REPEAT":
+        # 'repeat(' with no space is a call to a variable/function
+        # named 'repeat', not the loop — same disambiguation the
+        # Python parser uses.
+        if peek_type(state, 1) == "LPAREN":
+            advance(state)
+            expr = {"type": "Identifier", "name": "repeat"}
+            call = finish_call(state, "repeat")
+            expect_newline_or_eof(state)
+            return call
+        return parse_repeat(state)
+
+    if t == "IDENTIFIER":
+        if token["value"] == "pass":
+            line = token["line"]
+            advance(state)
+            expect_newline_or_eof(state)
+            return stamp({"type": "PassStatement"}, line)
+
+        # Tuple unpacking: a, b, c = expr
+        if peek_type(state, 1) == "COMMA":
+            return parse_unpack(state)
+
+        return parse_identifier_statement(state)
+
+    if t == "NEWLINE" or t == "EOF":
+        return null
+
+    if DEFERRED_AI_NATIVE_STATEMENT_TYPES.get(t, false):
+        raise ("'" + t + "' is an AI-native construct — not yet " +
+               "supported by the self-hosted parser (Layer 2 work). " +
+               "Line " + str(token["line"]) + ".")
+
+    if DEFERRED_CLASS_TYPES.get(t, false):
+        raise ("'" + t + "' (classes/self) is not yet supported by " +
+               "the self-hosted parser (Layer 3 work). Line " +
+               str(token["line"]) + ".")
+
+    raise ("Unexpected token '" + str(token["value"]) +
+           "' — NEKOVA doesn't know what to do with this here. Line " +
+           str(token["line"]) + ".")
+
+# ── Declarations ──────────────────────────────────────────────────
+
+task parse_let(state):
+    line = current(state)["line"]
+    consume(state, "LET")
+
+    if current(state)["type"] == "LBRACKET":
+        return parse_list_destructure(state, line, "LBRACKET", "RBRACKET")
+    if current(state)["type"] == "LPAREN":
+        return parse_list_destructure(state, line, "LPAREN", "RPAREN")
+    if current(state)["type"] == "LBRACE":
+        return parse_dict_destructure(state, line)
+
+    name = consume(state, "IDENTIFIER")["value"]
+
+    type_hint = null
+    if current(state)["type"] == "COLON":
+        advance(state)
+        if current(state)["type"] == "IDENTIFIER":
+            type_hint = advance(state)["value"]
+
+    consume(state, "ASSIGN")
+
+    if DEFERRED_AI_NATIVE_STATEMENT_TYPES.get(current(state)["type"], false):
+        raise ("Captured '" + current(state)["type"] + "' expressions " +
+               "(let " + name + " = ...) are Layer 2 work — not yet " +
+               "supported. Line " + str(line) + ".")
+
+    value = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({
+        "type": "AssignStatement", "name": name, "value": value,
+        "type_hint": type_hint, "is_const": false, "is_declaration": true
+    }, line)
+
+task parse_list_destructure(state, line, open_tok, close_tok):
+    consume(state, open_tok)
+    targets = []
+    rest = null
+    if current(state)["type"] != close_tok:
+        while true:
+            if current(state)["type"] == "ELLIPSIS":
+                advance(state)
+                rest = consume(state, "IDENTIFIER")["value"]
+                break
+            targets.append(consume(state, "IDENTIFIER")["value"])
+            if current(state)["type"] == "COMMA":
+                advance(state)
+                continue
+            break
+    consume(state, close_tok)
+    consume(state, "ASSIGN")
+    value = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({
+        "type": "ListDestructureStatement", "targets": targets,
+        "rest": rest, "value": value
+    }, line)
+
+task parse_dict_destructure(state, line):
+    consume(state, "LBRACE")
+    keys = []
+    if current(state)["type"] != "RBRACE":
+        keys.append(consume(state, "IDENTIFIER")["value"])
+        while current(state)["type"] == "COMMA":
+            advance(state)
+            keys.append(consume(state, "IDENTIFIER")["value"])
+    consume(state, "RBRACE")
+    consume(state, "ASSIGN")
+    value = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({"type": "DictDestructureStatement", "keys": keys, "value": value}, line)
+
+task parse_const(state):
+    line = current(state)["line"]
+    consume(state, "CONST")
+    name = consume(state, "IDENTIFIER")["value"]
+
+    type_hint = null
+    if current(state)["type"] == "COLON":
+        advance(state)
+        if current(state)["type"] == "IDENTIFIER":
+            type_hint = advance(state)["value"]
+
+    consume(state, "ASSIGN")
+    value = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({
+        "type": "AssignStatement", "name": name, "value": value,
+        "type_hint": type_hint, "is_const": true, "is_declaration": true
+    }, line)
+
+task parse_global(state):
+    line = current(state)["line"]
+    consume(state, "GLOBAL")
+    names = [consume(state, "IDENTIFIER")["value"]]
+    while current(state)["type"] == "COMMA":
+        advance(state)
+        names.append(consume(state, "IDENTIFIER")["value"])
+    expect_newline_or_eof(state)
+    return stamp({"type": "GlobalStatement", "names": names}, line)
+
+task parse_unpack(state):
+    line = current(state)["line"]
+    names = [consume(state, "IDENTIFIER")["value"]]
+    while current(state)["type"] == "COMMA":
+        advance(state)
+        names.append(consume(state, "IDENTIFIER")["value"])
+    consume(state, "ASSIGN")
+    value = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({"type": "UnpackStatement", "names": names, "value": value}, line)
+
+# ── Control flow ──────────────────────────────────────────────────
+
+task parse_if(state):
+    line = current(state)["line"]
+    consume(state, "IF")
+    condition = parse_expression(state)
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+
+    then_body = parse_block(state)
+    else_body = []
+    skip_newlines(state)
+
+    tail = null
+
+    while not at_end(state) and current(state)["type"] == "ELIF":
+        advance(state)
+        elif_condition = parse_expression(state)
+        consume(state, "COLON")
+        expect_newline_or_eof(state)
+        skip_newlines(state)
+        elif_body = parse_block(state)
+        skip_newlines(state)
+
+        elif_node = {"type": "IfStatement", "condition": elif_condition,
+                     "then_body": elif_body, "else_body": []}
+
+        if tail == null:
+            else_body = [elif_node]
+        else:
+            tail["else_body"] = [elif_node]
+        tail = elif_node
+
+    if not at_end(state) and current(state)["type"] == "ELSE":
+        advance(state)
+        consume(state, "COLON")
+        expect_newline_or_eof(state)
+        skip_newlines(state)
+        final_else = parse_block(state)
+        if tail == null:
+            else_body = final_else
+        else:
+            tail["else_body"] = final_else
+
+    return stamp({"type": "IfStatement", "condition": condition,
+                  "then_body": then_body, "else_body": else_body}, line)
+
+task parse_repeat(state):
+    line = current(state)["line"]
+    consume(state, "REPEAT")
+    count = parse_expression(state)
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+    body = parse_block(state)
+    return stamp({"type": "RepeatStatement", "count": count, "body": body}, line)
+
+task parse_while(state):
+    line = current(state)["line"]
+    consume(state, "WHILE")
+    condition = parse_expression(state)
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+    body = parse_block(state)
+    return stamp({"type": "WhileStatement", "condition": condition, "body": body}, line)
+
+task parse_try(state):
+    line = current(state)["line"]
+    consume(state, "TRY")
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+    try_body = parse_block(state)
+    skip_newlines(state)
+
+    catch_body = []
+    error_var = null
+    if current(state)["type"] == "CATCH":
+        advance(state)
+        if current(state)["type"] == "IDENTIFIER":
+            error_var = advance(state)["value"]
+        consume(state, "COLON")
+        expect_newline_or_eof(state)
+        skip_newlines(state)
+        catch_body = parse_block(state)
+        skip_newlines(state)
+
+    finally_body = []
+    if current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "finally":
+        advance(state)
+        consume(state, "COLON")
+        expect_newline_or_eof(state)
+        skip_newlines(state)
+        finally_body = parse_block(state)
+
+    return stamp({
+        "type": "TryStatement", "try_body": try_body, "catch_body": catch_body,
+        "error_var": error_var, "finally_body": finally_body
+    }, line)
+
+task parse_for(state):
+    line = current(state)["line"]
+    consume(state, "FOR")
+
+    variables = [consume(state, "IDENTIFIER")["value"]]
+    while current(state)["type"] == "COMMA":
+        advance(state)
+        variables.append(consume(state, "IDENTIFIER")["value"])
+
+    variable = variables[0]
+    if len(variables) > 1:
+        variable = variables
+
+    consume(state, "IN")
+    iterable = parse_expression(state)
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+    body = parse_block(state)
+
+    return stamp({"type": "ForStatement", "variable": variable,
+                  "iterable": iterable, "body": body}, line)
+
+task parse_return(state):
+    line = current(state)["line"]
+    consume(state, "RETURN")
+    if current(state)["type"] == "NEWLINE" or current(state)["type"] == "EOF":
+        return stamp({"type": "ReturnStatement", "value": null}, line)
+    value = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({"type": "ReturnStatement", "value": value}, line)
+
+task parse_show(state):
+    line = current(state)["line"]
+    consume(state, "SHOW")
+    expr = parse_expression(state)
+    extras = []
+    while current(state)["type"] == "COMMA":
+        advance(state)
+        extras.append(parse_expression(state))
+    expect_newline_or_eof(state)
+    return stamp({"type": "ShowStatement", "expr": expr, "extras": extras}, line)
+
+# ── Task definitions ──────────────────────────────────────────────
+
+task parse_task_param_list(state):
+    consume(state, "LPAREN")
+    params = []
+    while current(state)["type"] != "RPAREN":
+        is_vararg = false
+        if current(state)["type"] == "MULTIPLY":
+            advance(state)
+            is_vararg = true
+        pname = consume(state, "IDENTIFIER")["value"]
+
+        type_hint = null
+        if current(state)["type"] == "COLON":
+            advance(state)
+            type_hint = consume(state, "IDENTIFIER")["value"]
+
+        default = null
+        if current(state)["type"] == "ASSIGN":
+            advance(state)
+            default = parse_expression(state)
+
+        params.append([pname, type_hint, default, is_vararg])
+        if current(state)["type"] == "COMMA":
+            advance(state)
+    consume(state, "RPAREN")
+    return params
+
+task any_param_has_type_hint(params):
+    for p in params:
+        if p[1] != null:
+            return true
+    return false
+
+task parse_task(state):
+    line = current(state)["line"]
+    consume(state, "TASK")
+    name = advance(state)["value"]  # allow keyword names, matching Python
+
+    params = parse_task_param_list(state)
+
+    return_type = null
+    if current(state)["type"] == "ARROW":
+        advance(state)
+        return_type = consume(state, "IDENTIFIER")["value"]
+
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+    result = parse_block_with_docstring(state)
+    docstring = result[0]
+    body = result[1]
+
+    if return_type != null or any_param_has_type_hint(params):
+        return stamp({
+            "type": "TypedTaskStatement", "name": name, "params": params,
+            "body": body, "return_type": return_type, "docstring": docstring
+        }, line)
+
+    # Back-compat shape: strip type hints to (name, default, is_vararg)
+    simple = []
+    for p in params:
+        simple.append([p[0], p[2], p[3]])
+    return stamp({
+        "type": "TaskStatement", "name": name, "params": simple,
+        "body": body, "docstring": docstring
+    }, line)
+
+# ── Identifier-led statements ──────────────────────────────────────
+
+task parse_identifier_statement(state):
+    line = current(state)["line"]
+    name = consume(state, "IDENTIFIER")["value"]
+    token = current(state)
+
+    type_hint = null
+    if token["type"] == "COLON":
+        advance(state)
+        if current(state)["type"] == "IDENTIFIER":
+            type_hint = advance(state)["value"]
+        token = current(state)
+
+    augmented_ops = {"PLUS_EQUAL": "+", "MINUS_EQUAL": "-",
+                      "STAR_EQUAL": "*", "SLASH_EQUAL": "/"}
+    if augmented_ops.get(token["type"], null) != null:
+        op = augmented_ops[token["type"]]
+        advance(state)
+        rhs = parse_expression(state)
+        expect_newline_or_eof(state)
+        expanded = {"type": "BinaryOp", "left": {"type": "Identifier", "name": name},
+                    "op": op, "right": rhs}
+        return stamp({"type": "AssignStatement", "name": name, "value": expanded,
+                      "type_hint": type_hint, "is_const": false,
+                      "is_declaration": false}, line)
+
+    if token["type"] == "ASSIGN":
+        advance(state)
+        if DEFERRED_AI_NATIVE_STATEMENT_TYPES.get(current(state)["type"], false):
+            raise ("Captured '" + current(state)["type"] + "' expressions (" +
+                   name + " = ...) are Layer 2 work — not yet supported. Line " +
+                   str(line) + ".")
+        value = parse_expression(state)
+        expect_newline_or_eof(state)
+        return stamp({"type": "AssignStatement", "name": name, "value": value,
+                      "type_hint": type_hint, "is_const": false,
+                      "is_declaration": false}, line)
+
+    if token["type"] == "LBRACKET":
+        advance(state)
+        index = parse_expression(state)
+        consume(state, "RBRACKET")
+        if current(state)["type"] == "ASSIGN":
+            advance(state)
+            value = parse_expression(state)
+            expect_newline_or_eof(state)
+            return stamp({"type": "IndexAssignStatement",
+                          "object": {"type": "Identifier", "name": name},
+                          "index": index, "value": value}, line)
+        expr = {"type": "IndexExpression",
+                "object": {"type": "Identifier", "name": name}, "index": index}
+        expr = apply_postfix(state, expr)
+        expect_newline_or_eof(state)
+        return expr
+
+    if token["type"] == "LPAREN":
+        call = finish_call(state, name)
+        expect_newline_or_eof(state)
+        return call
+
+    if token["type"] == "DOT":
+        expr = {"type": "Identifier", "name": name}
+        expr = apply_postfix(state, expr)
+        expect_newline_or_eof(state)
+        return expr
+
+    raise "Expected '=' or '(' after '" + name + "'. Line " + str(line) + "."
+
+# ── Expression precedence chain ──────────────────────────────────
+
+task parse_expression(state):
+    expr = parse_ternary(state)
+    while current(state)["type"] == "PIPE":
+        line = current(state)["line"]
+        advance(state)
+        rhs = parse_ternary(state)
+        expr = build_pipe_call(expr, rhs, line)
+    return expr
+
+task build_pipe_call(piped_value, rhs, line):
+    if rhs["type"] == "CallExpression":
+        rhs["args"] = [piped_value] + rhs["args"]
+        return rhs
+    if rhs["type"] == "Identifier":
+        return {"type": "CallExpression", "callee": rhs["name"],
+                "args": [piped_value], "kwargs": {}}
+    raise ("The right side of '|>' must be a task call or task name. Line " +
+           str(line) + ".")
+
+task parse_ternary(state):
+    expr = parse_logical_or(state)
+    if current(state)["type"] == "IF":
+        line = current(state)["line"]
+        advance(state)
+        condition = parse_logical_or(state)
+        if current(state)["type"] == "ELSE":
+            advance(state)
+            false_expr = parse_expression(state)
+            return stamp({"type": "TernaryExpression", "condition": condition,
+                          "true_expr": expr, "false_expr": false_expr}, line)
+    return expr
+
+task parse_logical_or(state):
+    left = parse_logical_and(state)
+    while current(state)["type"] == "OR":
+        advance(state)
+        right = parse_logical_and(state)
+        left = {"type": "BinaryOp", "left": left, "op": "or", "right": right}
+    return left
+
+task parse_logical_and(state):
+    left = parse_comparison(state)
+    while current(state)["type"] == "AND":
+        advance(state)
+        right = parse_comparison(state)
+        left = {"type": "BinaryOp", "left": left, "op": "and", "right": right}
+    return left
+
+task parse_comparison(state):
+    left = parse_addition(state)
+    comparison_ops = {"EQUALS": "==", "NOT_EQUALS": "!=", "LESS": "<",
+                       "LESS_EQ": "<=", "GREATER": ">", "GREATER_EQ": ">="}
+
+    while true:
+        cur = current(state)
+        op = comparison_ops.get(cur["type"], null)
+        if op != null:
+            advance(state)
+            right = parse_addition(state)
+            left = {"type": "BinaryOp", "left": left, "op": op, "right": right}
+        elif cur["type"] == "IN":
+            advance(state)
+            right = parse_addition(state)
+            left = {"type": "BinaryOp", "left": left, "op": "in", "right": right}
+        elif cur["type"] == "NOT":
+            saved = state["pos"]
+            advance(state)
+            if current(state)["type"] == "IN":
+                advance(state)
+                right = parse_addition(state)
+                left = {"type": "BinaryOp", "left": left, "op": "not in", "right": right}
+            else:
+                state["pos"] = saved
+                break
+        elif cur["type"] == "IDENTIFIER" and cur["value"] == "is":
+            advance(state)
+            if current(state)["type"] == "NOT":
+                advance(state)
+                right = parse_addition(state)
+                left = {"type": "BinaryOp", "left": left, "op": "is not", "right": right}
+            else:
+                right = parse_addition(state)
+                left = {"type": "BinaryOp", "left": left, "op": "is", "right": right}
+        else:
+            break
+
+    return left
+
+task parse_addition(state):
+    left = parse_multiplication(state)
+    while current(state)["type"] == "PLUS" or current(state)["type"] == "MINUS":
+        op = current(state)["value"]
+        advance(state)
+        right = parse_multiplication(state)
+        left = {"type": "BinaryOp", "left": left, "op": op, "right": right}
+    return left
+
+task parse_multiplication(state):
+    left = parse_unary(state)
+    mul_types = {"MULTIPLY": true, "DIVIDE": true, "MODULO": true,
+                 "POWER": true, "FLOOR_DIVIDE": true}
+    while mul_types.get(current(state)["type"], false):
+        op = current(state)["value"]
+        advance(state)
+        right = parse_unary(state)
+        left = {"type": "BinaryOp", "left": left, "op": op, "right": right}
+    return left
+
+task parse_unary(state):
+    if current(state)["type"] == "MINUS":
+        advance(state)
+        return {"type": "UnaryOp", "op": "-", "operand": parse_unary(state)}
+    if current(state)["type"] == "NOT":
+        advance(state)
+        return {"type": "UnaryOp", "op": "not", "operand": parse_unary(state)}
+    return parse_primary(state)
+
+# ── Primary expressions ────────────────────────────────────────────
+
+task parse_primary(state):
+    token = current(state)
+    t = token["type"]
+
+    if t == "INTEGER":
+        advance(state)
+        return {"type": "IntegerLiteral", "value": token["value"]}
+    if t == "FLOAT":
+        advance(state)
+        return {"type": "FloatLiteral", "value": token["value"]}
+    if t == "MONEY":
+        advance(state)
+        return {"type": "MoneyLiteral", "value": token["value"]}
+    if t == "STRING":
+        advance(state)
+        return apply_postfix(state, {"type": "StringLiteral", "value": token["value"]})
+    if t == "F_STRING":
+        advance(state)
+        return parse_fstring(token["value"])
+    if t == "BOOLEAN":
+        advance(state)
+        return {"type": "BooleanLiteral", "value": token["value"]}
+    if t == "NULL":
+        advance(state)
+        return {"type": "NullLiteral"}
+
+    if t == "IDENTIFIER":
+        advance(state)
+        if current(state)["type"] == "LPAREN":
+            expr = finish_call(state, token["value"])
+        else:
+            expr = {"type": "Identifier", "name": token["value"]}
+        return apply_postfix(state, expr)
+
+    if t == "LBRACE":
+        return apply_postfix(state, parse_brace_literal(state))
+
+    if t == "LBRACKET":
+        return apply_postfix(state, parse_list(state))
+
+    if t == "LPAREN":
+        advance(state)
+        expr = parse_expression(state)
+        if current(state)["type"] == "COMMA":
+            elements = [expr]
+            while current(state)["type"] == "COMMA":
+                advance(state)
+                if current(state)["type"] == "RPAREN":
+                    break
+                elements.append(parse_expression(state))
+            consume(state, "RPAREN")
+            return apply_postfix(state, {"type": "TupleLiteral", "elements": elements})
+        consume(state, "RPAREN")
+        return apply_postfix(state, expr)
+
+    if DEFERRED_AI_NATIVE_STATEMENT_TYPES.get(t, false):
+        raise ("'" + t + "' as an expression is Layer 2 work — not yet " +
+               "supported. Line " + str(token["line"]) + ".")
+    if DEFERRED_CLASS_TYPES.get(t, false):
+        raise ("'" + t + "' (classes/self) is Layer 3 work — not yet " +
+               "supported. Line " + str(token["line"]) + ".")
+
+    raise ("Unexpected token '" + str(token["value"]) +
+           "' while parsing an expression. Line " + str(token["line"]) + ".")
+
+task apply_postfix(state, expr):
+    while current(state)["type"] == "DOT" or current(state)["type"] == "LBRACKET" or current(state)["type"] == "QUESTION_DOT":
+        if current(state)["type"] == "DOT":
+            advance(state)
+            prop = advance(state)["value"]
+            if current(state)["type"] == "LPAREN":
+                args = parse_call_args(state)
+                expr = {"type": "MethodCall", "object": expr, "method": prop,
+                        "args": args, "optional": false}
+            else:
+                expr = {"type": "PropertyAccess", "object": expr,
+                        "property": prop, "optional": false}
+        elif current(state)["type"] == "QUESTION_DOT":
+            advance(state)
+            prop = advance(state)["value"]
+            if current(state)["type"] == "LPAREN":
+                args = parse_call_args(state)
+                expr = {"type": "MethodCall", "object": expr, "method": prop,
+                        "args": args, "optional": true}
+            else:
+                expr = {"type": "PropertyAccess", "object": expr,
+                        "property": prop, "optional": true}
+        else:
+            advance(state)  # consume '['
+            expr = finish_index_or_slice(state, expr)
+    return expr
+
+task parse_call_args(state):
+    consume(state, "LPAREN")
+    args = []
+    while current(state)["type"] != "RPAREN":
+        args.append(parse_expression(state))
+        if current(state)["type"] == "COMMA":
+            advance(state)
+    consume(state, "RPAREN")
+    return args
+
+task finish_index_or_slice(state, obj):
+    line = current(state)["line"]
+    start = null
+    if current(state)["type"] != "COLON" and current(state)["type"] != "RBRACKET":
+        start = parse_expression(state)
+
+    if current(state)["type"] == "COLON":
+        advance(state)
+        stop = null
+        if current(state)["type"] != "RBRACKET" and current(state)["type"] != "COLON":
+            stop = parse_expression(state)
+        step = null
+        if current(state)["type"] == "COLON":
+            advance(state)
+            if current(state)["type"] != "RBRACKET":
+                step = parse_expression(state)
+        consume(state, "RBRACKET")
+        return stamp({"type": "SliceExpression", "object": obj, "start": start,
+                      "stop": stop, "step": step}, line)
+
+    consume(state, "RBRACKET")
+    return {"type": "IndexExpression", "object": obj, "index": start}
+
+task parse_list(state):
+    consume(state, "LBRACKET")
+    elements = []
+    while current(state)["type"] != "RBRACKET":
+        if at_end(state):
+            raise "List was never closed — did you forget a ']'?"
+        if current(state)["type"] == "ELLIPSIS":
+            advance(state)
+            elements.append({"type": "SpreadElement", "value": parse_expression(state)})
+        else:
+            elements.append(parse_expression(state))
+        if current(state)["type"] == "COMMA":
+            advance(state)
+    consume(state, "RBRACKET")
+    return {"type": "ListLiteral", "elements": elements}
+
+task parse_brace_literal(state):
+    # Disambiguate {} / {k: v} (dict) from {a, b, c} (set), skipping
+    # whitespace-only tokens the way the Python parser's lookahead does.
+    skip_types = {"NEWLINE": true, "INDENT": true, "DEDENT": true}
+    found = []
+    i = state["pos"] + 1
+    while i < len(state["tokens"]) and len(found) < 2:
+        if not skip_types.get(state["tokens"][i]["type"], false):
+            found.append(state["tokens"][i])
+        i = i + 1
+
+    first = null
+    second = null
+    if len(found) > 0:
+        first = found[0]
+    if len(found) > 1:
+        second = found[1]
+
+    if first == null or first["type"] == "RBRACE" or first["type"] == "ELLIPSIS":
+        return parse_dict(state)
+    if (first["type"] == "IDENTIFIER" or first["type"] == "STRING") and second != null and second["type"] == "COLON":
+        return parse_dict(state)
+    return parse_set(state)
+
+task parse_set(state):
+    consume(state, "LBRACE")
+    elements = []
+    skip_newlines(state)
+    while current(state)["type"] != "RBRACE":
+        if at_end(state):
+            raise "Set was never closed — did you forget a '}'?"
+        elements.append(parse_expression(state))
+        if current(state)["type"] == "COMMA":
+            advance(state)
+        skip_newlines(state)
+    consume(state, "RBRACE")
+    return {"type": "SetLiteral", "elements": elements}
+
+task parse_dict(state):
+    consume(state, "LBRACE")
+    pairs = []
+    skip_newlines(state)
+
+    while current(state)["type"] != "RBRACE":
+        if at_end(state):
+            raise "Dictionary was never closed."
+
+        if current(state)["type"] == "ELLIPSIS":
+            advance(state)
+            pairs.append([{"type": "SpreadElement", "value": parse_expression(state)}, null])
+            if current(state)["type"] == "COMMA":
+                advance(state)
+            skip_newlines(state)
+            continue
+
+        if current(state)["type"] == "IDENTIFIER" or current(state)["type"] == "STRING":
+            key = {"type": "StringLiteral", "value": advance(state)["value"]}
+        else:
+            raise "Dictionary key must be a word."
+
+        consume(state, "COLON")
+
+        while current(state)["type"] == "INDENT" or current(state)["type"] == "DEDENT" or current(state)["type"] == "NEWLINE":
+            advance(state)
+
+        value = parse_addition(state)
+        pairs.append([key, value])
+
+        if current(state)["type"] == "COMMA":
+            advance(state)
+        skip_newlines(state)
+
+    consume(state, "RBRACE")
+    return {"type": "DictLiteral", "pairs": pairs}
+
+task finish_call(state, name):
+    consume(state, "LPAREN")
+    args = []
+    kwargs = {}
+    while current(state)["type"] != "RPAREN":
+        if current(state)["type"] == "IDENTIFIER" and peek_type(state, 1) == "ASSIGN":
+            kw_name = consume(state, "IDENTIFIER")["value"]
+            consume(state, "ASSIGN")
+            kwargs[kw_name] = parse_expression(state)
+        else:
+            args.append(parse_expression(state))
+        if current(state)["type"] == "COMMA":
+            advance(state)
+    consume(state, "RPAREN")
+    return {"type": "CallExpression", "callee": name, "args": args, "kwargs": kwargs}
+
+# ── F-strings ─────────────────────────────────────────────────────
+# Splits on {expr} placeholders with brace-depth counting (so nested
+# f-strings work), then re-tokenizes/re-parses each expression via
+# this same module — genuinely self-hosted, no host-language escape
+# hatch.
+
+task parse_fstring(raw):
+    parts = []
+    i = 0
+    length = len(raw)
+    buf = ""
+
+    while i < length:
+        ch = raw[i]
+
+        if ch != "{":
+            buf = buf + ch
+            i = i + 1
+            continue
+
+        if len(buf) > 0:
+            parts.append({"kind": "str", "value": buf})
+            buf = ""
+
+        depth = 1
+        i = i + 1
+        expr_src = ""
+
+        while i < length and depth > 0:
+            c = raw[i]
+            if c == "{":
+                depth = depth + 1
+                expr_src = expr_src + c
+            elif c == "}":
+                depth = depth - 1
+                if depth > 0:
+                    expr_src = expr_src + c
+            else:
+                expr_src = expr_src + c
+            i = i + 1
+
+        expr_src = expr_src.strip()
+
+        if len(expr_src) == 0:
+            parts.append({"kind": "str", "value": ""})
+        else:
+            try:
+                inner_tokens = tokenize(expr_src)
+                inner_state = new_parser_state(inner_tokens)
+                expr_node = parse_expression(inner_state)
+                parts.append({"kind": "expr", "node": expr_node})
+            catch:
+                parts.append({"kind": "str", "value": "{" + expr_src + "}"})
+
+    if len(buf) > 0:
+        parts.append({"kind": "str", "value": buf})
+
+    return {"type": "FStringLiteral", "parts": parts}
+
+# ── Blocks ────────────────────────────────────────────────────────
+
+task parse_block(state):
+    if current(state)["type"] != "NEWLINE" and current(state)["type"] != "INDENT":
+        stmt = parse_statement(state)
+        if stmt != null:
+            return [stmt]
+        return []
+
+    statements = []
+    skip_newlines(state)
+
+    if current(state)["type"] != "INDENT":
+        raise ("Expected an indented block here. Did you forget to indent? Line " +
+               str(current(state)["line"]) + ".")
+
+    consume(state, "INDENT")
+    skip_newlines(state)
+
+    while not at_end(state) and current(state)["type"] != "DEDENT":
+        stmt = parse_statement(state)
+        if stmt != null:
+            statements.append(stmt)
+        skip_newlines(state)
+
+    if current(state)["type"] == "DEDENT":
+        consume(state, "DEDENT")
+
+    return statements
+
+task parse_block_with_docstring(state):
+    docstring = null
+    statements = []
+
+    if current(state)["type"] != "NEWLINE" and current(state)["type"] != "INDENT":
+        stmt = parse_statement(state)
+        if stmt != null:
+            return [docstring, [stmt]]
+        return [docstring, []]
+
+    skip_newlines(state)
+
+    if current(state)["type"] != "INDENT":
+        raise ("Expected an indented block here. Did you forget to indent? Line " +
+               str(current(state)["line"]) + ".")
+
+    consume(state, "INDENT")
+    skip_newlines(state)
+
+    if current(state)["type"] == "STRING" or current(state)["type"] == "F_STRING":
+        docstring = current(state)["value"]
+        advance(state)
+        expect_newline_or_eof(state)
+        skip_newlines(state)
+
+    while not at_end(state) and current(state)["type"] != "DEDENT":
+        stmt = parse_statement(state)
+        if stmt != null:
+            statements.append(stmt)
+        skip_newlines(state)
+
+    if current(state)["type"] == "DEDENT":
+        consume(state, "DEDENT")
+
+    return [docstring, statements]
