@@ -71,17 +71,35 @@ class Environment:
         """
         Update an existing variable — searches up the scope
         chain and updates it wherever it was defined.
-        If not found anywhere, creates it in current scope.
+        If not found anywhere, creates it in the scope update()
+        was originally called on (NOT wherever the search happens
+        to bottom out).
+
+        Bug fix: this used to recurse via `self.parent.update(...)`,
+        so the "not found anywhere — create in current scope"
+        fallback ran inside the recursive call, where `self` is
+        whichever ancestor the walk bottomed out at — global scope,
+        every time, since that's the only scope with parent=None.
+        That silently promoted every first-time bare (non-'let')
+        assignment anywhere in the program into a *global* variable,
+        so two unrelated tasks that happened to bare-assign a local
+        of the same name (e.g. both using `left`/`right` as loop
+        accumulators) would silently corrupt each other's values
+        through that shared global slot the moment either one
+        returned and the other read its own "local". Walking the
+        chain iteratively keeps `self` fixed at the original call
+        site, so the fallback creates the variable exactly where a
+        first bare assignment should live: the scope it was written in.
         """
-        if name in self.variables:
-            self.variables[name] = value
-            return
+        scope = self
+        while scope is not None:
+            if name in scope.variables:
+                scope.variables[name] = value
+                return
+            scope = scope.parent
 
-        if self.parent is not None:
-            self.parent.update(name, value)
-            return
-
-        # Not found anywhere — create in current scope
+        # Not found anywhere — create in the scope update() was
+        # originally invoked on (self, not the topmost ancestor).
         self.variables[name] = value
 
     def __repr__(self):
