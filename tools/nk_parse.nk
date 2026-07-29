@@ -1,0 +1,18 @@
+# tools/nk_parse.nk
+# Smoke/diff harness: parses a target .nk source file using the
+# self-hosted parser (nekova/stdlib/nk/parser.nk) and writes the
+# resulting AST to tools/nk_ast.json as JSON.
+#
+# Usage:  nekova run tools/nk_parse.nk
+
+use json
+use parser
+use file
+
+let target = "tools/parse_target.nk"
+let source = read(target)
+
+let statements = parse(source)
+
+write("tools/nk_ast.json", json_encode(statements))
+show "wrote " + str(len(statements)) + " statements to tools/nk_ast.json"
