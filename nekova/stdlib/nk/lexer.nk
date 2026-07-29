@@ -526,6 +526,14 @@ task read_symbol(state):
         advance(state)
         return
 
+    # Rest/spread operator: ... (must be checked before '..')
+    if ch == "." and peek(state) == "." and peek2(state) == ".":
+        add_token(state, "ELLIPSIS", "...")
+        advance(state)
+        advance(state)
+        advance(state)
+        return
+
     # Range operator: .. (must be checked before single-char '.')
     if ch == "." and peek(state) == ".":
         add_token(state, "DOTDOT", "..")
