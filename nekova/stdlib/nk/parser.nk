@@ -1,9 +1,8 @@
 # ═══════════════════════════════════════════════════════════════
 # NEKOVA Standard Library — parser.nk
-# Phase 27. Layer 1 (core grammar) and Layer 2a (core AI primitives
-# + safety) complete. Now adding: memory-store primitives
-# (remember/recall/forget/memory) — the first slice of the broader
-# "memory & agents" bucket deferred out of Layer 2a.
+# Phase 27. Layer 1 (core grammar), Layer 2a (core AI primitives +
+# safety), and the memory-store slice (remember/recall/forget/memory)
+# complete. Now adding: agent conversation (speak/listen/converse).
 #
 # Self-hosted port of nekova/parser/parser.py, written directly
 # against GRAMMAR.md and the live Python parser — same relationship
@@ -70,8 +69,7 @@ use lexer
 DEFERRED_AI_NATIVE_STATEMENT_TYPES = {
     "MODEL": true, "AUTONOMOUS": true,
     "PIPELINE_DEF": true, "RUN": true,
-    "CONVERSE": true, "SPEAK": true,
-    "LISTEN": true, "EVERY": true,
+    "EVERY": true,
     "IMAGINE": true, "WATCH": true, "MATCH": true,
     "ROUTE": true, "SERVE": true,
     "YIELD": true, "AT": true, "USE": true, "IMPORT": true,
@@ -193,6 +191,12 @@ task parse_statement(state):
         return parse_forget(state)
     if t == "MEMORY":
         return parse_memory(state)
+    if t == "CONVERSE":
+        return parse_converse(state)
+    if t == "SPEAK":
+        return parse_speak(state)
+    if t == "LISTEN":
+        return parse_listen_stmt(state)
     if t == "RETURN":
         return parse_return(state)
     if t == "BREAK":
@@ -965,6 +969,31 @@ task parse_memory(state):
     body = parse_block(state)
     return stamp({"type": "MemoryStatement", "name": name, "body": body}, line)
 
+# ── agent conversation: speak / listen / converse ──────────────────
+
+task parse_speak(state):
+    line = current(state)["line"]
+    consume(state, "SPEAK")
+    expr = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({"type": "SpeakStatement", "expr": expr}, line)
+
+task parse_listen_stmt(state):
+    line = current(state)["line"]
+    consume(state, "LISTEN")
+    prompt = null
+    if current(state)["type"] == "STRING":
+        prompt = {"type": "StringLiteral", "value": advance(state)["value"]}
+    expect_newline_or_eof(state)
+    return stamp({"type": "ListenExpression", "prompt": prompt}, line)
+
+task parse_converse(state):
+    line = current(state)["line"]
+    consume(state, "CONVERSE")
+    consume(state, "COLON")
+    body = parse_block(state)
+    return stamp({"type": "ConverseStatement", "body": body}, line)
+
 # ── Identifier-led statements ──────────────────────────────────────
 
 task parse_identifier_statement(state):
@@ -1207,6 +1236,13 @@ task parse_primary(state):
 
     if t == "RECALL":
         return parse_recall_expr(state)
+
+    if t == "LISTEN":
+        advance(state)
+        prompt = null
+        if current(state)["type"] == "STRING":
+            prompt = {"type": "StringLiteral", "value": advance(state)["value"]}
+        return {"type": "ListenExpression", "prompt": prompt}
 
     if t == "LPAREN":
         advance(state)
