@@ -1,7 +1,9 @@
 # ═══════════════════════════════════════════════════════════════
 # NEKOVA Standard Library — parser.nk
-# Phase 27. Layer 1 (core grammar) complete. Layer 2a (core AI
-# primitives + safety) in progress — see below.
+# Phase 27. Layer 1 (core grammar) and Layer 2a (core AI primitives
+# + safety) complete. Now adding: memory-store primitives
+# (remember/recall/forget/memory) — the first slice of the broader
+# "memory & agents" bucket deferred out of Layer 2a.
 #
 # Self-hosted port of nekova/parser/parser.py, written directly
 # against GRAMMAR.md and the live Python parser — same relationship
@@ -66,9 +68,9 @@ use lexer
 # set would.
 
 DEFERRED_AI_NATIVE_STATEMENT_TYPES = {
-    "MODEL": true, "AUTONOMOUS": true, "MEMORY": true,
-    "PIPELINE_DEF": true, "RUN": true, "REMEMBER": true,
-    "RECALL": true, "FORGET": true, "CONVERSE": true, "SPEAK": true,
+    "MODEL": true, "AUTONOMOUS": true,
+    "PIPELINE_DEF": true, "RUN": true,
+    "CONVERSE": true, "SPEAK": true,
     "LISTEN": true, "EVERY": true,
     "IMAGINE": true, "WATCH": true, "MATCH": true,
     "ROUTE": true, "SERVE": true,
@@ -183,6 +185,14 @@ task parse_statement(state):
         return parse_expect(state)
     if t == "MOCK":
         return parse_mock(state)
+    if t == "REMEMBER":
+        return parse_remember(state)
+    if t == "RECALL":
+        return parse_recall(state)
+    if t == "FORGET":
+        return parse_forget(state)
+    if t == "MEMORY":
+        return parse_memory(state)
     if t == "RETURN":
         return parse_return(state)
     if t == "BREAK":
@@ -880,6 +890,81 @@ task parse_mock(state):
     expect_newline_or_eof(state)
     return stamp({"type": "MockStatement", "target": target, "value": value}, line)
 
+# ── memory store: remember / recall / forget / memory ─────────────
+
+task parse_remember(state):
+    line = current(state)["line"]
+    advance(state)  # consume 'remember'
+    key_expr = parse_expression(state)
+    consume(state, "ASSIGN")
+    value_expr = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({"type": "RememberStatement", "key": key_expr,
+                  "value": value_expr}, line)
+
+task parse_recall(state):
+    # Statement form: recall "key" [or <default>]
+    #
+    # Uses addition-level parsing for the key (not the full
+    # expression chain) so a following 'or' isn't swallowed into a
+    # BinaryOp before we get to check for it — same reasoning
+    # parse_recall_expr uses below. The Python reference parser gets
+    # this wrong in a different way: its statement form checks for
+    # the optional clause via
+    # `token.type == IDENTIFIER and value == "or"` — but 'or' always
+    # lexes as the reserved OR token (see token_types.py), never
+    # IDENTIFIER, so that check can never match there either. Flagging
+    # rather than silently mirroring — implemented correctly here.
+    line = current(state)["line"]
+    advance(state)  # consume 'recall'
+    key_expr = parse_addition(state)
+    default = null
+    if current(state)["type"] == "OR":
+        advance(state)
+        default = parse_addition(state)
+    expect_newline_or_eof(state)
+    return stamp({"type": "RecallStatement", "key": key_expr,
+                  "default": default}, line)
+
+task parse_recall_expr(state):
+    # Expression form: let x = recall "key" [or <default>]
+    # Uses addition-level parsing for the key so a following OR isn't
+    # swallowed by the full expression parser — same reasoning the
+    # Python reference gives for this one.
+    line = current(state)["line"]
+    advance(state)  # consume 'recall'
+    key_expr = parse_addition(state)
+    default = null
+    if current(state)["type"] == "OR":
+        advance(state)
+        default = parse_addition(state)
+    return stamp({"type": "RecallStatement", "key": key_expr,
+                  "default": default}, line)
+
+task parse_forget(state):
+    line = current(state)["line"]
+    advance(state)  # consume 'forget'
+    cur = current(state)
+    if cur["type"] == "IDENTIFIER" and cur["value"] == "all":
+        advance(state)
+        expect_newline_or_eof(state)
+        return stamp({"type": "ForgetStatement", "forget_all": true,
+                      "key": null}, line)
+    key_expr = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({"type": "ForgetStatement", "forget_all": false,
+                  "key": key_expr}, line)
+
+task parse_memory(state):
+    line = current(state)["line"]
+    consume(state, "MEMORY")
+    name = consume(state, "IDENTIFIER")["value"]
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+    body = parse_block(state)
+    return stamp({"type": "MemoryStatement", "name": name, "body": body}, line)
+
 # ── Identifier-led statements ──────────────────────────────────────
 
 task parse_identifier_statement(state):
@@ -1119,6 +1204,9 @@ task parse_primary(state):
 
     if t == "THINK":
         return parse_think_expr(state)
+
+    if t == "RECALL":
+        return parse_recall_expr(state)
 
     if t == "LPAREN":
         advance(state)
