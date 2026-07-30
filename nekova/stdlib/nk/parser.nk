@@ -1,8 +1,8 @@
 # ═══════════════════════════════════════════════════════════════
 # NEKOVA Standard Library — parser.nk
-# Phase 27. Layer 1 (core grammar), Layer 2a (core AI primitives +
-# safety), and the memory-store slice (remember/recall/forget/memory)
-# complete. Now adding: agent conversation (speak/listen/converse).
+# Phase 27. Layer 1, Layer 2a, memory-store, and agent-conversation
+# slices complete. Now adding: orchestration (model/pipeline/
+# autonomous/every/watch) — the last slice of "memory & agents".
 #
 # Self-hosted port of nekova/parser/parser.py, written directly
 # against GRAMMAR.md and the live Python parser — same relationship
@@ -67,10 +67,7 @@ use lexer
 # set would.
 
 DEFERRED_AI_NATIVE_STATEMENT_TYPES = {
-    "MODEL": true, "AUTONOMOUS": true,
-    "PIPELINE_DEF": true, "RUN": true,
-    "EVERY": true,
-    "IMAGINE": true, "WATCH": true, "MATCH": true,
+    "IMAGINE": true, "MATCH": true,
     "ROUTE": true, "SERVE": true,
     "YIELD": true, "AT": true, "USE": true, "IMPORT": true,
     "FETCH": true, "AWAIT": true, "ASYNC": true,
@@ -151,6 +148,27 @@ task parse_statement(state):
 
     if t == "SHOW":
         return parse_show(state)
+    if t == "STRING":
+        # Could be a standalone pipeline: "prompt" -> agent1 -> agent2
+        first = parse_primary(state)
+        if current(state)["type"] == "ARROW":
+            return parse_pipeline(state, first)
+        raise ("Unexpected string — did you mean to use 'show' or '->'? Line " +
+               str(token["line"]) + ".")
+    if t == "ARROW":
+        return parse_pipeline(state, parse_primary(state))
+    if t == "MODEL":
+        return parse_model(state)
+    if t == "PIPELINE_DEF":
+        return parse_pipeline_def(state)
+    if t == "RUN":
+        return parse_run_pipeline(state)
+    if t == "AUTONOMOUS":
+        return parse_autonomous(state)
+    if t == "EVERY":
+        return parse_every(state)
+    if t == "WATCH":
+        return parse_watch(state)
     if t == "LET":
         return parse_let(state)
     if t == "CONST":
@@ -287,12 +305,31 @@ task parse_let(state):
         node["variable"] = name
         return stamp(node, line)
 
+    # Captured parallel: let results = autonomous parallel: ...
+    if current(state)["type"] == "AUTONOMOUS":
+        node = parse_autonomous(state)
+        node["variable"] = name
+        return stamp(node, line)
+
+    # Captured pipeline run: let result = run pipeline name
+    if current(state)["type"] == "RUN":
+        node = parse_run_pipeline(state)
+        node["variable"] = name
+        return stamp(node, line)
+
     if DEFERRED_AI_NATIVE_STATEMENT_TYPES.get(current(state)["type"], false):
         raise ("Captured '" + current(state)["type"] + "' expressions " +
                "(let " + name + " = ...) are a later Layer 2 slice — " +
                "not yet supported. Line " + str(line) + ".")
 
     value = parse_expression(state)
+
+    # Captured pipeline: let report = "prompt" -> agent1 -> agent2
+    if current(state)["type"] == "ARROW":
+        node = parse_pipeline(state, value)
+        node["variable"] = name
+        return stamp(node, line)
+
     expect_newline_or_eof(state)
     return stamp({
         "type": "AssignStatement", "name": name, "value": value,
@@ -994,6 +1031,139 @@ task parse_converse(state):
     body = parse_block(state)
     return stamp({"type": "ConverseStatement", "body": body}, line)
 
+# ── orchestration: model / pipeline / autonomous / every / watch ────
+
+task parse_model(state):
+    line = current(state)["line"]
+    consume(state, "MODEL")
+    provider = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({"type": "ModelStatement", "provider": provider}, line)
+
+task parse_pipeline(state, first_step):
+    # step -> step -> step ; 'first_step' is already parsed — continue
+    # from the first '->'.
+    line = current(state)["line"]
+    steps = [first_step]
+    while current(state)["type"] == "ARROW":
+        advance(state)
+        step = parse_primary(state)
+        steps.append(step)
+    expect_newline_or_eof(state)
+    return stamp({"type": "PipelineStatement", "steps": steps}, line)
+
+task parse_autonomous(state):
+    line = current(state)["line"]
+    consume(state, "AUTONOMOUS")
+    consume(state, "PARALLEL")
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+    body = parse_block(state)
+    return stamp({"type": "ParallelStatement", "body": body}, line)
+
+task parse_pipeline_def(state):
+    line = current(state)["line"]
+    consume(state, "PIPELINE_DEF")
+    name = consume(state, "IDENTIFIER")["value"]
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+
+    steps = []
+    consume(state, "INDENT")
+    skip_newlines(state)
+
+    while not at_end(state) and current(state)["type"] != "DEDENT":
+        token = current(state)
+
+        if token["type"] == "COLLECT":
+            advance(state)
+            expr = parse_expression(state)
+            steps.append({"type": "collect", "expr": expr})
+        elif token["type"] == "IDENTIFIER" and token["value"] == "process":
+            advance(state)  # consume 'process'
+            if current(state)["type"] == "WITH":
+                advance(state)
+            provider = "ai"
+            if current(state)["type"] == "IDENTIFIER":
+                provider = advance(state)["value"]
+            steps.append({"type": "process", "provider": provider})
+        elif token["type"] == "GENERATE":
+            advance(state)
+            format_name = "report"
+            if current(state)["type"] == "IDENTIFIER":
+                format_name = advance(state)["value"]
+            steps.append({"type": "generate", "format": format_name})
+        elif token["type"] == "SAVE":
+            advance(state)
+            if current(state)["type"] == "IDENTIFIER":
+                advance(state)  # consume 'to'
+            target = "database"
+            if current(state)["type"] == "IDENTIFIER":
+                target = advance(state)["value"]
+            steps.append({"type": "save", "target": target})
+        else:
+            advance(state)  # skip unknown tokens, matching reference
+
+        skip_newlines(state)
+
+    if current(state)["type"] == "DEDENT":
+        consume(state, "DEDENT")
+
+    return stamp({"type": "PipelineDefStatement", "name": name, "steps": steps}, line)
+
+task parse_run_pipeline(state):
+    line = current(state)["line"]
+    consume(state, "RUN")
+    consume(state, "PIPELINE_DEF")
+    name = consume(state, "IDENTIFIER")["value"]
+    expect_newline_or_eof(state)
+    return stamp({"type": "RunPipelineStatement", "name": name}, line)
+
+task parse_every(state):
+    line = current(state)["line"]
+    consume(state, "EVERY")
+
+    interval_val = parse_expression(state)
+
+    # interval unit — must be an identifier ending in s/m/h, e.g.
+    # "5s" lexes as INTEGER(5) IDENTIFIER(s), or the user writes it
+    # with a space: "every 5 s:"
+    unit = "s"
+    cur = current(state)
+    time_units = {"s": true, "m": true, "h": true, "ms": true}
+    if cur["type"] == "IDENTIFIER" and time_units.get(cur["value"], false):
+        unit = cur["value"]
+        advance(state)
+
+    # optional "X times" (bare "forever" needs nothing extra — no
+    # max_runs means run forever, matching the reference)
+    max_runs = null
+    if current(state)["type"] == "INTEGER":
+        max_runs = advance(state)["value"]
+        if current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "times":
+            advance(state)
+
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+    body = parse_block(state)
+    return stamp({"type": "EveryStatement", "interval": interval_val, "unit": unit,
+                  "body": body, "max_runs": max_runs}, line)
+
+task parse_watch(state):
+    line = current(state)["line"]
+    consume(state, "WATCH")
+    target = parse_expression(state)
+    is_file = target["type"] == "StringLiteral"
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+    body = parse_block(state)
+    return stamp({"type": "WatchStatement", "target": target, "body": body,
+                  "is_file": is_file}, line)
+
 # ── Identifier-led statements ──────────────────────────────────────
 
 task parse_identifier_statement(state):
@@ -1030,11 +1200,30 @@ task parse_identifier_statement(state):
             node["variable"] = name
             return stamp(node, line)
 
+        # Captured parallel: results = autonomous parallel: ...
+        if current(state)["type"] == "AUTONOMOUS":
+            node = parse_autonomous(state)
+            node["variable"] = name
+            return stamp(node, line)
+
+        # Captured pipeline run: result = run pipeline name
+        if current(state)["type"] == "RUN":
+            node = parse_run_pipeline(state)
+            node["variable"] = name
+            return stamp(node, line)
+
         if DEFERRED_AI_NATIVE_STATEMENT_TYPES.get(current(state)["type"], false):
             raise ("Captured '" + current(state)["type"] + "' expressions (" +
                    name + " = ...) are a later Layer 2 slice — not yet " +
                    "supported. Line " + str(line) + ".")
         value = parse_expression(state)
+
+        # Captured pipeline: report = "prompt" -> agent1 -> agent2
+        if current(state)["type"] == "ARROW":
+            node = parse_pipeline(state, value)
+            node["variable"] = name
+            return stamp(node, line)
+
         expect_newline_or_eof(state)
         return stamp({"type": "AssignStatement", "name": name, "value": value,
                       "type_hint": type_hint, "is_const": false,
