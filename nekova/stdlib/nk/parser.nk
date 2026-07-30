@@ -1,11 +1,12 @@
 # ═══════════════════════════════════════════════════════════════
 # NEKOVA Standard Library — parser.nk
-# Phase 27, Layer 1: core statement/expression grammar.
+# Phase 27. Layer 1 (core grammar) complete. Layer 2a (core AI
+# primitives + safety) in progress — see below.
 #
 # Self-hosted port of nekova/parser/parser.py, written directly
 # against GRAMMAR.md and the live Python parser — same relationship
 # lexer.nk (Phase 20) has to nekova/lexer/lexer.py. Consumes the
-# token dicts produced by lexer.nk's tokenize(source).
+# token dicts produced by lexer.nk's tokenize(source).a
 #
 # AST shape: every node is a dict with a "type" field matching the
 # Python Node class name 1:1 (e.g. "IntegerLiteral", "BinaryOp",
@@ -14,7 +15,7 @@
 # so NEKOVA never has to lean on classes it doesn't have yet while
 # bootstrapping its own parser.
 #
-# Layer 1 scope (agreed before writing any code — see session notes):
+# Layer 1 scope (shipped):
 #   - Full expression precedence chain (pipe -> ternary -> or -> and
 #     -> comparison -> addition -> multiplication -> unary -> primary),
 #     including literals, identifiers, calls, index/slice, property
@@ -28,9 +29,25 @@
 #   - identifier statements: assignment, augmented assignment,
 #     index assignment, call statements, dot-chain statements
 #
-# Explicitly DEFERRED to Layer 2 (AI-native: think/prompt/pipeline/
-# sandbox/converse/agents/etc., plus enum/shape/error/route/serve/
-# match/import/use/assert/raise/yield/decorator) and Layer 3
+# Layer 2a scope (agreed before writing this slice — core AI
+# primitives + safety, the foundation everything else in "AI-native
+# constructs" validates against or builds on):
+#   - think (statement + expression form), with using/with budget/
+#     when error clauses; think ... as json/list/bool/text/number/
+#     schema {...}
+#   - shape_def, error_def (field-list declarations: NAME type [=default])
+#   - enum_def (single-line comma-separated members)
+#   - prompt_def (templated task; bare-string body auto-parsed as an
+#     f-string template, matching _parse_prompt_body)
+#   - sandbox_stmt (strict/relaxed mode, optional capability allow-list)
+#   - test / expect / mock (probabilistic test blocks, repeat N times
+#     / expect at least K passes; mock think as ... for stubbing
+#     inside tests)
+#
+# Still DEFERRED to a later Layer 2 slice (memory & agents: remember/
+# recall/forget, converse/speak/listen, autonomous/memory/pipeline/
+# model/run/every/watch/imagine/retry/observe/route/serve, plus
+# import/use/assert/raise/yield/decorator/match) and Layer 3
 # (classes, async, self/new). Encountering one of those constructs
 # raises a clear "not yet supported" ParseError rather than
 # mis-parsing or crashing — see parse_statement's final dispatch
@@ -49,14 +66,15 @@ use lexer
 # set would.
 
 DEFERRED_AI_NATIVE_STATEMENT_TYPES = {
-    "THINK": true, "MODEL": true, "AUTONOMOUS": true, "MEMORY": true,
-    "SANDBOX": true, "PIPELINE_DEF": true, "RUN": true, "REMEMBER": true,
+    "MODEL": true, "AUTONOMOUS": true, "MEMORY": true,
+    "PIPELINE_DEF": true, "RUN": true, "REMEMBER": true,
     "RECALL": true, "FORGET": true, "CONVERSE": true, "SPEAK": true,
-    "LISTEN": true, "EVERY": true, "TEST": true, "EXPECT": true,
-    "IMAGINE": true, "SHAPE": true, "WATCH": true, "MATCH": true,
-    "ROUTE": true, "SERVE": true, "ENUM": true, "ERROR_TYPE": true,
+    "LISTEN": true, "EVERY": true,
+    "IMAGINE": true, "WATCH": true, "MATCH": true,
+    "ROUTE": true, "SERVE": true,
     "YIELD": true, "AT": true, "USE": true, "IMPORT": true,
-    "FETCH": true, "AWAIT": true, "ASYNC": true
+    "FETCH": true, "AWAIT": true, "ASYNC": true,
+    "RETRY": true, "OBSERVE": true, "FALLBACK": true
 }
 
 DEFERRED_CLASS_TYPES = {
@@ -149,6 +167,22 @@ task parse_statement(state):
         return parse_for(state)
     if t == "TASK":
         return parse_task(state)
+    if t == "THINK":
+        return parse_think(state)
+    if t == "SANDBOX":
+        return parse_sandbox(state)
+    if t == "SHAPE":
+        return parse_shape(state)
+    if t == "ERROR_TYPE":
+        return parse_error_def(state)
+    if t == "ENUM":
+        return parse_enum(state)
+    if t == "TEST":
+        return parse_test(state)
+    if t == "EXPECT":
+        return parse_expect(state)
+    if t == "MOCK":
+        return parse_mock(state)
     if t == "RETURN":
         return parse_return(state)
     if t == "BREAK":
@@ -180,6 +214,12 @@ task parse_statement(state):
             advance(state)
             expect_newline_or_eof(state)
             return stamp({"type": "PassStatement"}, line)
+
+        # 'prompt' is a soft keyword — only a definition when
+        # immediately followed by IDENTIFIER '(', so existing code
+        # using 'prompt' as an ordinary variable name keeps working.
+        if token["value"] == "prompt" and looks_like_prompt_def(state):
+            return parse_prompt(state)
 
         # Tuple unpacking: a, b, c = expr
         if peek_type(state, 1) == "COMMA":
@@ -227,10 +267,16 @@ task parse_let(state):
 
     consume(state, "ASSIGN")
 
+    # Captured think: let thought = think "prompt" ...
+    if current(state)["type"] == "THINK":
+        node = parse_think(state)
+        node["variable"] = name
+        return stamp(node, line)
+
     if DEFERRED_AI_NATIVE_STATEMENT_TYPES.get(current(state)["type"], false):
         raise ("Captured '" + current(state)["type"] + "' expressions " +
-               "(let " + name + " = ...) are Layer 2 work — not yet " +
-               "supported. Line " + str(line) + ".")
+               "(let " + name + " = ...) are a later Layer 2 slice — " +
+               "not yet supported. Line " + str(line) + ".")
 
     value = parse_expression(state)
     expect_newline_or_eof(state)
@@ -530,6 +576,310 @@ task parse_task(state):
         "body": body, "docstring": docstring
     }, line)
 
+# ── Layer 2a: core AI primitives & safety ──────────────────────────
+
+# 'using'/'budget'/'error' are soft keywords here — matched by
+# identifier value where the grammar calls for them, so none of
+# these words are taken away from use as ordinary variable names
+# elsewhere in the language (same convention parse_try's 'finally'
+# already relies on).
+
+task parse_think_using_model(state):
+    if current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "using":
+        advance(state)
+        return parse_expression(state)
+    return null
+
+task parse_think_with_budget(state):
+    if current(state)["type"] != "WITH":
+        return null
+    advance(state)
+    budget_tok = current(state)
+    if budget_tok["value"] != "budget":
+        raise ("Expected 'budget' after 'with' in a think clause, got '" +
+               str(budget_tok["value"]) + "'. Example: think \"...\" with budget: 500")
+    advance(state)
+    consume(state, "COLON")
+    return parse_expression(state)
+
+task parse_think_on_error(state):
+    if current(state)["type"] != "WHEN":
+        return null
+    advance(state)
+    err_tok = current(state)
+    if err_tok["value"] != "error":
+        raise ("Expected 'error' after 'when' in a think clause, got '" +
+               str(err_tok["value"]) + "'. Example: think \"...\" when error: \"fallback\"")
+    advance(state)  # consume 'error' (lexes as ERROR_TYPE keyword)
+    consume(state, "COLON")
+    return parse_expression(state)
+
+task parse_think_body(state, line):
+    # Shared by parse_think (statement) and parse_think_expr — parses
+    # everything after 'think', through the optional as/using/with/when
+    # clauses, but does NOT consume the trailing newline; callers do
+    # that themselves (statement form always does, expression form
+    # leaves it to whatever is parsing the enclosing expression).
+    prompt = parse_expression(state)
+
+    if current(state)["type"] == "AS":
+        advance(state)
+        fmt_tok = current(state)
+
+        if fmt_tok["type"] == "IDENTIFIER":
+            fmt = fmt_tok["value"].lower()
+            advance(state)
+            if fmt == "schema":
+                schema = parse_expression(state)
+                model_expr = parse_think_using_model(state)
+                budget = parse_think_with_budget(state)
+                on_error = parse_think_on_error(state)
+                return stamp({"type": "ThinkAsStatement", "prompt": prompt,
+                              "format": "schema", "schema": schema, "model": model_expr,
+                              "budget": budget, "on_error": on_error}, line)
+            model_expr = parse_think_using_model(state)
+            budget = parse_think_with_budget(state)
+            on_error = parse_think_on_error(state)
+            return stamp({"type": "ThinkAsStatement", "prompt": prompt,
+                          "format": fmt, "schema": null, "model": model_expr,
+                          "budget": budget, "on_error": on_error}, line)
+
+        if fmt_tok["type"] == "LBRACE":
+            schema = parse_expression(state)
+            model_expr = parse_think_using_model(state)
+            budget = parse_think_with_budget(state)
+            on_error = parse_think_on_error(state)
+            return stamp({"type": "ThinkAsStatement", "prompt": prompt,
+                          "format": "schema", "schema": schema, "model": model_expr,
+                          "budget": budget, "on_error": on_error}, line)
+
+    model_expr = parse_think_using_model(state)
+    budget = parse_think_with_budget(state)
+    on_error = parse_think_on_error(state)
+    return stamp({"type": "ThinkStatement", "prompt": prompt, "model": model_expr,
+                  "budget": budget, "on_error": on_error}, line)
+
+task parse_think(state):
+    line = current(state)["line"]
+    consume(state, "THINK")
+    node = parse_think_body(state, line)
+    expect_newline_or_eof(state)
+    return node
+
+task parse_think_expr(state):
+    # think used inside a larger expression (return think ..., show
+    # think ..., x + think ..., etc.) — same body, caller owns the
+    # trailing newline.
+    line = current(state)["line"]
+    consume(state, "THINK")
+    return parse_think_body(state, line)
+
+# ── shape / error / enum declarations ──────────────────────────────
+
+task parse_field_list_def(state, node_type, consume_type):
+    line = current(state)["line"]
+    consume(state, consume_type)
+    name = consume(state, "IDENTIFIER")["value"]
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+
+    fields = []
+    consume(state, "INDENT")
+    while current(state)["type"] != "DEDENT" and current(state)["type"] != "EOF":
+        if current(state)["type"] == "NEWLINE":
+            advance(state)
+            continue
+        fname = consume(state, "IDENTIFIER")["value"]
+        ftype = consume(state, "IDENTIFIER")["value"]
+        default = null
+        if current(state)["type"] == "ASSIGN":
+            advance(state)
+            default = parse_expression(state)
+        fields.append([fname, ftype, default])
+        if current(state)["type"] == "NEWLINE":
+            advance(state)
+    if current(state)["type"] == "DEDENT":
+        advance(state)
+
+    return stamp({"type": node_type, "name": name, "fields": fields}, line)
+
+task parse_shape(state):
+    return parse_field_list_def(state, "ShapeDefinition", "SHAPE")
+
+task parse_error_def(state):
+    return parse_field_list_def(state, "ErrorDefinition", "ERROR_TYPE")
+
+task parse_enum(state):
+    line = current(state)["line"]
+    consume(state, "ENUM")
+    name = consume(state, "IDENTIFIER")["value"]
+    consume(state, "COLON")
+
+    members = [consume(state, "IDENTIFIER")["value"]]
+    while current(state)["type"] == "COMMA":
+        advance(state)
+        members.append(consume(state, "IDENTIFIER")["value"])
+
+    expect_newline_or_eof(state)
+    return stamp({"type": "EnumDefinition", "name": name, "members": members}, line)
+
+# ── prompt definitions ───────────────────────────────────────────────
+
+task looks_like_prompt_def(state):
+    # Disambiguates 'prompt name(...):' from 'prompt' used as an
+    # ordinary variable (e.g. prompt = "x", show prompt). Only a
+    # definition when immediately followed by IDENTIFIER '('.
+    nxt = peek_type(state, 1)
+    nxt2 = peek_type(state, 2)
+    return nxt == "IDENTIFIER" and nxt2 == "LPAREN"
+
+task parse_prompt(state):
+    line = current(state)["line"]
+    advance(state)  # consume the 'prompt' identifier token
+    name = advance(state)["value"]
+    params = parse_task_param_list(state)
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    body = parse_prompt_body(state)
+    return stamp({"type": "PromptStatement", "name": name, "params": params,
+                  "body": body}, line)
+
+task parse_prompt_body(state):
+    # Like parse_block, but a bare STRING/F_STRING statement is
+    # allowed and parsed as an interpolation template via
+    # parse_fstring, so {var} placeholders resolve against the
+    # prompt's own parameters even without an 'f' prefix.
+    if current(state)["type"] != "NEWLINE" and current(state)["type"] != "INDENT":
+        if current(state)["type"] == "STRING":
+            tok = advance(state)
+            return [parse_fstring(tok["value"])]
+        stmt = parse_statement(state)
+        if stmt != null:
+            return [stmt]
+        return []
+
+    skip_newlines(state)
+
+    if current(state)["type"] != "INDENT":
+        raise ("Expected an indented block here. Did you forget to indent? Line " +
+               str(current(state)["line"]) + ".")
+
+    consume(state, "INDENT")
+    skip_newlines(state)
+
+    statements = []
+    while not at_end(state) and current(state)["type"] != "DEDENT":
+        if current(state)["type"] == "STRING":
+            tok = advance(state)
+            expect_newline_or_eof(state)
+            statements.append(parse_fstring(tok["value"]))
+        else:
+            stmt = parse_statement(state)
+            if stmt != null:
+                statements.append(stmt)
+        skip_newlines(state)
+
+    if current(state)["type"] == "DEDENT":
+        consume(state, "DEDENT")
+
+    return statements
+
+# ── sandbox ───────────────────────────────────────────────────────
+
+task parse_sandbox(state):
+    line = current(state)["line"]
+    consume(state, "SANDBOX")
+
+    mode_token = current(state)
+    mode = null
+    if mode_token["type"] == "STRICT":
+        mode = "strict"
+        advance(state)
+    elif mode_token["type"] == "RELAXED":
+        mode = "relaxed"
+        advance(state)
+    else:
+        raise ("Expected 'strict' or 'relaxed' after 'sandbox', got '" +
+               str(mode_token["value"]) + "'. Line " + str(mode_token["line"]) + ".")
+
+    allow = null
+    if current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "allow":
+        advance(state)
+        consume(state, "COLON")
+        consume(state, "LBRACKET")
+        allow = []
+        while current(state)["type"] != "RBRACKET":
+            allow.append(consume(state, "IDENTIFIER")["value"])
+            if current(state)["type"] == "COMMA":
+                advance(state)
+        consume(state, "RBRACKET")
+
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+    body = parse_block(state)
+    return stamp({"type": "SandboxStatement", "mode": mode, "body": body,
+                  "allow": allow}, line)
+
+# ── test / expect / mock ─────────────────────────────────────────────
+
+task parse_test(state):
+    line = current(state)["line"]
+    consume(state, "TEST")
+    label = consume(state, "STRING")["value"]
+
+    repeat_count = null
+    min_passes = null
+
+    if current(state)["type"] == "REPEAT":
+        advance(state)
+        repeat_count = parse_expression(state)
+        if current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "times":
+            advance(state)
+
+        if current(state)["type"] == "COMMA":
+            advance(state)
+            if current(state)["type"] != "EXPECT":
+                raise ("Expected 'expect at least <n> passes' after 'repeat <n> " +
+                       "times,' in a test block. Example: test \"label\" repeat 10 " +
+                       "times, expect at least 8 passes: Line " + str(line) + ".")
+            advance(state)  # 'expect'
+            if not (current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "at"):
+                raise ("Expected 'at least <n> passes'. Example: expect at least " +
+                       "8 passes. Line " + str(current(state)["line"]) + ".")
+            advance(state)  # 'at'
+            if not (current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "least"):
+                raise ("Expected 'least <n> passes'. Example: expect at least " +
+                       "8 passes. Line " + str(current(state)["line"]) + ".")
+            advance(state)  # 'least'
+            min_passes = parse_expression(state)
+            if current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "passes":
+                advance(state)
+
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+    body = parse_block(state)
+    return stamp({"type": "TestBlock", "label": label, "body": body,
+                  "repeat_count": repeat_count, "min_passes": min_passes}, line)
+
+task parse_expect(state):
+    line = current(state)["line"]
+    consume(state, "EXPECT")
+    expr = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({"type": "ExpectStatement", "expr": expr}, line)
+
+task parse_mock(state):
+    line = current(state)["line"]
+    consume(state, "MOCK")
+    target = advance(state)["value"]  # e.g. "think" — allow keyword names
+    consume(state, "AS")
+    value = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({"type": "MockStatement", "target": target, "value": value}, line)
+
 # ── Identifier-led statements ──────────────────────────────────────
 
 task parse_identifier_statement(state):
@@ -559,10 +909,17 @@ task parse_identifier_statement(state):
 
     if token["type"] == "ASSIGN":
         advance(state)
+
+        # Captured think: thought = think "prompt" ...
+        if current(state)["type"] == "THINK":
+            node = parse_think(state)
+            node["variable"] = name
+            return stamp(node, line)
+
         if DEFERRED_AI_NATIVE_STATEMENT_TYPES.get(current(state)["type"], false):
             raise ("Captured '" + current(state)["type"] + "' expressions (" +
-                   name + " = ...) are Layer 2 work — not yet supported. Line " +
-                   str(line) + ".")
+                   name + " = ...) are a later Layer 2 slice — not yet " +
+                   "supported. Line " + str(line) + ".")
         value = parse_expression(state)
         expect_newline_or_eof(state)
         return stamp({"type": "AssignStatement", "name": name, "value": value,
@@ -759,6 +1116,9 @@ task parse_primary(state):
 
     if t == "LBRACKET":
         return apply_postfix(state, parse_list(state))
+
+    if t == "THINK":
+        return parse_think_expr(state)
 
     if t == "LPAREN":
         advance(state)
