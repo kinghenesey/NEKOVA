@@ -1,8 +1,9 @@
 # ═══════════════════════════════════════════════════════════════
 # NEKOVA Standard Library — parser.nk
-# Phase 27. Layer 1, Layer 2a, memory-store, and agent-conversation
-# slices complete. Now adding: orchestration (model/pipeline/
-# autonomous/every/watch) — the last slice of "memory & agents".
+# Phase 27. Layer 1, Layer 2a, and all of "memory & agents" (memory-
+# store, agent-conversation, orchestration) complete. Now adding: the
+# smaller stragglers — route/serve, import/use, assert/raise, yield,
+# decorators, fetch, imagine.
 #
 # Self-hosted port of nekova/parser/parser.py, written directly
 # against GRAMMAR.md and the live Python parser — same relationship
@@ -67,10 +68,8 @@ use lexer
 # set would.
 
 DEFERRED_AI_NATIVE_STATEMENT_TYPES = {
-    "IMAGINE": true, "MATCH": true,
-    "ROUTE": true, "SERVE": true,
-    "YIELD": true, "AT": true, "USE": true, "IMPORT": true,
-    "FETCH": true, "AWAIT": true, "ASYNC": true,
+    "MATCH": true,
+    "AWAIT": true, "ASYNC": true,
     "RETRY": true, "OBSERVE": true, "FALLBACK": true
 }
 
@@ -169,6 +168,22 @@ task parse_statement(state):
         return parse_every(state)
     if t == "WATCH":
         return parse_watch(state)
+    if t == "IMAGINE":
+        return parse_imagine(state)
+    if t == "YIELD":
+        return parse_yield(state)
+    if t == "AT":
+        return parse_decorator(state)
+    if t == "USE":
+        return parse_use(state)
+    if t == "IMPORT":
+        return parse_import(state)
+    if t == "FETCH":
+        return parse_fetch_expr(state)
+    if t == "ROUTE":
+        return parse_route(state)
+    if t == "SERVE":
+        return parse_serve(state)
     if t == "LET":
         return parse_let(state)
     if t == "CONST":
@@ -247,6 +262,12 @@ task parse_statement(state):
             expect_newline_or_eof(state)
             return stamp({"type": "PassStatement"}, line)
 
+        if token["value"] == "assert":
+            return parse_assert(state)
+
+        if token["value"] == "raise":
+            return parse_raise(state)
+
         # 'prompt' is a soft keyword — only a definition when
         # immediately followed by IDENTIFIER '(', so existing code
         # using 'prompt' as an ordinary variable name keeps working.
@@ -316,6 +337,16 @@ task parse_let(state):
         node = parse_run_pipeline(state)
         node["variable"] = name
         return stamp(node, line)
+
+    # Fetch expression: let res = fetch "url" method "GET"
+    # (only captured here, not in bare identifier assignment — matches
+    # the reference parser's actual coverage, not embellished beyond it)
+    if current(state)["type"] == "FETCH":
+        value = parse_fetch_expr(state)
+        expect_newline_or_eof(state)
+        return stamp({"type": "AssignStatement", "name": name, "value": value,
+                      "type_hint": type_hint, "is_const": false,
+                      "is_declaration": true}, line)
 
     if DEFERRED_AI_NATIVE_STATEMENT_TYPES.get(current(state)["type"], false):
         raise ("Captured '" + current(state)["type"] + "' expressions " +
@@ -1164,6 +1195,199 @@ task parse_watch(state):
     return stamp({"type": "WatchStatement", "target": target, "body": body,
                   "is_file": is_file}, line)
 
+# ── stragglers: imagine / yield / decorators / assert / raise /
+#    use / import / fetch / route / serve ──────────────────────────
+
+task parse_imagine(state):
+    line = current(state)["line"]
+    consume(state, "IMAGINE")
+    prompt = parse_expression(state)
+    fmt = "url"
+    if current(state)["type"] == "AS":
+        advance(state)
+        fmt = consume(state, "IDENTIFIER")["value"]
+    expect_newline_or_eof(state)
+    return stamp({"type": "ImagineStatement", "prompt": prompt, "result_format": fmt}, line)
+
+task parse_imagine_expr(state):
+    line = current(state)["line"]
+    consume(state, "IMAGINE")
+    prompt = parse_expression(state)
+    fmt = "url"
+    if current(state)["type"] == "AS":
+        advance(state)
+        fmt = consume(state, "IDENTIFIER")["value"]
+    return stamp({"type": "ImagineStatement", "prompt": prompt, "result_format": fmt}, line)
+
+task parse_yield(state):
+    line = current(state)["line"]
+    consume(state, "YIELD")
+    expr = null
+    stop_types = {"NEWLINE": true, "EOF": true, "DEDENT": true}
+    if not stop_types.get(current(state)["type"], false):
+        expr = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({"type": "YieldStatement", "expr": expr}, line)
+
+task parse_decorator_expr(state):
+    # A single @name or @name(args) decorator, without the trailing
+    # newline handling — shared by the first and each stacked decorator.
+    name = advance(state)["value"]  # allow keyword names
+    node = {"type": "Identifier", "name": name}
+    if current(state)["type"] == "LPAREN":
+        advance(state)
+        args = []
+        while current(state)["type"] != "RPAREN":
+            args.append(parse_expression(state))
+            if current(state)["type"] == "COMMA":
+                advance(state)
+        consume(state, "RPAREN")
+        node = {"type": "CallExpression", "callee": name, "args": args, "kwargs": {}}
+    return node
+
+task parse_decorator(state):
+    line = current(state)["line"]
+    consume(state, "AT")
+    decorators = [parse_decorator_expr(state)]
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+
+    while current(state)["type"] == "AT":
+        advance(state)
+        decorators.append(parse_decorator_expr(state))
+        expect_newline_or_eof(state)
+        skip_newlines(state)
+
+    if current(state)["type"] != "TASK":
+        raise ("Expected 'task' after decorator, got '" +
+               str(current(state)["value"]) + "'. Line " +
+               str(current(state)["line"]) + ".")
+    target = parse_task(state)
+
+    # Apply right-to-left, matching the reference
+    node = target
+    i = len(decorators) - 1
+    while i >= 0:
+        node = stamp({"type": "DecoratorStatement", "decorator": decorators[i],
+                      "target": node}, line)
+        i = i - 1
+    return node
+
+task parse_assert(state):
+    line = current(state)["line"]
+    advance(state)  # consume 'assert'
+    condition = parse_expression(state)
+    message = null
+    if current(state)["type"] == "COMMA":
+        advance(state)
+        message = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({"type": "AssertStatement", "condition": condition, "message": message}, line)
+
+task parse_raise(state):
+    line = current(state)["line"]
+    advance(state)  # consume 'raise'
+    expr = parse_expression(state)
+    expect_newline_or_eof(state)
+    return stamp({"type": "RaiseStatement", "expr": expr}, line)
+
+task parse_use(state):
+    consume(state, "USE")
+    module = consume(state, "IDENTIFIER")["value"]
+    expect_newline_or_eof(state)
+    return {"type": "UseStatement", "module": module}
+
+task parse_import(state):
+    consume(state, "IMPORT")
+
+    if current(state)["type"] == "STRING":
+        filepath = consume(state, "STRING")["value"]
+        expect_newline_or_eof(state)
+        return {"type": "ImportStatement", "filepath": filepath, "names": null}
+
+    names = [consume(state, "IDENTIFIER")["value"]]
+    while current(state)["type"] == "COMMA" or (current(state)["type"] == "IDENTIFIER" and current(state)["value"] != "from"):
+        if current(state)["type"] == "COMMA":
+            advance(state)
+        if current(state)["type"] == "IDENTIFIER" and current(state)["value"] != "from":
+            names.append(consume(state, "IDENTIFIER")["value"])
+
+    if current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "from":
+        advance(state)
+    else:
+        raise ("Expected 'from' after import names, got '" +
+               str(current(state)["value"]) + "'.")
+
+    filepath = consume(state, "STRING")["value"]
+    expect_newline_or_eof(state)
+    return {"type": "ImportStatement", "filepath": filepath, "names": names}
+
+task parse_fetch_expr(state):
+    # fetch <url_expr>
+    # fetch <url_expr> method "POST" headers {...} body {...}
+    # Modifiers are optional and order-independent. Note: this is
+    # only reachable as a top-level statement or via 'let x = fetch
+    # ...' (see parse_let) — not from general expression contexts —
+    # matching the reference parser's actual coverage.
+    consume(state, "FETCH")
+    url = parse_expression(state)
+
+    method = "GET"
+    headers = {}
+    body_expr = null
+
+    while current(state)["type"] == "IDENTIFIER":
+        kw = current(state)["value"].lower()
+        if kw == "method":
+            advance(state)
+            method = consume(state, "STRING")["value"].upper()
+        elif kw == "headers":
+            advance(state)
+            headers = parse_expression(state)
+        elif kw == "body":
+            advance(state)
+            body_expr = parse_expression(state)
+        else:
+            break
+
+    return {"type": "FetchNode", "url": url, "method": method,
+            "headers": headers, "body": body_expr}
+
+task parse_route(state):
+    advance(state)  # consume 'route'
+
+    method_tok = current(state)
+    if method_tok["type"] != "IDENTIFIER":
+        raise ("Expected HTTP method after 'route' (GET, POST, PUT, DELETE). Line " +
+               str(method_tok["line"]) + ".")
+    method = method_tok["value"].upper()
+    advance(state)
+
+    path_tok = current(state)
+    if path_tok["type"] != "STRING" and path_tok["type"] != "F_STRING":
+        raise ("Expected path string after HTTP method. Line " +
+               str(path_tok["line"]) + ".")
+    path = path_tok["value"]
+    advance(state)
+
+    consume(state, "COLON")
+    skip_newlines(state)
+    body = parse_block(state)
+
+    return {"type": "RouteStatement", "method": method, "path": path, "body": body}
+
+task parse_serve(state):
+    advance(state)  # consume 'serve'
+    port_expr = null
+
+    if current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "port":
+        advance(state)
+        consume(state, "COLON")
+        port_expr = parse_expression(state)
+
+    expect_newline_or_eof(state)
+    return {"type": "ServeStatement", "port": port_expr}
+
 # ── Identifier-led statements ──────────────────────────────────────
 
 task parse_identifier_statement(state):
@@ -1432,6 +1656,9 @@ task parse_primary(state):
         if current(state)["type"] == "STRING":
             prompt = {"type": "StringLiteral", "value": advance(state)["value"]}
         return {"type": "ListenExpression", "prompt": prompt}
+
+    if t == "IMAGINE":
+        return parse_imagine_expr(state)
 
     if t == "LPAREN":
         advance(state)
