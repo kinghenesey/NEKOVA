@@ -1,9 +1,11 @@
 # ═══════════════════════════════════════════════════════════════
 # NEKOVA Standard Library — parser.nk
-# Phase 27. Layer 1, Layer 2a, and all of "memory & agents" (memory-
-# store, agent-conversation, orchestration) complete. Now adding: the
-# smaller stragglers — route/serve, import/use, assert/raise, yield,
-# decorators, fetch, imagine.
+# Phase 27. ALL layers complete: Layer 1 (core grammar), Layer 2
+# (all AI-native constructs across every sub-slice: think/shape/
+# sandbox/test, memory-store, agent-conversation, orchestration,
+# stragglers), and now Layer 3 (classes/self/new, async/await,
+# stream think, match, retry/observe/fallback). Self-hosted parser.nk
+# now covers the full language grammar end to end.
 #
 # Self-hosted port of nekova/parser/parser.py, written directly
 # against GRAMMAR.md and the live Python parser — same relationship
@@ -67,15 +69,15 @@ use lexer
 # (value unused) so membership checks read the same way as a real
 # set would.
 
-DEFERRED_AI_NATIVE_STATEMENT_TYPES = {
-    "MATCH": true,
-    "AWAIT": true, "ASYNC": true,
-    "RETRY": true, "OBSERVE": true, "FALLBACK": true
-}
+# Both empty now — Layer 3 (this slice) covers everything that was
+# still deferred: match, await/async, retry/observe/fallback, and
+# classes/self/new. Kept as empty dicts (rather than deleted, along
+# with their .get() call sites) so a future construct can be added
+# to either set again with a one-line change if needed.
 
-DEFERRED_CLASS_TYPES = {
-    "CLASS": true, "OBJECT": true, "NEW": true, "SELF": true
-}
+DEFERRED_AI_NATIVE_STATEMENT_TYPES = {}
+
+DEFERRED_CLASS_TYPES = {}
 
 # ── Parser state ─────────────────────────────────────────────────
 
@@ -184,6 +186,28 @@ task parse_statement(state):
         return parse_route(state)
     if t == "SERVE":
         return parse_serve(state)
+    if t == "MATCH":
+        return parse_match(state)
+    if t == "ASYNC":
+        return parse_async_function(state)
+    if t == "AWAIT":
+        return parse_await_expr(state)
+    if t == "STREAM":
+        return parse_stream_think(state)
+    if t == "OBJECT":
+        return parse_class_definition(state)
+    if t == "CLASS":
+        return parse_class_definition(state)
+    if t == "NEW":
+        node = parse_new_instance(state)
+        expect_newline_or_eof(state)
+        return node
+    if t == "SELF":
+        return parse_self_expr(state)
+    if t == "RETRY":
+        return parse_retry(state)
+    if t == "OBSERVE":
+        return parse_observe(state)
     if t == "LET":
         return parse_let(state)
     if t == "CONST":
@@ -1388,6 +1412,361 @@ task parse_serve(state):
     expect_newline_or_eof(state)
     return {"type": "ServeStatement", "port": port_expr}
 
+# ── Layer 3: classes / self / new ──────────────────────────────────
+
+task parse_class_param_list(state):
+    # Simpler than parse_task_param_list: (name: type, ...) pairs
+    # only — no defaults, no varargs. Matches the reference's
+    # dedicated class-param parser exactly.
+    params = []
+    while current(state)["type"] != "RPAREN" and current(state)["type"] != "EOF":
+        if current(state)["type"] == "IDENTIFIER":
+            pname = consume(state, "IDENTIFIER")["value"]
+            phint = "any"
+            if current(state)["type"] == "COLON":
+                advance(state)
+                if current(state)["type"] == "IDENTIFIER":
+                    phint = consume(state, "IDENTIFIER")["value"]
+            params.append([pname, phint])
+            if current(state)["type"] == "COMMA":
+                advance(state)
+        else:
+            break
+    return params
+
+task parse_class_definition(state):
+    line = current(state)["line"]
+    # Accept both 'object' and 'class' keywords
+    if current(state)["type"] == "OBJECT" or current(state)["type"] == "CLASS":
+        advance(state)
+    else:
+        consume(state, "OBJECT")
+    name = consume(state, "IDENTIFIER")["value"]
+
+    parent = null
+    if current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "extends":
+        advance(state)
+        parent = consume(state, "IDENTIFIER")["value"]
+
+    consume(state, "COLON")
+
+    fields = []
+    init_params = []
+    init_body = []
+    methods = []
+
+    # Class body may have multiple INDENT/DEDENT pairs (the lexer
+    # reindents on blank lines) — keep consuming them all.
+    skip_newlines(state)
+
+    while current(state)["type"] == "INDENT":
+        advance(state)
+
+        while current(state)["type"] != "DEDENT" and current(state)["type"] != "EOF":
+            skip_newlines(state)
+            if current(state)["type"] == "DEDENT" or current(state)["type"] == "EOF":
+                break
+
+            tok = current(state)
+
+            if tok["type"] == "IDENTIFIER" and peek_type(state, 1) == "COLON":
+                field_name = consume(state, "IDENTIFIER")["value"]
+                consume(state, "COLON")
+                type_hint = "any"
+                if current(state)["type"] == "IDENTIFIER":
+                    type_hint = consume(state, "IDENTIFIER")["value"]
+                skip_newlines(state)
+                fields.append([field_name, type_hint])
+            elif tok["type"] == "INIT":
+                consume(state, "INIT")
+                consume(state, "LPAREN")
+                init_params = parse_class_param_list(state)
+                consume(state, "RPAREN")
+                consume(state, "COLON")
+                init_body = parse_block(state)
+                skip_newlines(state)
+            elif tok["type"] == "FUNC":
+                consume(state, "FUNC")
+                method_name = advance(state)["value"]  # allow keyword names
+                consume(state, "LPAREN")
+                params = parse_class_param_list(state)
+                consume(state, "RPAREN")
+                consume(state, "COLON")
+                body = parse_block(state)
+                skip_newlines(state)
+                methods.append({"name": method_name, "params": params,
+                                "body": body, "is_async": false})
+            elif tok["type"] == "ASYNC":
+                consume(state, "ASYNC")
+                consume(state, "FUNC")
+                method_name = advance(state)["value"]
+                consume(state, "LPAREN")
+                params = parse_class_param_list(state)
+                consume(state, "RPAREN")
+                consume(state, "COLON")
+                body = parse_block(state)
+                skip_newlines(state)
+                methods.append({"name": method_name, "params": params,
+                                "body": body, "is_async": true})
+            else:
+                advance(state)
+
+        if current(state)["type"] == "DEDENT":
+            advance(state)
+        skip_newlines(state)
+
+    return stamp({"type": "ClassDefinition", "name": name, "fields": fields,
+                  "init_params": init_params, "init_body": init_body,
+                  "methods": methods, "parent": parent}, line)
+
+task parse_new_instance(state):
+    line = current(state)["line"]
+    consume(state, "NEW")
+    class_name = consume(state, "IDENTIFIER")["value"]
+    consume(state, "LPAREN")
+    args = []
+    while current(state)["type"] != "RPAREN":
+        args.append(parse_expression(state))
+        if current(state)["type"] == "COMMA":
+            advance(state)
+    consume(state, "RPAREN")
+    return stamp({"type": "NewInstance", "class_name": class_name, "args": args}, line)
+
+task parse_self_expr(state):
+    # self.attr            -> SelfAccess
+    # self.attr = value    -> SelfAssign (consumes its own newline)
+    # self.method(args)    -> MethodCall on the __self__ identifier
+    line = current(state)["line"]
+    consume(state, "SELF")
+    consume(state, "DOT")
+    attr = consume(state, "IDENTIFIER")["value"]
+
+    if current(state)["type"] == "LPAREN":
+        advance(state)
+        args = []
+        while current(state)["type"] != "RPAREN":
+            args.append(parse_expression(state))
+            if current(state)["type"] == "COMMA":
+                advance(state)
+        consume(state, "RPAREN")
+        return stamp({"type": "MethodCall",
+                      "object": {"type": "Identifier", "name": "__self__"},
+                      "method": attr, "args": args, "optional": false}, line)
+
+    if current(state)["type"] == "ASSIGN":
+        advance(state)
+        value = parse_expression(state)
+        expect_newline_or_eof(state)
+        return stamp({"type": "SelfAssign", "attr": attr, "value": value}, line)
+
+    return stamp({"type": "SelfAccess", "attr": attr}, line)
+
+# ── async / await / stream think ────────────────────────────────────
+
+task parse_async_function(state):
+    line = current(state)["line"]
+    consume(state, "ASYNC")
+    # Accept both 'func' and 'task' after 'async'
+    if current(state)["type"] == "FUNC":
+        advance(state)
+    elif current(state)["type"] == "TASK":
+        advance(state)
+    else:
+        consume(state, "FUNC")  # trigger the normal error
+    name = advance(state)["value"]  # allow keyword names
+
+    # Reuses the same task-param parser regular/typed tasks use, so
+    # async tasks get default values, *varargs, and type hints too.
+    params = parse_task_param_list(state)
+
+    return_type = null
+    if current(state)["type"] == "ARROW":
+        advance(state)
+        return_type = consume(state, "IDENTIFIER")["value"]
+
+    consume(state, "COLON")
+    result = parse_block_with_docstring(state)
+    docstring = result[0]
+    body = result[1]
+
+    return stamp({"type": "AsyncFunctionNode", "name": name, "params": params,
+                  "body": body, "return_type": return_type,
+                  "docstring": docstring}, line)
+
+task parse_await_expr(state):
+    # await <expr> — no trailing-newline handling here; relies on
+    # the caller/enclosing block loop to mop it up, same as think_expr.
+    line = current(state)["line"]
+    consume(state, "AWAIT")
+    expr = parse_expression(state)
+    return stamp({"type": "AwaitNode", "expr": expr}, line)
+
+task parse_stream_think(state):
+    line = current(state)["line"]
+    consume(state, "STREAM")
+    consume(state, "THINK")
+    prompt = parse_expression(state)
+    consume(state, "COLON")
+    skip_newlines(state)
+
+    if current(state)["type"] == "INDENT":
+        advance(state)
+
+    consume(state, "EACH")
+    chunk_var = consume(state, "IDENTIFIER")["value"]
+    consume(state, "COLON")
+
+    body = parse_block(state)
+
+    if current(state)["type"] == "DEDENT":
+        advance(state)
+
+    return stamp({"type": "StreamThinkNode", "prompt": prompt,
+                  "chunk_var": chunk_var, "body": body}, line)
+
+# ── match / when / else ──────────────────────────────────────────────
+
+MATCH_TYPE_NAMES = {"text": true, "number": true, "boolean": true,
+                     "list": true, "dict": true, "any": true, "null": true}
+
+task parse_inline_or_block(state):
+    # After the colon of a when/else arm: an inline statement on the
+    # same line, or a full indented block on subsequent lines.
+    if current(state)["type"] == "NEWLINE":
+        return parse_block(state)
+    stmt = parse_statement(state)
+    skip_newlines(state)
+    if stmt != null:
+        return [stmt]
+    return []
+
+task parse_match(state):
+    line = current(state)["line"]
+    advance(state)  # consume 'match'
+    subject = parse_expression(state)
+    consume(state, "COLON")
+    skip_newlines(state)
+
+    if current(state)["type"] == "INDENT":
+        advance(state)
+
+    arms = []
+
+    while not at_end(state):
+        skip_newlines(state)
+        tok = current(state)
+
+        if tok["type"] == "DEDENT" or tok["type"] == "EOF":
+            break
+
+        if tok["type"] == "ELSE":
+            advance(state)
+            consume(state, "COLON")
+            body = parse_inline_or_block(state)
+            arms.append({"pattern": null, "body": body, "is_else": true,
+                        "is_type_check": false, "is_range": false, "range_end": null})
+            skip_newlines(state)
+            break  # else is always last
+
+        if tok["type"] == "WHEN":
+            advance(state)
+
+            cur = current(state)
+            is_type_check = false
+            is_range = false
+            range_end = null
+            pattern = null
+
+            if cur["type"] == "IDENTIFIER":
+                name = cur["value"]
+                next_type = peek_type(state, 1)
+                starts_upper = len(name) > 0 and name[0] == name[0].upper()
+                if MATCH_TYPE_NAMES.get(name, false) or (starts_upper and next_type == "COLON"):
+                    is_type_check = true
+                    pattern = name
+                    advance(state)
+                else:
+                    pattern = parse_expression(state)
+            else:
+                pattern = parse_expression(state)
+
+            # Range pattern: when 'a'..'z' or when 0..9
+            if current(state)["type"] == "DOTDOT":
+                advance(state)
+                range_end = parse_expression(state)
+                is_range = true
+
+            consume(state, "COLON")
+            body = parse_inline_or_block(state)
+            arms.append({"pattern": pattern, "body": body, "is_else": false,
+                        "is_type_check": is_type_check, "is_range": is_range,
+                        "range_end": range_end})
+            continue
+
+        break  # anything unrecognised ends the match block
+
+    if current(state)["type"] == "DEDENT":
+        advance(state)
+
+    return stamp({"type": "MatchStatement", "subject": subject, "arms": arms}, line)
+
+# ── retry / observe ───────────────────────────────────────────────────
+
+task parse_retry(state):
+    line = current(state)["line"]
+    consume(state, "RETRY")
+    times = parse_expression(state)
+
+    if current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "times":
+        advance(state)
+
+    backoff = null
+    if current(state)["type"] == "WITH":
+        advance(state)
+        if current(state)["type"] == "IDENTIFIER":
+            strategy = advance(state)["value"].lower()
+            if current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "backoff":
+                advance(state)
+            backoff = strategy
+
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+    body = parse_block(state)
+
+    skip_newlines(state)
+
+    fallback_body = null
+    if not at_end(state) and current(state)["type"] == "FALLBACK":
+        advance(state)
+        consume(state, "COLON")
+        expect_newline_or_eof(state)
+        skip_newlines(state)
+        fallback_body = parse_block(state)
+
+    return stamp({"type": "RetryStatement", "times": times, "backoff": backoff,
+                  "body": body, "fallback_body": fallback_body}, line)
+
+task parse_observe(state):
+    line = current(state)["line"]
+    consume(state, "OBSERVE")
+    label = parse_expression(state)
+
+    tags = null
+    if current(state)["type"] == "WITH":
+        advance(state)
+        if current(state)["type"] == "IDENTIFIER" and current(state)["value"] == "tags":
+            advance(state)
+        tags = parse_expression(state)
+
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+    body = parse_block(state)
+
+    return stamp({"type": "ObserveStatement", "label": label, "tags": tags,
+                  "body": body}, line)
+
 # ── Identifier-led statements ──────────────────────────────────────
 
 task parse_identifier_statement(state):
@@ -1659,6 +2038,15 @@ task parse_primary(state):
 
     if t == "IMAGINE":
         return parse_imagine_expr(state)
+
+    if t == "AWAIT":
+        return parse_await_expr(state)
+
+    if t == "NEW":
+        return parse_new_instance(state)
+
+    if t == "SELF":
+        return parse_self_expr(state)
 
     if t == "LPAREN":
         advance(state)
