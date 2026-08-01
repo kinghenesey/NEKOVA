@@ -480,11 +480,20 @@ task parse_if(state):
     skip_newlines(state)
 
     then_body = parse_block(state)
-    else_body = []
     skip_newlines(state)
 
-    tail = null
-
+    # Collect elif clauses first, then build the nested else-chain
+    # from the end backwards. NEKOVA assignment deep-copies dicts/
+    # lists (documented in interpreter.py — "prevent aliasing bugs"),
+    # so a "keep a tail pointer and mutate it after storing it
+    # elsewhere" approach silently doesn't propagate: once a dict is
+    # embedded inside an already-assigned list/dict, further
+    # mutation through a separate variable reference to the same
+    # object no longer reaches the copy that got stored. Building
+    # from the innermost clause outward — like the decorator
+    # stacking below — never mutates anything after the fact, so it
+    # works under copy semantics.
+    elif_clauses = []
     while not at_end(state) and current(state)["type"] == "ELIF":
         advance(state)
         elif_condition = parse_expression(state)
@@ -493,26 +502,23 @@ task parse_if(state):
         skip_newlines(state)
         elif_body = parse_block(state)
         skip_newlines(state)
+        elif_clauses.append([elif_condition, elif_body])
 
-        elif_node = {"type": "IfStatement", "condition": elif_condition,
-                     "then_body": elif_body, "else_body": []}
-
-        if tail == null:
-            else_body = [elif_node]
-        else:
-            tail["else_body"] = [elif_node]
-        tail = elif_node
-
+    final_else = []
     if not at_end(state) and current(state)["type"] == "ELSE":
         advance(state)
         consume(state, "COLON")
         expect_newline_or_eof(state)
         skip_newlines(state)
         final_else = parse_block(state)
-        if tail == null:
-            else_body = final_else
-        else:
-            tail["else_body"] = final_else
+
+    else_body = final_else
+    i = len(elif_clauses) - 1
+    while i >= 0:
+        clause = elif_clauses[i]
+        else_body = [{"type": "IfStatement", "condition": clause[0],
+                      "then_body": clause[1], "else_body": else_body}]
+        i = i - 1
 
     return stamp({"type": "IfStatement", "condition": condition,
                   "then_body": then_body, "else_body": else_body}, line)
@@ -612,7 +618,7 @@ task parse_show(state):
         advance(state)
         extras.append(parse_expression(state))
     expect_newline_or_eof(state)
-    return stamp({"type": "ShowStatement", "expr": expr, "extras": extras}, line)
+    return stamp({"type": "ShowStatement", "expression": expr, "extra_expressions": extras}, line)
 
 # ── Task definitions ──────────────────────────────────────────────
 
@@ -740,14 +746,14 @@ task parse_think_body(state, line):
                 model_expr = parse_think_using_model(state)
                 budget = parse_think_with_budget(state)
                 on_error = parse_think_on_error(state)
-                return stamp({"type": "ThinkAsStatement", "prompt": prompt,
-                              "format": "schema", "schema": schema, "model": model_expr,
+                return stamp({"type": "ThinkAsStatement", "prompt": prompt, "variable": null,
+                              "as_format": "schema", "schema": schema, "model": model_expr,
                               "budget": budget, "on_error": on_error}, line)
             model_expr = parse_think_using_model(state)
             budget = parse_think_with_budget(state)
             on_error = parse_think_on_error(state)
-            return stamp({"type": "ThinkAsStatement", "prompt": prompt,
-                          "format": fmt, "schema": null, "model": model_expr,
+            return stamp({"type": "ThinkAsStatement", "prompt": prompt, "variable": null,
+                          "as_format": fmt, "schema": null, "model": model_expr,
                           "budget": budget, "on_error": on_error}, line)
 
         if fmt_tok["type"] == "LBRACE":
@@ -755,15 +761,15 @@ task parse_think_body(state, line):
             model_expr = parse_think_using_model(state)
             budget = parse_think_with_budget(state)
             on_error = parse_think_on_error(state)
-            return stamp({"type": "ThinkAsStatement", "prompt": prompt,
-                          "format": "schema", "schema": schema, "model": model_expr,
+            return stamp({"type": "ThinkAsStatement", "prompt": prompt, "variable": null,
+                          "as_format": "schema", "schema": schema, "model": model_expr,
                           "budget": budget, "on_error": on_error}, line)
 
     model_expr = parse_think_using_model(state)
     budget = parse_think_with_budget(state)
     on_error = parse_think_on_error(state)
-    return stamp({"type": "ThinkStatement", "prompt": prompt, "model": model_expr,
-                  "budget": budget, "on_error": on_error}, line)
+    return stamp({"type": "ThinkStatement", "prompt": prompt, "variable": null,
+                  "model": model_expr, "budget": budget, "on_error": on_error}, line)
 
 task parse_think(state):
     line = current(state)["line"]
@@ -975,7 +981,7 @@ task parse_expect(state):
     consume(state, "EXPECT")
     expr = parse_expression(state)
     expect_newline_or_eof(state)
-    return stamp({"type": "ExpectStatement", "expr": expr}, line)
+    return stamp({"type": "ExpectStatement", "expression": expr}, line)
 
 task parse_mock(state):
     line = current(state)["line"]
@@ -995,8 +1001,8 @@ task parse_remember(state):
     consume(state, "ASSIGN")
     value_expr = parse_expression(state)
     expect_newline_or_eof(state)
-    return stamp({"type": "RememberStatement", "key": key_expr,
-                  "value": value_expr}, line)
+    return stamp({"type": "RememberStatement", "key_expr": key_expr,
+                  "value_expr": value_expr}, line)
 
 task parse_recall(state):
     # Statement form: recall "key" [or <default>]
@@ -1019,8 +1025,8 @@ task parse_recall(state):
         advance(state)
         default = parse_addition(state)
     expect_newline_or_eof(state)
-    return stamp({"type": "RecallStatement", "key": key_expr,
-                  "default": default}, line)
+    return stamp({"type": "RecallStatement", "key_expr": key_expr,
+                  "variable": null, "default": default}, line)
 
 task parse_recall_expr(state):
     # Expression form: let x = recall "key" [or <default>]
@@ -1034,8 +1040,8 @@ task parse_recall_expr(state):
     if current(state)["type"] == "OR":
         advance(state)
         default = parse_addition(state)
-    return stamp({"type": "RecallStatement", "key": key_expr,
-                  "default": default}, line)
+    return stamp({"type": "RecallStatement", "key_expr": key_expr,
+                  "variable": null, "default": default}, line)
 
 task parse_forget(state):
     line = current(state)["line"]
@@ -1045,11 +1051,11 @@ task parse_forget(state):
         advance(state)
         expect_newline_or_eof(state)
         return stamp({"type": "ForgetStatement", "forget_all": true,
-                      "key": null}, line)
+                      "key_expr": null}, line)
     key_expr = parse_expression(state)
     expect_newline_or_eof(state)
     return stamp({"type": "ForgetStatement", "forget_all": false,
-                  "key": key_expr}, line)
+                  "key_expr": key_expr}, line)
 
 task parse_memory(state):
     line = current(state)["line"]
@@ -1068,7 +1074,7 @@ task parse_speak(state):
     consume(state, "SPEAK")
     expr = parse_expression(state)
     expect_newline_or_eof(state)
-    return stamp({"type": "SpeakStatement", "expr": expr}, line)
+    return stamp({"type": "SpeakStatement", "expression": expr}, line)
 
 task parse_listen_stmt(state):
     line = current(state)["line"]
@@ -1105,7 +1111,7 @@ task parse_pipeline(state, first_step):
         step = parse_primary(state)
         steps.append(step)
     expect_newline_or_eof(state)
-    return stamp({"type": "PipelineStatement", "steps": steps}, line)
+    return stamp({"type": "PipelineStatement", "steps": steps, "variable": null}, line)
 
 task parse_autonomous(state):
     line = current(state)["line"]
@@ -1115,7 +1121,7 @@ task parse_autonomous(state):
     expect_newline_or_eof(state)
     skip_newlines(state)
     body = parse_block(state)
-    return stamp({"type": "ParallelStatement", "body": body}, line)
+    return stamp({"type": "ParallelStatement", "body": body, "variable": null}, line)
 
 task parse_pipeline_def(state):
     line = current(state)["line"]
@@ -1174,7 +1180,7 @@ task parse_run_pipeline(state):
     consume(state, "PIPELINE_DEF")
     name = consume(state, "IDENTIFIER")["value"]
     expect_newline_or_eof(state)
-    return stamp({"type": "RunPipelineStatement", "name": name}, line)
+    return stamp({"type": "RunPipelineStatement", "name": name, "variable": null}, line)
 
 task parse_every(state):
     line = current(state)["line"]
@@ -1204,8 +1210,8 @@ task parse_every(state):
     expect_newline_or_eof(state)
     skip_newlines(state)
     body = parse_block(state)
-    return stamp({"type": "EveryStatement", "interval": interval_val, "unit": unit,
-                  "body": body, "max_runs": max_runs}, line)
+    return stamp({"type": "EveryStatement", "interval_value": interval_val,
+                  "interval_unit": unit, "body": body, "max_runs": max_runs}, line)
 
 task parse_watch(state):
     line = current(state)["line"]
@@ -1231,7 +1237,8 @@ task parse_imagine(state):
         advance(state)
         fmt = consume(state, "IDENTIFIER")["value"]
     expect_newline_or_eof(state)
-    return stamp({"type": "ImagineStatement", "prompt": prompt, "result_format": fmt}, line)
+    return stamp({"type": "ImagineStatement", "prompt": prompt, "result_var": null,
+                  "result_format": fmt}, line)
 
 task parse_imagine_expr(state):
     line = current(state)["line"]
@@ -1241,7 +1248,8 @@ task parse_imagine_expr(state):
     if current(state)["type"] == "AS":
         advance(state)
         fmt = consume(state, "IDENTIFIER")["value"]
-    return stamp({"type": "ImagineStatement", "prompt": prompt, "result_format": fmt}, line)
+    return stamp({"type": "ImagineStatement", "prompt": prompt, "result_var": null,
+                  "result_format": fmt}, line)
 
 task parse_yield(state):
     line = current(state)["line"]
@@ -1251,7 +1259,7 @@ task parse_yield(state):
     if not stop_types.get(current(state)["type"], false):
         expr = parse_expression(state)
     expect_newline_or_eof(state)
-    return stamp({"type": "YieldStatement", "expr": expr}, line)
+    return stamp({"type": "YieldStatement", "expression": expr}, line)
 
 task parse_decorator_expr(state):
     # A single @name or @name(args) decorator, without the trailing
@@ -1260,13 +1268,19 @@ task parse_decorator_expr(state):
     node = {"type": "Identifier", "name": name}
     if current(state)["type"] == "LPAREN":
         advance(state)
-        args = []
+        let args = []
         while current(state)["type"] != "RPAREN":
             args.append(parse_expression(state))
             if current(state)["type"] == "COMMA":
                 advance(state)
         consume(state, "RPAREN")
-        node = {"type": "CallExpression", "callee": name, "args": args, "kwargs": {}}
+        # NOTE: the reference parser passes an Identifier node (not a
+        # plain string) as CallExpression.name here specifically —
+        # inconsistent with every other CallExpression in the
+        # grammar, which use a plain string, but it's the actual
+        # ground-truth behaviour, so mirrored rather than "corrected".
+        node = {"type": "CallExpression", "name": {"type": "Identifier", "name": name},
+                "args": args, "kwargs": {}}
     return node
 
 task parse_decorator(state):
@@ -1292,7 +1306,7 @@ task parse_decorator(state):
     node = target
     i = len(decorators) - 1
     while i >= 0:
-        node = stamp({"type": "DecoratorStatement", "decorator": decorators[i],
+        node = stamp({"type": "DecoratorStatement", "decorator_expr": decorators[i],
                       "target": node}, line)
         i = i - 1
     return node
@@ -1313,7 +1327,7 @@ task parse_raise(state):
     advance(state)  # consume 'raise'
     expr = parse_expression(state)
     expect_newline_or_eof(state)
-    return stamp({"type": "RaiseStatement", "expr": expr}, line)
+    return stamp({"type": "RaiseStatement", "expression": expr}, line)
 
 task parse_use(state):
     consume(state, "USE")
@@ -1375,7 +1389,7 @@ task parse_fetch_expr(state):
             break
 
     return {"type": "FetchNode", "url": url, "method": method,
-            "headers": headers, "body": body_expr}
+            "headers": headers, "body_expr": body_expr}
 
 task parse_route(state):
     advance(state)  # consume 'route'
@@ -1410,7 +1424,7 @@ task parse_serve(state):
         port_expr = parse_expression(state)
 
     expect_newline_or_eof(state)
-    return {"type": "ServeStatement", "port": port_expr}
+    return {"type": "ServeStatement", "port_expr": port_expr}
 
 # ── Layer 3: classes / self / new ──────────────────────────────────
 
@@ -1494,8 +1508,8 @@ task parse_class_definition(state):
                 consume(state, "COLON")
                 body = parse_block(state)
                 skip_newlines(state)
-                methods.append({"name": method_name, "params": params,
-                                "body": body, "is_async": false})
+                methods.append({"type": "MethodDefinition", "name": method_name,
+                                "params": params, "body": body, "is_async": false})
             elif tok["type"] == "ASYNC":
                 consume(state, "ASYNC")
                 consume(state, "FUNC")
@@ -1506,8 +1520,8 @@ task parse_class_definition(state):
                 consume(state, "COLON")
                 body = parse_block(state)
                 skip_newlines(state)
-                methods.append({"name": method_name, "params": params,
-                                "body": body, "is_async": true})
+                methods.append({"type": "MethodDefinition", "name": method_name,
+                                "params": params, "body": body, "is_async": true})
             else:
                 advance(state)
 
@@ -1524,7 +1538,7 @@ task parse_new_instance(state):
     consume(state, "NEW")
     class_name = consume(state, "IDENTIFIER")["value"]
     consume(state, "LPAREN")
-    args = []
+    let args = []
     while current(state)["type"] != "RPAREN":
         args.append(parse_expression(state))
         if current(state)["type"] == "COMMA":
@@ -1543,7 +1557,7 @@ task parse_self_expr(state):
 
     if current(state)["type"] == "LPAREN":
         advance(state)
-        args = []
+        let args = []
         while current(state)["type"] != "RPAREN":
             args.append(parse_expression(state))
             if current(state)["type"] == "COMMA":
@@ -1557,9 +1571,9 @@ task parse_self_expr(state):
         advance(state)
         value = parse_expression(state)
         expect_newline_or_eof(state)
-        return stamp({"type": "SelfAssign", "attr": attr, "value": value}, line)
+        return stamp({"type": "SelfAssign", "attribute": attr, "value": value}, line)
 
-    return stamp({"type": "SelfAccess", "attr": attr}, line)
+    return stamp({"type": "SelfAccess", "attribute": attr}, line)
 
 # ── async / await / stream think ────────────────────────────────────
 
@@ -1663,7 +1677,7 @@ task parse_match(state):
             advance(state)
             consume(state, "COLON")
             body = parse_inline_or_block(state)
-            arms.append({"pattern": null, "body": body, "is_else": true,
+            arms.append({"type": "MatchArm", "pattern": null, "body": body, "is_else": true,
                         "is_type_check": false, "is_range": false, "range_end": null})
             skip_newlines(state)
             break  # else is always last
@@ -1698,7 +1712,7 @@ task parse_match(state):
 
             consume(state, "COLON")
             body = parse_inline_or_block(state)
-            arms.append({"pattern": pattern, "body": body, "is_else": false,
+            arms.append({"type": "MatchArm", "pattern": pattern, "body": body, "is_else": false,
                         "is_type_check": is_type_check, "is_range": is_range,
                         "range_end": range_end})
             continue
@@ -1789,7 +1803,7 @@ task parse_identifier_statement(state):
         rhs = parse_expression(state)
         expect_newline_or_eof(state)
         expanded = {"type": "BinaryOp", "left": {"type": "Identifier", "name": name},
-                    "op": op, "right": rhs}
+                    "operator": op, "right": rhs}
         return stamp({"type": "AssignStatement", "name": name, "value": expanded,
                       "type_hint": type_hint, "is_const": false,
                       "is_declaration": false}, line)
@@ -1841,10 +1855,10 @@ task parse_identifier_statement(state):
             value = parse_expression(state)
             expect_newline_or_eof(state)
             return stamp({"type": "IndexAssignStatement",
-                          "object": {"type": "Identifier", "name": name},
+                          "collection": {"type": "Identifier", "name": name},
                           "index": index, "value": value}, line)
         expr = {"type": "IndexExpression",
-                "object": {"type": "Identifier", "name": name}, "index": index}
+                "collection": {"type": "Identifier", "name": name}, "index": index}
         expr = apply_postfix(state, expr)
         expect_newline_or_eof(state)
         return expr
@@ -1878,7 +1892,7 @@ task build_pipe_call(piped_value, rhs, line):
         rhs["args"] = [piped_value] + rhs["args"]
         return rhs
     if rhs["type"] == "Identifier":
-        return {"type": "CallExpression", "callee": rhs["name"],
+        return {"type": "CallExpression", "name": rhs["name"],
                 "args": [piped_value], "kwargs": {}}
     raise ("The right side of '|>' must be a task call or task name. Line " +
            str(line) + ".")
@@ -1901,7 +1915,7 @@ task parse_logical_or(state):
     while current(state)["type"] == "OR":
         advance(state)
         right = parse_logical_and(state)
-        left = {"type": "BinaryOp", "left": left, "op": "or", "right": right}
+        left = {"type": "BinaryOp", "left": left, "operator": "or", "right": right}
     return left
 
 task parse_logical_and(state):
@@ -1909,7 +1923,7 @@ task parse_logical_and(state):
     while current(state)["type"] == "AND":
         advance(state)
         right = parse_comparison(state)
-        left = {"type": "BinaryOp", "left": left, "op": "and", "right": right}
+        left = {"type": "BinaryOp", "left": left, "operator": "and", "right": right}
     return left
 
 task parse_comparison(state):
@@ -1923,18 +1937,18 @@ task parse_comparison(state):
         if op != null:
             advance(state)
             right = parse_addition(state)
-            left = {"type": "BinaryOp", "left": left, "op": op, "right": right}
+            left = {"type": "BinaryOp", "left": left, "operator": op, "right": right}
         elif cur["type"] == "IN":
             advance(state)
             right = parse_addition(state)
-            left = {"type": "BinaryOp", "left": left, "op": "in", "right": right}
+            left = {"type": "BinaryOp", "left": left, "operator": "in", "right": right}
         elif cur["type"] == "NOT":
             saved = state["pos"]
             advance(state)
             if current(state)["type"] == "IN":
                 advance(state)
                 right = parse_addition(state)
-                left = {"type": "BinaryOp", "left": left, "op": "not in", "right": right}
+                left = {"type": "BinaryOp", "left": left, "operator": "not in", "right": right}
             else:
                 state["pos"] = saved
                 break
@@ -1943,10 +1957,10 @@ task parse_comparison(state):
             if current(state)["type"] == "NOT":
                 advance(state)
                 right = parse_addition(state)
-                left = {"type": "BinaryOp", "left": left, "op": "is not", "right": right}
+                left = {"type": "BinaryOp", "left": left, "operator": "is not", "right": right}
             else:
                 right = parse_addition(state)
-                left = {"type": "BinaryOp", "left": left, "op": "is", "right": right}
+                left = {"type": "BinaryOp", "left": left, "operator": "is", "right": right}
         else:
             break
 
@@ -1958,7 +1972,7 @@ task parse_addition(state):
         op = current(state)["value"]
         advance(state)
         right = parse_multiplication(state)
-        left = {"type": "BinaryOp", "left": left, "op": op, "right": right}
+        left = {"type": "BinaryOp", "left": left, "operator": op, "right": right}
     return left
 
 task parse_multiplication(state):
@@ -1969,16 +1983,16 @@ task parse_multiplication(state):
         op = current(state)["value"]
         advance(state)
         right = parse_unary(state)
-        left = {"type": "BinaryOp", "left": left, "op": op, "right": right}
+        left = {"type": "BinaryOp", "left": left, "operator": op, "right": right}
     return left
 
 task parse_unary(state):
     if current(state)["type"] == "MINUS":
         advance(state)
-        return {"type": "UnaryOp", "op": "-", "operand": parse_unary(state)}
+        return {"type": "UnaryOp", "operator": "-", "operand": parse_unary(state)}
     if current(state)["type"] == "NOT":
         advance(state)
-        return {"type": "UnaryOp", "op": "not", "operand": parse_unary(state)}
+        return {"type": "UnaryOp", "operator": "not", "operand": parse_unary(state)}
     return parse_primary(state)
 
 # ── Primary expressions ────────────────────────────────────────────
@@ -2079,7 +2093,7 @@ task apply_postfix(state, expr):
             advance(state)
             prop = advance(state)["value"]
             if current(state)["type"] == "LPAREN":
-                args = parse_call_args(state)
+                let args = parse_call_args(state)
                 expr = {"type": "MethodCall", "object": expr, "method": prop,
                         "args": args, "optional": false}
             else:
@@ -2089,7 +2103,7 @@ task apply_postfix(state, expr):
             advance(state)
             prop = advance(state)["value"]
             if current(state)["type"] == "LPAREN":
-                args = parse_call_args(state)
+                let args = parse_call_args(state)
                 expr = {"type": "MethodCall", "object": expr, "method": prop,
                         "args": args, "optional": true}
             else:
@@ -2102,7 +2116,7 @@ task apply_postfix(state, expr):
 
 task parse_call_args(state):
     consume(state, "LPAREN")
-    args = []
+    let args = []
     while current(state)["type"] != "RPAREN":
         args.append(parse_expression(state))
         if current(state)["type"] == "COMMA":
@@ -2127,11 +2141,11 @@ task finish_index_or_slice(state, obj):
             if current(state)["type"] != "RBRACKET":
                 step = parse_expression(state)
         consume(state, "RBRACKET")
-        return stamp({"type": "SliceExpression", "object": obj, "start": start,
+        return stamp({"type": "SliceExpression", "obj": obj, "start": start,
                       "stop": stop, "step": step}, line)
 
     consume(state, "RBRACKET")
-    return {"type": "IndexExpression", "object": obj, "index": start}
+    return {"type": "IndexExpression", "collection": obj, "index": start}
 
 task parse_list(state):
     consume(state, "LBRACKET")
@@ -2141,7 +2155,7 @@ task parse_list(state):
             raise "List was never closed — did you forget a ']'?"
         if current(state)["type"] == "ELLIPSIS":
             advance(state)
-            elements.append({"type": "SpreadElement", "value": parse_expression(state)})
+            elements.append({"type": "SpreadElement", "expr": parse_expression(state)})
         else:
             elements.append(parse_expression(state))
         if current(state)["type"] == "COMMA":
@@ -2198,7 +2212,7 @@ task parse_dict(state):
 
         if current(state)["type"] == "ELLIPSIS":
             advance(state)
-            pairs.append([{"type": "SpreadElement", "value": parse_expression(state)}, null])
+            pairs.append([{"type": "SpreadElement", "expr": parse_expression(state)}, null])
             if current(state)["type"] == "COMMA":
                 advance(state)
             skip_newlines(state)
@@ -2226,7 +2240,7 @@ task parse_dict(state):
 
 task finish_call(state, name):
     consume(state, "LPAREN")
-    args = []
+    let args = []
     kwargs = {}
     while current(state)["type"] != "RPAREN":
         if current(state)["type"] == "IDENTIFIER" and peek_type(state, 1) == "ASSIGN":
@@ -2238,7 +2252,7 @@ task finish_call(state, name):
         if current(state)["type"] == "COMMA":
             advance(state)
     consume(state, "RPAREN")
-    return {"type": "CallExpression", "callee": name, "args": args, "kwargs": kwargs}
+    return {"type": "CallExpression", "name": name, "args": args, "kwargs": kwargs}
 
 # ── F-strings ─────────────────────────────────────────────────────
 # Splits on {expr} placeholders with brace-depth counting (so nested
@@ -2249,7 +2263,7 @@ task finish_call(state, name):
 task parse_fstring(raw):
     parts = []
     i = 0
-    length = len(raw)
+    let length = len(raw)
     buf = ""
 
     while i < length:
@@ -2261,7 +2275,7 @@ task parse_fstring(raw):
             continue
 
         if len(buf) > 0:
-            parts.append({"kind": "str", "value": buf})
+            parts.append(["str", buf])
             buf = ""
 
         depth = 1
@@ -2284,18 +2298,18 @@ task parse_fstring(raw):
         expr_src = expr_src.strip()
 
         if len(expr_src) == 0:
-            parts.append({"kind": "str", "value": ""})
+            parts.append(["str", ""])
         else:
             try:
                 inner_tokens = tokenize(expr_src)
                 inner_state = new_parser_state(inner_tokens)
                 expr_node = parse_expression(inner_state)
-                parts.append({"kind": "expr", "node": expr_node})
+                parts.append(["expr", expr_node])
             catch:
-                parts.append({"kind": "str", "value": "{" + expr_src + "}"})
+                parts.append(["str", "{" + expr_src + "}"])
 
     if len(buf) > 0:
-        parts.append({"kind": "str", "value": buf})
+        parts.append(["str", buf])
 
     return {"type": "FStringLiteral", "parts": parts}
 
