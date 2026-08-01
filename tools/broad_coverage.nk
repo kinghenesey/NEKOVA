@@ -1,0 +1,125 @@
+# broad coverage pass — constructs not in diff_parsers.py's default sample
+let coords = (1, 2, 3)
+let mixed = {1, 2, 3}
+data["key"] = 42
+let nested = data.users[0].name.upper()
+let flag = (1 if true else 0)
+let sliced = arr[1:5:2]
+
+global counter
+a, b, c = [1, 2, 3]
+let [x, y, ...rest] = [1, 2, 3, 4]
+let {name, age} = user
+
+repeat 3:
+    show "hi"
+
+model "claude-sonnet"
+pipeline daily:
+    collect "data"
+    process with ai
+    generate report
+    save to database
+
+run pipeline daily
+let r = run pipeline daily
+
+autonomous parallel:
+    do_a()
+let par = autonomous parallel:
+    do_a()
+
+every 5s:
+    ping()
+
+watch "config.json":
+    reload()
+
+"prompt" -> agent1 -> agent2
+let pip = "prompt" -> agent1 -> agent2
+
+imagine "a cat"
+let img = imagine "cat" as path
+
+yield 1 + 2
+
+@retry(3)
+@log
+task audited():
+    return 1
+
+assert x > 0, "must be positive"
+raise "boom"
+
+use math
+import "utils.nk"
+import greet, add from "utils.nk"
+
+let fetched = fetch "https://api.example.com" method "POST" headers {"X-Key": "abc"} body {"a": 1}
+
+route GET "/users":
+    show "list"
+
+serve port: 8080
+
+error NetworkError:
+    message str
+    code int = 0
+
+enum Status: PENDING, ACTIVE, DONE
+
+prompt greet(name, tone="friendly"):
+    "Say hello to {name} in a {tone} tone"
+
+sandbox relaxed allow: [search_web, send_email]:
+    do_risky_thing()
+
+test "ai classification" repeat 10 times, expect at least 8 passes:
+    mock think as "positive"
+    let sentiment = think "classify" as text
+    expect sentiment == "positive"
+
+remember "key" = "value"
+forget all
+
+memory session:
+    turns = 0
+
+speak "hi"
+converse:
+    let reply = listen
+
+object Employee extends Person:
+    salary: number
+
+    init(name: text, salary: number):
+        self.name = name
+        self.salary = salary
+
+    async func fetch_data():
+        return await compute()
+
+async task background(x):
+    return x
+
+match status:
+    when 1:
+        show "one"
+    when text:
+        show "text"
+    when Custom:
+        show "custom"
+    when 1..10:
+        show "range"
+    else:
+        show "other"
+
+retry 5 times with exponential backoff:
+    connect()
+fallback:
+    show "failed"
+
+observe "run" with tags {"user": id}:
+    do_thing()
+
+think "quick" using "claude-sonnet"
