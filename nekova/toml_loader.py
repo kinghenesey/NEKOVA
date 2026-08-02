@@ -47,9 +47,13 @@ class DependenciesConfig:
 
 @dataclass
 class RunConfig:
-    strict_types: bool = False
-    show_imports: bool = False
-    debug:        bool = False
+    strict_types:       bool = False
+    show_imports:       bool = False
+    debug:              bool = False
+    max_loop_iterations: int = 10000  # safety cap per while-loop; raise for
+                                       # large self-hosted workloads (e.g. a
+                                       # stdlib lexer/parser tokenizing a big
+                                       # source file). 0 disables the cap.
 
 
 @dataclass
@@ -197,9 +201,10 @@ def _build_config(data: dict, root_dir: str, toml_path: str) -> NekovaConfig:
     # ── [run] ─────────────────────────────────────────────────
     r = data.get("run", {})
     run = RunConfig(
-        strict_types = _bool(r, "strict_types", False),
-        show_imports = _bool(r, "show_imports", False),
-        debug        = _bool(r, "debug",        False),
+        strict_types        = _bool(r, "strict_types",        False),
+        show_imports        = _bool(r, "show_imports",        False),
+        debug                = _bool(r, "debug",                False),
+        max_loop_iterations = _int(r, "max_loop_iterations",  10000),
     )
 
     return NekovaConfig(
@@ -236,5 +241,19 @@ def _bool(d: dict, key: str, default: bool) -> bool:
     if not isinstance(val, bool):
         raise ConfigError(
             f"nekova.toml: '{key}' must be true or false, got {type(val).__name__}."
+        )
+    return val
+
+def _int(d: dict, key: str, default: int) -> int:
+    val = d.get(key, default)
+    # bool is a subclass of int in Python — reject it explicitly so
+    # `max_loop_iterations = true` doesn't silently become 1.
+    if isinstance(val, bool) or not isinstance(val, int):
+        raise ConfigError(
+            f"nekova.toml: '{key}' must be a whole number, got {type(val).__name__}."
+        )
+    if val < 0:
+        raise ConfigError(
+            f"nekova.toml: '{key}' must be 0 or greater, got {val}."
         )
     return val
