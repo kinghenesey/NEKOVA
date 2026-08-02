@@ -145,6 +145,12 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # _call_task. This is what MAX_CALL_DEPTH is checked against.
         self._call_depth = 0
 
+        # Cache for _get_max_loop_iterations() — see that method for
+        # why this is memoized rather than re-reading nekova.toml
+        # on every while-loop execution.
+        self._max_loop_iterations_cache = None
+        self._max_loop_iterations_resolved = False
+
         # Phase 25: cumulative AI usage tracking, surfaced via the
         # ai_usage() builtin. Token counts are an estimate (roughly
         # 4 characters per token, the same rule of thumb most
@@ -396,6 +402,39 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         except Exception:
             pass
         return 30.0  # default
+
+    def _get_max_loop_iterations(self):
+        """
+        Return the configured while-loop safety cap.
+        Reads from nekova.toml [run] max_loop_iterations.
+        Returns None if the cap is disabled (set to 0) — an
+        unbounded while loop then only stops via break/return/error,
+        same as any other language with no built-in loop guard.
+
+        Cached on the instance after first call: load_config() does
+        an uncached directory walk + TOML parse every time, and
+        while-loops are entered far more often than think-calls (the
+        other config-backed setting) — self-hosted code in
+        particular can execute many while-statements per run, so
+        re-reading the file each time would add real overhead to
+        exactly the large-file workloads this setting exists for.
+        """
+        if self._max_loop_iterations_resolved:
+            return self._max_loop_iterations_cache
+
+        result = 10000  # default
+        try:
+            from nekova.toml_loader import load_config
+            cfg = load_config()
+            if cfg is not None:
+                n = cfg.run.max_loop_iterations
+                result = None if n <= 0 else int(n)
+        except Exception:
+            pass
+
+        self._max_loop_iterations_cache = result
+        self._max_loop_iterations_resolved = True
+        return result
 
     def _sandbox_guard(self, operation: str):
         """
@@ -1317,7 +1356,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             while <condition>:
                 <body>
         """
-        max_iterations = 10000
+        max_iterations = self._get_max_loop_iterations()
         count = 0
 
         while self._is_truthy(
@@ -1329,10 +1368,13 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             except ContinueSignal:
                 pass  # condition is re-evaluated naturally
             count += 1
-            if count >= max_iterations:
+            if max_iterations is not None and count >= max_iterations:
                 raise NEKOVARuntimeError(
                     "While loop ran too many times.\n"
-                    "  Check your loop condition."
+                    "  Check your loop condition.\n"
+                    "  If this is intentional (e.g. processing a large "
+                    "file), raise [run] max_loop_iterations in "
+                    "nekova.toml, or set it to 0 to disable the cap."
                 )
     
     def _exec_TryStatement(self, node: TryStatement):
