@@ -1,0 +1,45 @@
+# nekova.toml
+# ─────────────────────────────────────────────────────────────────────────────
+# Repo-level config. This is NOT a NEKOVA "project" in the usual sense
+# (the repo has no single main.nk entry point) — this file exists
+# specifically so the self-hosted tooling under tools/ (nk_tokenize.nk,
+# nk_parse.nk, and anything diff_parsers.py/diff_lexers.py drive) can
+# process the repo's own large .nk source files (lexer.nk, parser.nk)
+# without tripping the while-loop safety cap.
+#
+# Without this file, running e.g. `python3 main.py tools/nk_parse.nk`
+# on a large target (parser.nk's own ~2400 lines, well past the
+# default 10000-iteration cap once lexer.nk's one-iteration-per-token
+# tokenize() loop runs on it) fails with:
+#   "While loop ran too many times."
+# even though nothing is actually stuck — it's a legitimate large
+# finite computation, just one with more loop iterations than the
+# conservative default expects for ordinary user scripts.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[project]
+name    = "nekova"
+version = "1.13.0"
+author  = "SYNEKCOT Tech"
+description = "NEKOVA — AI-native programming language (self-hosting toolchain)"
+entry   = "main.py"
+
+[ai]
+model   = "mock"
+api_key = ""
+
+[dependencies]
+packages = []
+
+[run]
+strict_types = false
+show_imports = false
+debug        = false
+
+# Raised well above the 10000 default: lexer.nk's tokenize() runs one
+# while-loop iteration per token, and the repo's own .nk source files
+# (parser.nk in particular) comfortably exceed 10000 tokens. This is
+# a repo-tooling concern, not a change to the language's default
+# safety net — ordinary NEKOVA projects should keep the 10000 default
+# unless they have a similar reason to raise it.
+max_loop_iterations = 2000000
