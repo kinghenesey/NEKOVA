@@ -390,14 +390,14 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     def _get_think_timeout(self):
         """
         Return the configured think timeout in seconds.
-        Reads from nekova.toml [run] think_timeout.
+        Reads from nekova.toml [ai] think_timeout.
         Returns None if timeout is disabled (set to 0).
         """
         try:
             from nekova.toml_loader import load_config
             cfg = load_config()
             if cfg is not None:
-                t = cfg.think_timeout
+                t = cfg.ai.think_timeout
                 return None if t <= 0 else float(t)
         except Exception:
             pass
@@ -1545,8 +1545,27 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         """
         Execute:  task greet(name): ...
         If body contains yield, registers a generator factory instead.
+
+        Binds a fresh shallow copy of the node each time this
+        definition statement runs, rather than mutating node.closure_env
+        on the shared AST node in place. The AST node is the same
+        Python object on every execution of the surrounding code (it's
+        parsed once) — if a task is defined *inside* another task and
+        that outer task is called more than once (the classic "counter
+        factory" closure pattern), mutating the inner node's
+        closure_env in place meant every call overwrote the same
+        attribute, so all the returned closures ended up sharing
+        whichever call's environment ran last, instead of each closure
+        keeping the environment it actually captured. AsyncFunction
+        (see async_interpreter.py) already avoids this by constructing
+        a fresh wrapper object per definition; this mirrors that
+        approach without introducing a new type, since a shallow copy
+        of the node is still a TaskStatement everywhere else in the
+        interpreter that checks for one.
         """
-        node.closure_env = self.env
+        import copy
+        bound = copy.copy(node)
+        bound.closure_env = self.env
         if self._body_has_yield(node.body):
             # Register as a generator factory
             interp = self
@@ -1556,18 +1575,24 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 _factory.__name__ = n.name
                 _factory._is_generator = True
                 return _factory
-            self.env.set(node.name, _make_gen_factory(node))
+            self.env.set(node.name, _make_gen_factory(bound))
         else:
-            self.env.set(node.name, node)
+            self.env.set(node.name, bound)
 
     def _exec_PromptStatement(self, node: PromptStatement):
         """
         Execute:  prompt summarize(text, style="professional"): ...
         Registers the prompt like a task — calling it later returns
         the interpolated template string (see _call_prompt).
+
+        See _exec_TaskStatement's docstring for why this binds a
+        fresh shallow copy rather than mutating node.closure_env on
+        the shared AST node in place.
         """
-        node.closure_env = self.env
-        self.env.set(node.name, node)
+        import copy
+        bound = copy.copy(node)
+        bound.closure_env = self.env
+        self.env.set(node.name, bound)
 
     def _exec_ReturnStatement(self, node: ReturnStatement):
         """
@@ -3574,16 +3599,23 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         """
         Typed task with param type hints and optional return type.
         Checks if any param uses `yield` — if so, registers a generator factory.
+
+        See _exec_TaskStatement's docstring for why this binds a
+        fresh shallow copy per execution rather than mutating
+        node.closure_env on the shared AST node in place.
         """
+        import copy
+        bound = copy.copy(node)
+
         # Check if body contains yield (makes it a generator)
         is_gen = self._body_has_yield(node.body)
 
         if is_gen:
-            self._register_generator_task(node)
+            self._register_generator_task(bound)
         else:
             # Treat like a regular task but enforce types at call time
-            node.closure_env = self.env
-            self.env.set(node.name, node)
+            bound.closure_env = self.env
+            self.env.set(node.name, bound)
         return None
 
     def _body_has_yield(self, body: list) -> bool:
@@ -3600,7 +3632,17 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         return False
 
     def _register_generator_task(self, node: TypedTaskStatement):
-        """Register a generator factory function."""
+        """
+        Register a generator factory function.
+
+        `node` is expected to already be a fresh per-definition copy
+        (see _exec_TaskStatement/_exec_TypedTaskStatement) — this
+        just needs to make sure closure_env is actually set on it,
+        since _NEKOVAGenerator falls back to interp.globals via
+        getattr() if it isn't, which silently breaks a generator task
+        that closes over an enclosing task's locals.
+        """
+        node.closure_env = self.env
         interp = self
 
         def _generator_factory(*args):
