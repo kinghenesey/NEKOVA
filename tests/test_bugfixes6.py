@@ -283,6 +283,64 @@ class TestClosureMutation(unittest.TestCase):
         )
         self.assertEqual(run(src), "1\n2\n3")
 
+    def test_two_factory_instances_have_independent_closures(self):
+        """Two separate calls to the same factory task must produce
+        two independently-scoped closures. Previously, closure_env
+        was stored as a mutable attribute on the shared inner-task
+        AST node (the same Python object every time the enclosing
+        task's body runs), so the second make_counter() call
+        silently overwrote which environment the *first* counter's
+        closure pointed at — both counters ended up reading/writing
+        the same (most-recently-created) count variable."""
+        src = (
+            'task make_counter():\n'
+            '    let count = 0\n'
+            '    task increment():\n'
+            '        count = count + 1\n'
+            '        return count\n'
+            '    return increment\n'
+            'let counter1 = make_counter()\n'
+            'let counter2 = make_counter()\n'
+            'show counter1()\n'
+            'show counter1()\n'
+            'show counter1()\n'
+            'show counter2()\n'
+        )
+        self.assertEqual(run(src), "1\n2\n3\n1")
+
+    def test_three_level_nested_closures_stay_independent(self):
+        src = (
+            'task make_adder(base):\n'
+            '    task make_inner(step):\n'
+            '        task adder(x):\n'
+            '            return base + step + x\n'
+            '        return adder\n'
+            '    return make_inner\n'
+            'let inner1 = make_adder(10)\n'
+            'let add_10_5 = inner1(5)\n'
+            'let inner2 = make_adder(100)\n'
+            'let add_100_1 = inner2(1)\n'
+            'show add_10_5(1)\n'
+            'show add_100_1(1)\n'
+            'show add_10_5(2)\n'
+        )
+        self.assertEqual(run(src), "16\n102\n17")
+
+    def test_prompt_closures_are_independent_per_factory_call(self):
+        """prompt definitions have the same closure_env mechanism as
+        task definitions and need the same fix."""
+        src = (
+            'task make_greeter(greeting):\n'
+            '    prompt greet(name):\n'
+            '        "{greeting}, {name}!"\n'
+            '    return greet\n'
+            'let hello_greeter = make_greeter("Hello")\n'
+            'let hi_greeter = make_greeter("Hi")\n'
+            'show hello_greeter("Sam")\n'
+            'show hi_greeter("Sam")\n'
+        )
+        self.assertEqual(run(src), "Hello, Sam!\nHi, Sam!")
+
     def test_let_still_shadows_outer_variable(self):
         """A `let` with the same name as an outer variable must still
         create a fresh local binding (shadow), not mutate the outer
