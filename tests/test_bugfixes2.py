@@ -67,6 +67,48 @@ class TestMemoryIsolation(unittest.TestCase):
         self.assertEqual(out, "gone")
 
 
+# ── Bug: bare `recall "key" or default` statement never reached its
+#    default clause (dead 'or' check + full-expression key parsing
+#    swallowed the 'or' into a BinaryOp first) ──────────────────
+
+class TestBareRecallOrDefault(unittest.TestCase):
+
+    def test_bare_recall_statement_splits_key_and_default(self):
+        """A standalone `recall "key" or default` statement (not
+        wrapped in show/let/return) must parse into separate
+        key_expr and default fields, not swallow 'or' into the key
+        expression."""
+        from nekova.parser.nodes import RecallStatement, StringLiteral
+
+        tokens = Lexer('recall "missing" or "fallback"').tokenize()
+        ast = Parser(tokens).parse()
+        stmt = ast.statements[0]
+
+        self.assertIsInstance(stmt, RecallStatement)
+        self.assertIsInstance(stmt.key_expr, StringLiteral)
+        self.assertEqual(stmt.key_expr.value, "missing")
+        self.assertIsInstance(stmt.default, StringLiteral)
+        self.assertEqual(stmt.default.value, "fallback")
+
+    def test_bare_recall_statement_without_default(self):
+        from nekova.parser.nodes import RecallStatement
+
+        tokens = Lexer('recall "just_a_key"').tokenize()
+        ast = Parser(tokens).parse()
+        stmt = ast.statements[0]
+
+        self.assertIsInstance(stmt, RecallStatement)
+        self.assertIsNone(stmt.default)
+
+    def test_bare_recall_statement_executes_without_error(self):
+        """End-to-end: the bare statement form should run cleanly —
+        this is really an execution smoke test, since a bare recall
+        statement has no visible output of its own."""
+        src = 'recall "missing" or "fallback"\nshow "done"'
+        out = run(src)
+        self.assertEqual(out, "done")
+
+
 # ── Bug 14: not not x / --x parser crash ─────────────────────
 
 class TestDoubleUnary(unittest.TestCase):
