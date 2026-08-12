@@ -947,14 +947,25 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         line = self._current().line
         self._advance()   # consume 'recall'
 
-        key_expr = self._parse_expression()
+        # Addition-level (not full expression) parsing for the key,
+        # same reasoning _parse_recall_expr already uses below: this
+        # keeps 'or' from being consumed as part of a logical-or
+        # BinaryOp before we get a chance to check for it.
+        key_expr = self._parse_addition()
 
         # Optional:  or <default>
+        # NOTE: this used to check
+        #   self._current().type == TokenType.IDENTIFIER and value == "or"
+        # but 'or' always lexes as the reserved TokenType.OR, never
+        # IDENTIFIER, so that check could never match — combined with
+        # parsing the key via the full expression grammar (which
+        # would swallow a following 'or' into a BinaryOp anyway), a
+        # bare `recall "key" or default` statement could never
+        # actually reach its default clause.
         default = None
-        if (self._current().type == TokenType.IDENTIFIER and
-                self._current().value == "or"):
+        if self._current().type == TokenType.OR:
             self._advance()
-            default = self._parse_expression()
+            default = self._parse_addition()
 
         self._expect_newline_or_eof()
         return RecallStatement(key_expr, default=default, line=line)
