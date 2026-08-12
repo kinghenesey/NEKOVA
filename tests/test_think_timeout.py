@@ -190,7 +190,7 @@ class TestTomlTimeout:
         # Patch load_config to return timeout=0
         import unittest.mock as mock
         cfg_mock = mock.MagicMock()
-        cfg_mock.think_timeout = 0
+        cfg_mock.ai.think_timeout = 0
         with mock.patch('nekova.toml_loader.load_config', return_value=cfg_mock):
             t = interp._get_think_timeout()
         assert t is None
@@ -200,7 +200,7 @@ class TestTomlTimeout:
         import unittest.mock as mock
         interp = Interpreter()
         cfg_mock = mock.MagicMock()
-        cfg_mock.think_timeout = 60
+        cfg_mock.ai.think_timeout = 60
         with mock.patch('nekova.toml_loader.load_config', return_value=cfg_mock):
             t = interp._get_think_timeout()
         assert t == 60.0
@@ -212,3 +212,31 @@ class TestTomlTimeout:
         with mock.patch('nekova.toml_loader.load_config', return_value=None):
             t = interp._get_think_timeout()
         assert t == 30.0
+
+    def test_real_toml_ai_think_timeout_is_actually_applied(self):
+        # End-to-end with a real parsed config (no mocking) — this is
+        # the case that was silently broken: _get_think_timeout() read
+        # cfg.think_timeout, but the field only ever existed at
+        # cfg.ai.think_timeout, so [ai] think_timeout in nekova.toml
+        # was never actually applied; it always fell through to the
+        # hardcoded 30.0 default. A MagicMock-based test can't catch
+        # this (it auto-creates whatever attribute you touch), so this
+        # uses a real written-to-disk nekova.toml instead.
+        import os, tempfile
+        from nekova.interpreter.interpreter import Interpreter
+
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "main.nk"), "w") as f:
+                f.write('show "hi"\n')
+            with open(os.path.join(d, "nekova.toml"), "w") as f:
+                f.write(
+                    "[project]\nname = 'x'\nentry = 'main.nk'\n"
+                    "[ai]\nthink_timeout = 77\n"
+                )
+            original = os.getcwd()
+            os.chdir(d)
+            try:
+                t = Interpreter()._get_think_timeout()
+            finally:
+                os.chdir(original)
+            assert t == 77.0
