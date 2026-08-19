@@ -48,3 +48,10 @@ debug        = false   # enable debug output
 # disable the cap entirely — then only break/return/errors stop the
 # loop, same as most other languages.
 max_loop_iterations = 10000
+
+# Parse this project with the self-hosted lexer.nk/parser.nk (Phase
+# 27) instead of the Python reference lexer/parser. Off by default —
+# the Python path is the well-established, fast default; this is
+# mainly useful for exercising/validating the self-hosted toolchain
+# itself. `nekova run --self-hosted` overrides this either way.
+self_hosted_parser = false
