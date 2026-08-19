@@ -37,7 +37,8 @@ class NEKOVARunner:
                  compile_mode: bool = False, strict_types: bool = False,
                  script_args: dict = None, debug_ai: bool = False,
                  why: bool = False, simple_errors: bool = False,
-                 record_ai: str = None, replay_ai: str = None):
+                 record_ai: str = None, replay_ai: str = None,
+                 self_hosted: bool = False):
         self.filepath     = filepath
         self.debug        = debug
         self.debug_ai     = debug_ai
@@ -48,6 +49,7 @@ class NEKOVARunner:
         self.compile_mode = compile_mode
         self.strict_types = strict_types
         self.script_args  = script_args or {}
+        self.self_hosted  = self_hosted
         self.source       = ""
 
     def run(self):
@@ -156,19 +158,29 @@ class NEKOVARunner:
         print()
 
         try:
-            # Phase 2 â€” Lexer
-            lexer  = Lexer(self.source)
-            tokens = lexer.tokenize()
+            # Phase 2 â€” Lexer, Phase 3 â€” Parser
+            # Phase 27 â€” self-hosted path: lexer.nk + parser.nk,
+            # bootstrapped via the Python toolchain, producing the
+            # exact same Node tree the reference parser would (see
+            # nekova/parser/rehydrate.py for how). Opt-in only, via
+            # --self-hosted or [run] self_hosted_parser in
+            # nekova.toml -- the Python path stays the default.
+            if self.self_hosted:
+                from nekova.parser.rehydrate import parse_self_hosted
+                program = parse_self_hosted(self.source)
+                tokens = None  # no separate token list to show in --debug
+            else:
+                lexer  = Lexer(self.source)
+                tokens = lexer.tokenize()
 
-            if self.debug:
-                print_info("Tokens:")
-                for token in tokens:
-                    print(f"  {Color.CYAN}{token}{Color.RESET}")
-                print()
+                if self.debug:
+                    print_info("Tokens:")
+                    for token in tokens:
+                        print(f"  {Color.CYAN}{token}{Color.RESET}")
+                    print()
 
-            # Phase 3 â€” Parser
-            parser  = Parser(tokens)
-            program = parser.parse()
+                parser  = Parser(tokens)
+                program = parser.parse()
 
             if self.debug:
                 print_info("AST:")
