@@ -54,6 +54,10 @@ class RunConfig:
                                        # large self-hosted workloads (e.g. a
                                        # stdlib lexer/parser tokenizing a big
                                        # source file). 0 disables the cap.
+    self_hosted_parser: bool = False  # parse with lexer.nk/parser.nk
+                                       # (Phase 27) instead of the Python
+                                       # reference lexer/parser. --self-hosted
+                                       # on the CLI overrides this either way.
 
 
 @dataclass
@@ -205,6 +209,7 @@ def _build_config(data: dict, root_dir: str, toml_path: str) -> NekovaConfig:
         show_imports        = _bool(r, "show_imports",        False),
         debug                = _bool(r, "debug",                False),
         max_loop_iterations = _int(r, "max_loop_iterations",  10000),
+        self_hosted_parser  = _bool(r, "self_hosted_parser",  False),
     )
 
     return NekovaConfig(
