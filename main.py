@@ -139,13 +139,14 @@ def parse_args(argv: list) -> dict:
         "watch":       False,
         "template":    "default",
         "quiet":       False,
+        "self_hosted": False,
     }
 
     if not argv:
         return args
 
     # ── Known NEKOVA CLI flags ────────────────────────────────
-    KNOWN_FLAGS = {"--debug", "--debug-ai", "--version", "--help", "--packages", "--compile", "--watch", "--quiet", "-q"}
+    KNOWN_FLAGS = {"--debug", "--debug-ai", "--version", "--help", "--packages", "--compile", "--watch", "--quiet", "-q", "--self-hosted"}
     KNOWN_VALUE_FLAGS = {"--install", "--uninstall"}
 
     argv_list = list(argv)
@@ -192,6 +193,10 @@ def parse_args(argv: list) -> dict:
     args["help"]     = "--help"     in argv_list
     args["packages"] = "--packages" in argv_list
     args["compile"]  = "--compile"  in argv_list
+    # --self-hosted: parse with lexer.nk/parser.nk (Phase 27's
+    # self-hosted implementation) instead of the Python reference
+    # lexer/parser. See nekova/parser/rehydrate.py.
+    args["self_hosted"] = "--self-hosted" in argv_list
 
     # Handle --install and --uninstall
     for i, a in enumerate(argv_list):
@@ -428,17 +433,20 @@ def main():
                     args["debug"] = True
                 strict = config.run.strict_types
                 arg = config.entry_path
+                self_hosted = args["self_hosted"] or config.run.self_hosted_parser
                 runner = NEKOVARunner(filepath=arg, debug=args["debug"],
                                       strict_types=strict, debug_ai=args["debug_ai"],
                                       script_args=args["script_args"], why=args["why"],
                                       simple_errors=args["simple_errors"],
-                                      record_ai=args["record_ai"], replay_ai=args["replay_ai"])
+                                      record_ai=args["record_ai"], replay_ai=args["replay_ai"],
+                                      self_hosted=self_hosted)
             else:
                 runner = NEKOVARunner(filepath=arg, debug=args["debug"],
                                       debug_ai=args["debug_ai"],
                                       script_args=args["script_args"], why=args["why"],
                                       simple_errors=args["simple_errors"],
-                                      record_ai=args["record_ai"], replay_ai=args["replay_ai"])
+                                      record_ai=args["record_ai"], replay_ai=args["replay_ai"],
+                                      self_hosted=args["self_hosted"])
             if args["sandbox"]:
                 # Run file in sandbox mode
                 mode = args.get("sandbox_mode", "strict")
@@ -668,7 +676,8 @@ def main():
                                compile_mode=args["compile"],
                                script_args=args["script_args"], why=args["why"],
                                simple_errors=args["simple_errors"],
-                               record_ai=args["record_ai"], replay_ai=args["replay_ai"])
+                               record_ai=args["record_ai"], replay_ai=args["replay_ai"],
+                               self_hosted=args["self_hosted"])
         exit_code = runner.run()
         sys.exit(exit_code)
 
