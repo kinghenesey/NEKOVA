@@ -39,7 +39,7 @@ from nekova.interpreter.exceptions import (
     NEKOVARaiseError, NEKOVAAssertionError, NEKOVARecursionError,
     _ExpectFailed, _YieldSignal
 )
-from nekova.interpreter.async_interpreter import AsyncInterpreterMixin
+from nekova.interpreter.async_interpreter import AsyncInterpreterMixin, AsyncFunction
 from nekova.interpreter.class_interpreter import ClassInterpreterMixin
 
 # Phase 22: sentinel meaning "no mock active" — distinct from None,
@@ -1954,8 +1954,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # function actually raises the built-in RuntimeError — so the
         # except clause never matched, and calling an async task without
         # 'await' crashed with an unhandled RuntimeError.
-        from nekova.interpreter.async_interpreter import AsyncFunction as _AsyncFn
-        if isinstance(callee, _AsyncFn):
+        if isinstance(callee, AsyncFunction):
             return callee.call(args)
 
         raise NEKOVARuntimeError(
