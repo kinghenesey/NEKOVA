@@ -2537,18 +2537,35 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         previous_globals = self._global_names
         self._global_names = set()
 
-        # Normalise params: support old-style plain strings
-        params = task.params
-        if params and isinstance(params[0], str):
-            params = [(p, None, False) for p in params]
-
-        # Check for vararg param
-        vararg_idx = next((i for i, (n, d, v) in enumerate(params) if v), None)
+        # Normalised param layout (old-style-string support, vararg
+        # split, required-count) depends only on task.params, which
+        # never changes for a given task node after it's parsed (or
+        # shallow-copied once at definition-execution time for closures
+        # — see the factory-pattern fix in Phase 27). Recomputing this
+        # analysis from scratch on every CALL was pure waste for a task
+        # invoked many times (a parser helper called per-token, say),
+        # so it's memoised on the node itself the first time this task
+        # is called, and reused after that.
+        info = getattr(task, "_param_info", None)
+        if info is None:
+            params = task.params
+            if params and isinstance(params[0], str):
+                params = [(p, None, False) for p in params]
+            vararg_idx = next((i for i, (n, d, v) in enumerate(params) if v), None)
+            if vararg_idx is not None:
+                positional  = params[:vararg_idx]
+                vararg_name = params[vararg_idx][0]
+                required    = None
+            else:
+                positional  = None
+                vararg_name = None
+                required    = sum(1 for (_, d, _) in params if d is None)
+            info = (params, vararg_idx, positional, vararg_name, required)
+            task._param_info = info
+        params, vararg_idx, positional, vararg_name, required = info
 
         if vararg_idx is not None:
             # All params before vararg are positional
-            positional = params[:vararg_idx]
-            vararg_name = params[vararg_idx][0]
             if len(args) < len(positional):
                 raise NEKOVARuntimeError(
                     f"Task '{task.name}' expects at least "
@@ -2558,8 +2575,6 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 local_env.set(pname, val)
             local_env.set(vararg_name, list(args[len(positional):]))
         else:
-            # Count required (no default) params
-            required = sum(1 for (_, d, _) in params if d is None)
             if len(args) < required or len(args) > len(params):
                 raise NEKOVARuntimeError(
                     f"Task '{task.name}' expects "
