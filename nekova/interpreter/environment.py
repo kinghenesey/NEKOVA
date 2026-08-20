@@ -48,12 +48,19 @@ class Environment:
         Look up a variable by name.
         Searches current scope first, then parent scopes.
         Raises an error if not found anywhere.
-        """
-        if name in self.variables:
-            return self.variables[name]
 
-        if self.parent is not None:
-            return self.parent.get(name)
+        Walks the chain iteratively (matching the pattern update()
+        already uses) rather than recursing one Python call per scope
+        level — same search order and result, just without paying a
+        function-call per ancestor on every lookup that isn't found
+        in the immediate scope (e.g. any builtin or outer-scope name
+        referenced from inside a nested task).
+        """
+        scope = self
+        while scope is not None:
+            if name in scope.variables:
+                return scope.variables[name]
+            scope = scope.parent
 
         raise NameError(
             f"\n  Variable '{name}' does not exist.\n"
