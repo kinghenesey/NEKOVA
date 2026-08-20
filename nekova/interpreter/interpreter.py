@@ -163,6 +163,21 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         self.env          = self.globals
         self.strict_types = strict_types
 
+        # Node-type -> bound-handler dispatch cache for _execute_node.
+        # Populated lazily (once per distinct node class actually seen),
+        # so the hot path becomes a single dict lookup instead of the
+        # isinstance chain + f-string method-name build + getattr that
+        # used to run on EVERY node visit (see _execute_node). The four
+        # "special" node types that previously short-circuited via
+        # isinstance are seeded up front so they're cache hits from the
+        # very first visit too.
+        self._dispatch_cache = {
+            AsyncFunctionNode: self.visit_async_function,
+            AwaitNode:         self.visit_await,
+            StreamThinkNode:   self.visit_stream_think,
+            FetchNode:         self.visit_fetch,
+        }
+
         # Type registry: tracks declared type of each variable name
         # { var_name: type_hint_str }  — populated on first typed assignment
         self._type_registry: dict = {}
@@ -221,32 +236,35 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
     def _execute_node(self, node):
         """
         Route a node to its matching execute method.
-        This is the heart of the interpreter.
+        This is the heart of the interpreter — called for every single
+        AST node, so it's the hottest path in the whole tree-walker.
+        Dispatch is resolved once per node CLASS (not per node instance)
+        and cached in self._dispatch_cache; see __init__ for the four
+        seeded entries and the profiling note on why this replaced an
+        isinstance chain + getattr(self, f"_exec_{...}") lookup that ran
+        unconditionally on every visit.
         """
         # Update current line whenever a stamped node is executed
-        # so error messages point to the exact source line
-        if hasattr(node, "line") and node.line:
-            self._current_line = node.line
+        # so error messages point to the exact source line.
+        # getattr(..., None) is a single call, unlike the previous
+        # hasattr(...) + node.line pair (two attribute lookups).
+        line = getattr(node, "line", None)
+        if line:
+            self._current_line = line
 
-        if isinstance(node, AsyncFunctionNode):
-            return self.visit_async_function(node)
-        if isinstance(node, AwaitNode):
-            return self.visit_await(node)
-        if isinstance(node, StreamThinkNode):
-            return self.visit_stream_think(node)
-        if isinstance(node, FetchNode):
-            return self.visit_fetch(node)
+        node_type = type(node)
+        handler = self._dispatch_cache.get(node_type)
+        if handler is None:
+            method_name = f"_exec_{node_type.__name__}"
+            handler = getattr(self, method_name, None)
+            if handler is None:
+                raise NEKOVARuntimeError(
+                    f"NEKOVA doesn't know how to execute "
+                    f"'{node_type.__name__}' yet."
+                )
+            self._dispatch_cache[node_type] = handler
 
-        method_name = f"_exec_{type(node).__name__}"
-        method      = getattr(self, method_name, None)
-
-        if method is None:
-            raise NEKOVARuntimeError(
-                f"NEKOVA doesn't know how to execute "
-                f"'{type(node).__name__}' yet."
-            )
-
-        return method(node)
+        return handler(node)
 
     # ----------------------------------------------------------
     # Statement executors
