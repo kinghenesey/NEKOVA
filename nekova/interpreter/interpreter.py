@@ -41,6 +41,7 @@ from nekova.interpreter.exceptions import (
 )
 from nekova.interpreter.async_interpreter import AsyncInterpreterMixin, AsyncFunction
 from nekova.interpreter.class_interpreter import ClassInterpreterMixin
+from nekova.interpreter.nekova_class import NEKOVAInstance
 
 # Phase 22: sentinel meaning "no mock active" — distinct from None,
 # since `mock think as null` should be a legitimate mocked value.
@@ -1987,6 +1988,19 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         try:
             if op == "+":
+                # Fast path: both operands already plain numbers (the
+                # overwhelmingly common case for '+') skips straight to
+                # the arithmetic — no need to run the string/bool
+                # isinstance gauntlet below for something that's
+                # already known to be safe to add.
+                # (bool is deliberately excluded here too, same reason
+                # as the mismatch check below: isinstance(True, int) is
+                # True in Python, and NEKOVA treats bools as their own
+                # thing rather than silently letting them participate
+                # in numeric '+'.)
+                if (type(left) in (int, float)
+                        and type(right) in (int, float)):
+                    return left + right
                 # String + string is concatenation.
                 if isinstance(left, str) and isinstance(right, str):
                     return left + right
@@ -2315,7 +2329,6 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             return None
 
         # NEKOVA class instances — check first
-        from nekova.interpreter.nekova_class import NEKOVAInstance
         if isinstance(obj, NEKOVAInstance):
             return obj.get_attr(prop)
 
@@ -2454,7 +2467,6 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             )
 
         # ── NEKOVAInstance method call ──────────────────────────────────────
-        from nekova.interpreter.nekova_class import NEKOVAInstance
         if isinstance(obj, NEKOVAInstance):
             return self._call_instance_method(obj, node.method, args)
 
@@ -3186,7 +3198,6 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         Evaluate the subject then iterate arms in order.
         First matching arm wins; else arm is a catch-all.
         """
-        from nekova.interpreter.nekova_class import NEKOVAInstance
         subject = self._execute_node(node.subject)
 
         for arm in node.arms:
