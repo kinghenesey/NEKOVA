@@ -16,6 +16,93 @@ from nekova.ai.agents.agent_runner import AgentRunner
 from nekova.ai.workflows.workflow import Workflow
 from nekova.ai.providers import get_provider
 
+import ast
+import operator
+
+
+# ----------------------------------------------------------
+# Safe arithmetic evaluator for the "calculate" tool
+# ----------------------------------------------------------
+# The "calculate" tool used to be `eval(expr)` — and agent_runner.py's
+# _run_with_tools() hands every registered tool the ENTIRE raw task
+# string automatically, with no LLM decision or filtering in between.
+# That meant any NEKOVA program wiring up a "calculate" tool and then
+# calling agent_run(name, some_untrusted_string) — a web request body,
+# user input, anything — ran that string as arbitrary Python. Confirmed
+# exploitable, e.g. agent_run("bot", "__import__('os').system('...')").
+#
+# Fixed by parsing with ast.parse() and walking the resulting tree
+# through an explicit whitelist: only numeric constants and the
+# operators below are ever evaluated. Anything else — Name, Call,
+# Attribute, Subscript, Import, comprehensions, lambdas, literally
+# anything that isn't a number or one of these operators — is
+# rejected before evaluation ever touches it, so there is no
+# expression that can escape into arbitrary code execution.
+_SAFE_BINOPS = {
+    ast.Add:      operator.add,
+    ast.Sub:      operator.sub,
+    ast.Mult:     operator.mul,
+    ast.Div:      operator.truediv,
+    ast.FloorDiv: operator.floordiv,
+    ast.Mod:      operator.mod,
+    ast.Pow:      operator.pow,
+}
+_SAFE_UNARYOPS = {
+    ast.USub: operator.neg,
+    ast.UAdd: operator.pos,
+}
+# Pow with a huge exponent (9**9**9**9) can hang or exhaust memory even
+# though it's "just arithmetic" — cap exponents to something no
+# legitimate calculator use needs.
+_MAX_POW_EXPONENT = 1000
+
+
+def _safe_calculate(expr: str) -> str:
+    """
+    Evaluate a plain arithmetic expression without using Python's
+    eval(). Only numbers, + - * / // % **, parentheses, and unary
+    +/- are permitted. Raises ValueError on anything else, including
+    syntactically valid Python that isn't arithmetic.
+    """
+    text = str(expr).replace("^", "**")
+    try:
+        tree = ast.parse(text, mode="eval")
+    except SyntaxError:
+        raise ValueError(
+            f"'{expr}' is not a valid arithmetic expression."
+        )
+
+    def _eval(node):
+        if isinstance(node, ast.Expression):
+            return _eval(node.body)
+        if isinstance(node, ast.Constant):
+            if isinstance(node.value, (int, float)) and not isinstance(node.value, bool):
+                return node.value
+            raise ValueError(
+                "calculate() only accepts numbers, "
+                f"got {node.value!r}."
+            )
+        if isinstance(node, ast.BinOp) and type(node.op) in _SAFE_BINOPS:
+            left  = _eval(node.left)
+            right = _eval(node.right)
+            if isinstance(node.op, ast.Pow) and abs(right) > _MAX_POW_EXPONENT:
+                raise ValueError(
+                    "calculate() exponent is too large."
+                )
+            return _SAFE_BINOPS[type(node.op)](left, right)
+        if isinstance(node, ast.UnaryOp) and type(node.op) in _SAFE_UNARYOPS:
+            return _SAFE_UNARYOPS[type(node.op)](_eval(node.operand))
+        raise ValueError(
+            f"'{expr}' isn't a plain arithmetic expression — "
+            f"calculate() only supports numbers and + - * / // % **."
+        )
+
+    try:
+        result = _eval(tree)
+    except ZeroDivisionError:
+        raise ValueError("calculate(): division by zero.")
+    return str(result)
+
 
 # Global state
 _agents    = {}
@@ -90,9 +177,7 @@ def _agent_tool(agent_name: str,
         "save": lambda content: _save_to_file(
             str(agent_name), str(content)
         ),
-        "calculate": lambda expr: str(eval(
-            str(expr).replace("^", "**")
-        )),
+        "calculate": lambda expr: _safe_calculate(expr),
     }
 
     if tool_name in tools:
