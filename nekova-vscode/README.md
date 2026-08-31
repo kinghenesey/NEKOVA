@@ -1,4 +1,4 @@
-﻿# NEKOVA VS Code Extension — v1.13.0
+﻿# NEKOVA VS Code Extension — v2.0.0
 
 Syntax highlighting, two branded color themes, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
@@ -217,6 +217,18 @@ match status:
 ---
 
 ## Release Notes
+
+### 2.0.0
+- Version bump for consistency with NEKOVA core v2.0.0 (Phase 27, NEKOVA
+  Parser in NEKOVA — self-hosting milestone 2: the parser is now written
+  in NEKOVA itself, verified against the Python reference parser on
+  real-world input including its own source). No editor-facing changes
+  in this release — the self-hosting work, its performance pass, and a
+  security fix in the agent runtime are all backend-level, not visible
+  from the editor. Known gap carried over from 1.13.0 still open: the
+  `$0.01` money-literal syntax still isn't specially highlighted by the
+  TextMate grammar
+- Welcome message and status bar now report `v2.0.0`
 
 ### 1.13.0
 - Version bump for consistency with NEKOVA core v1.13.0 (Phase 26c, AI-Native
