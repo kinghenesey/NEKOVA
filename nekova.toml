@@ -19,7 +19,7 @@
 
 [project]
 name    = "nekova"
-version = "1.13.0"
+version = "2.0.0"
 author  = "SYNEKCOT Tech"
 description = "NEKOVA — AI-native programming language (self-hosting toolchain)"
 entry   = "main.py"
