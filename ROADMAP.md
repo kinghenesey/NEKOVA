@@ -1,8 +1,8 @@
 # NEKOVA Language — Official Roadmap
 
-**Version:** 1.13.0 · Genesis  
-**Tests:** 1,665 passing (1 skipped — no fuzz regressions saved yet) · 32 test phases  
-**Status:** Active development · Phase 26c complete · Phase 27 prerequisites complete, self-hosted parser work next  
+**Version:** 2.0.0 · Genesis  
+**Tests:** 1,712 passing (1 skipped — no fuzz regressions saved yet) · 33 test phases  
+**Status:** Active development · Phase 27 complete (self-hosted parser, performance pass, agent-security fix) · Phase 28 next  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
 ---
@@ -50,7 +50,7 @@ consistent meaning. Going forward:
 | **1.11.0** | 26 | ✅ Developer experience — **current**. Language Server Protocol (real autocomplete, inline errors, hover docs), `nekova fmt --diff`, multi-error parser recovery, interactive `nekova new` wizard, `nekova.lock`, `--why`, `expect_snapshot(...)`, `.env.example` scaffolding |
 | **1.12.0** | 26b | ✅ Education layer — `nekova learn`, `nekova explain`, `nekova translate`, `nekova classroom`, `nekova help` glossary, `--simple-errors` |
 | **1.13.0** | 26c | ✅ AI-Native Differentiators III — typed AI output validation + re-prompt, probabilistic testing, dollar-denominated think budgets, model fallback chains, deterministic AI-call replay (cassettes), capability-scoped agent sandboxing, `think_stream` |
-| **2.0.0** | 27 | Parser in NEKOVA — self-hosting milestone 2. Includes a published formal grammar (EBNF) and a parser/lexer fuzz-testing harness in CI, both prerequisites for this phase, not just nice-to-haves |
+| **2.0.0** | 27 | ✅ Parser in NEKOVA — self-hosting milestone 2. `parser.nk` (~2,400 lines) verified via AST diffing against the Python reference, including parsing its own source. Includes the published formal grammar (EBNF) and parser/lexer fuzz-testing harness in CI that were prerequisites for this phase, four profiling-driven performance passes on the self-hosted parse path (~16s → ~7.8s), and a fix for a real code-execution vulnerability in the agent system's `calculate` tool |
 | **2.1.0** | 28 | Agent system, unified schema |
 | **2.2.0** | 29 | Sandbox commercial API, `nekova teach`, deployment targets, WebSocket + middleware support in the web router |
 | **2.3.0** | 30 | Safety & performance hardening — resource-limited sandbox quotas (CPU/memory, not just time), bytecode caching, public test-coverage dashboard |
@@ -478,7 +478,7 @@ processes each chunk as it arrives rather than waiting for the full
 response, verified by breaking after 2 of 5 chunks and confirming only
 2 were ever pulled from the underlying generator.
 
-### Phase 27 · NEKOVA Parser in NEKOVA — v2.0.0 📋
+### Phase 27 · NEKOVA Parser in NEKOVA ✅ — v2.0.0
 
 Self-hosting milestone 2. The parser is recursive descent — more complex
 than the lexer.
@@ -501,10 +501,47 @@ than the lexer.
   fuzzer ever finds is saved as a permanent regression file, replayed
   on every normal test run via `tests/test_fuzz_regressions.py`.
 
-With both prerequisites in place, the actual self-hosting work — writing
-NEKOVA's parser in NEKOVA, implementing against `GRAMMAR.md` as the
-stable spec — is next. When Phase 27 ships, v2.0 commits to backward
-compatibility.
+1. ✅ **`parser.nk`** (~2,400 lines) — a complete recursive-descent
+   parser for NEKOVA, written in NEKOVA, covering every grammar layer:
+   core statements and the full expression precedence chain, the
+   AI-native constructs, and classes/`async`/`await`/`match`/
+   `retry`-`observe`-`fallback` together. Built in scoped, verified
+   slices against `GRAMMAR.md` as the stable spec, each slice confirmed
+   via `tools/nk_parse.nk` before the next began.
+2. ✅ **`tools/diff_parsers.py`** — structural AST diffing (ignoring
+   line numbers) between the Python reference parser and `parser.nk`,
+   confirming parity on real-world input including `parser.nk` parsing
+   its own source.
+3. ✅ **`nekova/parser/rehydrate.py`** and **`--self-hosted`** —
+   converts the self-hosted parser's dict-shaped AST into real `Node`
+   objects, and a run flag (`nekova run app.nk --self-hosted`, or
+   `nekova.toml [run] self_hosted_parser = true`) to use it.
+4. ✅ **Seven bugs found and fixed** while building `parser.nk`,
+   several pre-existing in the Python reference and only surfaced by
+   self-hosting: a missing `ELLIPSIS` token in `lexer.nk`; a
+   scope-leak in `Environment.update()`; a bare-assignment collision
+   with pre-seeded interpreter globals; a `parse_if` aliasing bug from
+   deep-copy-on-assign semantics; `_get_think_timeout()` reading the
+   wrong config path (silently broken for the project's entire
+   history); a dead branch in `_parse_recall`; and a
+   closure-instance-sharing bug in task factories.
+5. ✅ **Performance pass** — four profiling-driven optimizations to the
+   interpreter's hot path (dispatch caching, per-task parameter-layout
+   memoization, an iterative environment scope-chain walk, and two
+   smaller fixes), cutting the self-hosted parse path's own runtime
+   roughly in half (~16s → ~7.8s on `parser.nk` parsing itself), with
+   every pass verified against the full test suite, AST parity, and
+   the fuzz harness before being accepted.
+6. ✅ **Security fix** — the agent system's `calculate` tool called
+   Python's `eval()` directly on unsanitized input, a real
+   code-execution path since `agent_runner.py` hands every registered
+   tool an agent's full plan text automatically. Replaced with an
+   AST-whitelist evaluator that only ever touches numeric constants
+   and arithmetic operators; added `tests/test_agents_security.py`
+   (15 tests — the agent system had none before this).
+
+v2.0.0 commits to backward compatibility from here per the versioning
+policy above.
 
 ### Phase 28 · Agent System + Unified Schema — v2.1.0 📋
 
@@ -549,18 +586,18 @@ once anyone can see which phases and features it actually covers.
 
 | Metric | Value |
 |--------|-------|
-| Test phases | 29 |
-| Tests passing | 1,358 / 1,358 |
-| Version | 1.10.0 |
+| Test phases | 33 |
+| Tests passing | 1,712 / 1,713 (1 skipped — no fuzz regressions saved yet) |
+| Version | 2.0.0 |
 | PyPI package | `nekova-lang` |
 | VS Code extension | ✅ Published |
 | Documentation site | ✅ Live — kinghenesey.github.io/NEKOVA |
 | Self-hosting blockers | 0 remaining |
-| Self-hosting status | Phase 20 complete (lexer) — Phase 27 next (parser) |
+| Self-hosting status | Phase 20 complete (lexer) · Phase 27 complete (parser) — Phase 31 next (interpreter) |
 | Commercial story | Phase 19 Sandbox — live |
-| Critical bugs fixed | 39 of 39 |
+| Critical bugs fixed | 39 of 39 (Phase 19b security batch) + 7 more found and fixed while building the self-hosted parser (Phase 27) |
 
 ---
 
-*Last updated: July 2026 · SYNEKCOT Tech · Nigeria 🇳🇬*  
+*Last updated: August 2026 · SYNEKCOT Tech · Nigeria 🇳🇬*  
 *Built with NEKOVA · Documented with intent*
