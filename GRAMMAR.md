@@ -1,11 +1,12 @@
 # NEKOVA Formal Grammar (EBNF)
 
-**Version this grammar describes:** 1.13.0
+**Version this grammar describes:** 2.0.0
 **Status:** Reference — written directly against `nekova/parser/parser.py`
 and its mixins (`async_parser.py`, `class_parser.py`, `match_parser.py`,
-`web_parser.py`), not from memory or the docs site. This is the stable
+`web_parser.py`), not from memory or the docs site. This was the stable
 spec **Phase 27** (NEKOVA Parser in NEKOVA — self-hosting milestone 2)
-implements against.
+implemented `parser.nk` against; `tools/check_grammar_coverage.py`
+continues to cross-check every parse method against it on every run.
 
 ## How this was produced, and how to keep it honest
 
