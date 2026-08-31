@@ -145,6 +145,16 @@
 This page summarizes recent releases. Every release since the project began is documented in <a href="https://github.com/kinghenesey/NEKOVA/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> on GitHub.
 </div>
 
+<h2 id="200-nekova-parser-in-nekova">2.0.0 — NEKOVA Parser in NEKOVA</h2>
+<p>Self-hosting milestone 2. NEKOVA's parser — not just its lexer — is now written in NEKOVA itself: <code>parser.nk</code> (~2,400 lines) covers every grammar layer, from core statements through the AI-native constructs to classes, <code>async</code>/<code>await</code>, <code>match</code>, and <code>retry</code>/<code>observe</code>/<code>fallback</code>. It's verified against the Python reference parser by diffing the two parsers' ASTs structurally on real-world input, including <code>parser.nk</code> parsing its own source. Run any file through it with <code>nekova run app.nk --self-hosted</code>, or set <code>self_hosted_parser = true</code> under <code>[run]</code> in <code>nekova.toml</code>. This release also cuts the self-hosted parse path's own runtime roughly in half (~16s → ~7.8s on that self-parsing benchmark) across four profiling-driven interpreter optimizations, and fixes a real code-execution vulnerability in the agent system's <code>calculate</code> tool, which used to call Python's <code>eval()</code> directly on unsanitized input — it's now a safe, whitelist-based arithmetic evaluator.</p>
+<h2 id="1130-ai-native-differentiators-iii">1.13.0 — AI-Native Differentiators III</h2>
+<p>Six features built specifically around AI being a first-class citizen in the language, not bolted on. <code>think "..." as User</code> now validates the response against the shape and automatically re-prompts on a mismatch instead of silently accepting bad data. <code>test "label" repeat 10 times, expect at least 8 passes:</code> is a new probabilistic test form for AI-backed behavior where a single run isn't a meaningful signal. Budgets can be dollar amounts (<code>with budget: $0.01</code>) as well as token counts, and <code>using ["model-a", "model-b"]</code> gives a model fallback chain. <code>nekova run app.nk --record-ai cassette.json</code> / <code>--replay-ai</code> gives deterministic, API-key-free replay of AI calls for testing. <code>sandbox strict allow: [search_web]:</code> scopes exactly which tasks a sandboxed block may call. And <code>for chunk in think_stream("..."):</code> is genuinely lazy streaming.</p>
+<h2 id="1120-education-layer">1.12.0 — Education Layer</h2>
+<p><code>nekova learn</code> is a guided terminal tutorial that checks your actual code against the real interpreter, not string-matching. <code>nekova explain file.nk</code> walks through why an error happened in plain language. <code>nekova translate script.py</code> does best-effort Python-to-NEKOVA translation. <code>nekova classroom</code> batch-grades a folder of student submissions against a reference solution. A new <code>nekova help &lt;topic&gt;</code> glossary works both from the command line and inside the REPL, and <code>--simple-errors</code> strips error output down to plain sentences for a beginner audience.</p>
+<h2 id="1110-developer-experience">1.11.0 — Developer Experience</h2>
+<p>A real Language Server Protocol implementation (<code>nekova lsp</code>) replaces syntax-highlighting-only support in the VS Code extension with live diagnostics, hover docs, and autocomplete — including method completion on <code>obj.</code> with lightweight type inference. The parser now recovers from multiple syntax errors in a single pass instead of stopping at the first. Also new: <code>nekova fmt --diff</code>, an interactive <code>nekova new</code> wizard, <code>nekova.lock</code> for reproducible dependencies, a <code>--why</code> flag that names the exact internal function that raised an error, <code>expect_snapshot(...)</code> for AI-output snapshot testing, and <code>.env.example</code> scaffolding for every project template.</p>
+<h2 id="1100-documentation-website-ai-native-differentiators-ii">1.10.0 — Documentation Website + AI-Native Differentiators II</h2>
+<p>Two phases in one release. The documentation site you're reading now shipped — 28 pages generated from plain markdown, every code example verified against the real interpreter before publishing. Alongside it: <code>think "..." as &lt;ShapeName&gt;</code> for typed AI output from a defined shape, cost/token tracking via <code>with budget:</code> and <code>ai_usage()</code>, explicit model selection with <code>using</code>, multi-turn <code>converse:</code> blocks, <code>--debug-ai</code> for inspecting exact prompts, a prompt-injection guard for <code>sandbox</code> blocks, <code>imagine ... as file</code> with local disk caching, and visible retry/backoff for <code>think</code> calls.</p>
 <h2 id="199-correctness-amp-trust-part-2-language-completeness-ii">1.9.9 — Correctness &amp; Trust Part 2 + Language Completeness II</h2>
 <p>Two phases shipped together in one release. On the correctness side: indentation errors now report the exact valid depths instead of guessing, and every built-in function (<code>int()</code>, <code>len()</code>, <code>range()</code>, and the rest) was audited so a bad argument can no longer leak a raw Python traceback. On the language side: tuple-style destructuring, keyword arguments, <code>const</code> bindings, spread syntax (<code>[...a, ...b]</code>), optional chaining (<code>?.</code>), enums, and a new <code>Set</code> type all landed.</p>
 <h2 id="198-correctness-amp-trust-part-1">1.9.8 — Correctness &amp; Trust Part 1</h2>
@@ -175,6 +185,16 @@ This page summarizes recent releases. Every release since the project began is d
     
     <div class="toc-label">On this page</div>
     <ul>
+      
+      <li class="lvl-2"><a href="#200-nekova-parser-in-nekova">2.0.0 — NEKOVA Parser in NEKOVA</a></li>
+      
+      <li class="lvl-2"><a href="#1130-ai-native-differentiators-iii">1.13.0 — AI-Native Differentiators III</a></li>
+      
+      <li class="lvl-2"><a href="#1120-education-layer">1.12.0 — Education Layer</a></li>
+      
+      <li class="lvl-2"><a href="#1110-developer-experience">1.11.0 — Developer Experience</a></li>
+      
+      <li class="lvl-2"><a href="#1100-documentation-website-ai-native-differentiators-ii">1.10.0 — Documentation Website + AI-Native Differentiators II</a></li>
       
       <li class="lvl-2"><a href="#199-correctness-amp-trust-part-2-language-completeness-ii">1.9.9 — Correctness &amp; Trust Part 2 + Language Completeness II</a></li>
       
