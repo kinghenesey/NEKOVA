@@ -3,6 +3,116 @@
 All notable changes to NEKOVA are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.0.0] — NEKOVA Parser in NEKOVA
+
+Self-hosting milestone 2. Per the versioning policy below, this is a
+major-version release: NEKOVA's parser — not just its lexer — is now
+written in NEKOVA itself, and from this point the language commits to
+backward compatibility going forward. Everything before 2.0 was
+formative; this is the platform.
+
+### Added
+
+- **`parser.nk`** (~2,400 lines) — a complete recursive-descent parser
+  for NEKOVA, written entirely in NEKOVA, covering every grammar layer:
+  core statements and the full expression precedence chain, the
+  AI-native constructs (`think`, `prompt`, `retry`/`fallback`,
+  `observe`, `mock`), and classes, `async`/`await`, `match`, and
+  `retry`/`observe`/`fallback` together. Built in scoped, verified
+  slices, each confirmed via `tools/nk_parse.nk` before the next began.
+- **`GRAMMAR.md`** — a formal EBNF grammar for the whole language,
+  written directly against the live `parser.py` and its mixin files
+  (`async_parser.py`, `class_parser.py`, `match_parser.py`,
+  `web_parser.py`), not from memory or the docs site. Covers every
+  statement form, the full expression precedence chain, and the
+  lexical grammar (including the `$` money literal from Phase 26c).
+  `tools/check_grammar_coverage.py` cross-checks every parse method in
+  the codebase against it and fails CI on either direction of drift.
+- **`tools/fuzz/`** — a dependency-free fuzz-testing harness:
+  `generator.py` produces grammar-informed (but often deliberately
+  invalid) NEKOVA source, `mutator.py` applies realistic corruptions
+  (truncation, bracket/quote unbalancing, indentation corruption,
+  unicode/null-byte injection, deep nesting, huge identifiers, and
+  more), and `harness.py` feeds the result through the real
+  lexer/parser, classifying every result and saving any ungraceful
+  crash as a permanent regression file. Wired into
+  `.github/workflows/fuzz.yml` (fast budget on push/PR, longer
+  nightly run) and replayed on every normal test run via
+  `tests/test_fuzz_regressions.py`.
+- **`tools/diff_parsers.py`** — diffs the Python reference parser's AST
+  against the self-hosted NEKOVA parser's AST for the same source,
+  structurally (ignoring line numbers). Confirms parity on real-world
+  input, including `parser.nk` parsing its own source.
+- **`nekova/parser/rehydrate.py`** — converts the self-hosted parser's
+  dict-shaped AST output into real `Node` objects the interpreter can
+  execute directly, via `object.__new__` + `setattr`.
+- **`--self-hosted`** run flag (also settable via `nekova.toml
+  [run] self_hosted_parser`) — runs a file through `parser.nk` instead
+  of the Python reference parser.
+
+### Fixed
+
+- Found by the fuzzer before any self-hosted-parser work even started:
+  deeply nested expressions (hundreds of parentheses in something like
+  `let x = ((((...))))`) crashed with a raw Python `RecursionError`
+  instead of a clean NEKOVA error. Now raises an ordinary `ParseError`
+  with a message suggesting the fix (break the expression into smaller
+  pieces with intermediate variables).
+- Seven bugs found and fixed with regression tests while building
+  `parser.nk`, several of them pre-existing bugs in the *Python*
+  reference implementation that self-hosting exposed: a missing
+  `ELLIPSIS` token in `lexer.nk`; a scope-leak in `Environment.update()`
+  that silently promoted bare local assignments to globals; a
+  language-level footgun where bare (non-`let`) assignment collided
+  with pre-seeded interpreter globals like `args` and `length`; a
+  `parse_if` aliasing bug surfaced by deep-copy-on-assign semantics;
+  `_get_think_timeout()` reading the wrong config attribute path
+  (`cfg.think_timeout` instead of `cfg.ai.think_timeout`) — silently
+  ignored for the project's entire history until now; a dead `or
+  default` branch in `_parse_recall`; and a closure-instance-sharing
+  bug where a task's `closure_env` was mutated on the shared AST node
+  across factory calls, fixed via a shallow copy per definition-execution.
+- **Security: `calculate` tool arbitrary code execution.** The agent
+  system's built-in `calculate` tool called Python's `eval()` directly
+  on its input. `agent_runner.py` hands every registered tool an
+  agent's full plan text automatically, with no LLM decision or
+  filtering in between, making this a real code-execution path rather
+  than a theoretical one. Replaced with `_safe_calculate()`, an
+  AST-walking evaluator that only ever evaluates numeric constants and
+  a fixed whitelist of arithmetic operators (`+ - * / // % **`, unary
+  `+`/`-`) — everything else is rejected before evaluation touches it,
+  plus a guard against exponent-based denial-of-service
+  (`9**9**9**9`-style inputs). Added `tests/test_agents_security.py`
+  (15 tests) — the agent system had zero test coverage before this.
+
+### Performance
+
+- The self-hosted parse path — `parser.nk` parsing its own ~2,400-line
+  source through `parser.nk` itself — went from roughly 16 seconds to
+  roughly 7.8 seconds, in four verified passes:
+  - A dispatch cache on the interpreter's core `_execute_node` routing
+    function, replacing an isinstance chain + f-string method lookup
+    that ran on every single AST node visit (15.4 million times on
+    this benchmark) with a per-node-class cache resolved once.
+  - Memoized parameter-layout analysis (`_param_info`) on `TaskStatement`
+    nodes — old-style-string normalization, vararg detection, and
+    required-argument counting depend only on a task's declared
+    parameters, so they're now computed once per task rather than
+    redone on every call.
+  - An iterative rewrite of `Environment.get()`'s scope-chain walk
+    (matching the pattern `Environment.update()` already used),
+    removing one Python function call per ancestor scope on lookups
+    that aren't found in the immediate scope.
+  - Hoisted three repeated local imports of `NEKOVAInstance` out of
+    hot interpreter methods (`_exec_PropertyAccess`, `_exec_MethodCall`,
+    the `match` executor) to module level, and added a fast path to
+    `_exec_BinaryOp`'s `+` handler for the common case of two plain
+    numbers, skipping the string-mismatch-detection logic that exists
+    to catch `"5" + 3`-style bugs.
+  - Every pass verified against the full test suite, `diff_parsers.py`
+    AST parity, the grammar-coverage check, and the fuzz harness before
+    being accepted — none of them changed any language semantics.
+
 ## [Unreleased] — Phase 27 prerequisites
 
 Infrastructure only — no version bump, since nothing user-facing shipped.
@@ -43,8 +153,6 @@ so they're done before any self-hosted-parser code gets written.
   instead of a clean NEKOVA error. Now raises an ordinary `ParseError`
   with a message suggesting the fix (break the expression into smaller
   pieces with intermediate variables).
-
-## [1.13.0] — AI-Native Differentiators III
 
 Six features aimed specifically at "a language where AI is a first-class
 citizen" rather than generic language features with an AI label on them.
