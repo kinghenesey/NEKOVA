@@ -1,5 +1,5 @@
 ﻿// =============================================================
-// NEKOVA Language — VS Code Extension  (v1.13.0)
+// NEKOVA Language — VS Code Extension  (v2.0.0)
 // =============================================================
 // Commands:
 //   nekova.runFile     F5          Run the active .nk file
@@ -186,7 +186,7 @@ function createStatusBar(context) {
         vscode.StatusBarAlignment.Left, 100
     );
     statusBar.text = '$(zap) NEKOVA';
-    statusBar.tooltip = 'NEKOVA v1.13.0 — Connected Forge by SYNEKCOT Tech\nClick to run file';
+    statusBar.tooltip = 'NEKOVA v2.0.0 — Connected Forge by SYNEKCOT Tech\nClick to run file';
     statusBar.command = 'nekova.runFile';
 
     vscode.window.onDidChangeActiveTextEditor(editor => {
@@ -257,7 +257,7 @@ function startLanguageClient(context) {
 // ── Activate ───────────────────────────────────────────────────────────────
 
 function activate(context) {
-    console.log('NEKOVA Language extension v1.13.0 activated');
+    console.log('NEKOVA Language extension v2.0.0 activated');
 
     // Language server (real diagnostics, hover, autocomplete)
     startLanguageClient(context);
@@ -291,16 +291,16 @@ function activate(context) {
     context.subscriptions.push(...commands);
 
     // Welcome message on first activation
-    const shown = context.globalState.get('nekova.welcomeShown_1.13.0');
+    const shown = context.globalState.get('nekova.welcomeShown_2.0.0');
     if (!shown) {
         vscode.window.showInformationMessage(
-            'NEKOVA v1.13.0 — six AI-native features: typed shape validation with re-prompt, probabilistic testing, dollar think budgets, model fallback chains, --record-ai/--replay-ai cassettes, and capability-scoped sandboxing. Press F5 to run any .nk file.',
+            'NEKOVA v2.0.0 — the parser is now self-hosted: NEKOVA\'s own parser is written in NEKOVA (parser.nk), verified against the Python reference on real-world input including its own source. No editor-facing changes in this release. Press F5 to run any .nk file.',
             'Open REPL', 'New Project'
         ).then(choice => {
             if (choice === 'Open REPL')    cmdOpenRepl();
             if (choice === 'New Project')  cmdNewProject();
         });
-        context.globalState.update('nekova.welcomeShown_1.13.0', true);
+        context.globalState.update('nekova.welcomeShown_2.0.0', true);
     }
 }
 
