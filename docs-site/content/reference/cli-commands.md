@@ -9,6 +9,7 @@ lede: Every command the nekova tool supports, grouped the way the CLI's own --he
 nekova hello.nk               # run a file
 nekova hello.nk --debug       # run with debug output
 nekova hello.nk --compile     # run using the compiler
+nekova hello.nk --self-hosted # parse with parser.nk (NEKOVA's own self-hosted parser) instead of the Python reference parser
 nekova run hello.nk           # equivalent to the bare form above
 nekova repl                   # start the interactive shell
 ```
