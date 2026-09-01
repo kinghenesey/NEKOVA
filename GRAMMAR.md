@@ -42,7 +42,7 @@ program        = { statement } ;
 
 statement      = show_stmt | think_stmt | let_stmt | const_stmt
                | if_stmt | while_stmt | repeat_stmt | for_stmt | try_stmt
-               | task_def | class_def | shape_def | error_def | enum_def
+               | task_def | class_def | shape_def | schema_def | error_def | enum_def
                | prompt_def | pipeline_def
                | sandbox_stmt | test_stmt | expect_stmt
                | retry_stmt | observe_stmt | mock_stmt
@@ -146,6 +146,22 @@ shape_def      = 'shape' IDENTIFIER ':' NEWLINE INDENT
                (* each line: field_name field_type [= default];
                   a field with no default is required — see
                   Interpreter._validate_shape_fields *)
+
+schema_def     = 'schema' IDENTIFIER ':' NEWLINE INDENT
+                   { IDENTIFIER ':' IDENTIFIER [ '=' expression ] NEWLINE }
+                 DEDENT ;
+               (* Phase 28: a named, reusable schema, structurally
+                  identical to shape_def (name/type/default triples,
+                  same required-unless-defaulted rule) but with
+                  colon-separated fields and the text/number/boolean/
+                  list/dict/any vocabulary that `think ... as schema
+                  {...}` already validates against, rather than
+                  shape's str/int/float/bool names. Deliberately a
+                  separate keyword and rule from shape_def, not a
+                  variant of it — see SchemaDefinition's docstring in
+                  nodes.py for why. 'schema' is a soft keyword (like
+                  'prompt'): only treated as this rule when followed
+                  by IDENTIFIER ':' — see _looks_like_schema_def *)
 
 error_def      = 'error' IDENTIFIER ':' NEWLINE INDENT
                    { IDENTIFIER IDENTIFIER [ '=' expression ] NEWLINE }
