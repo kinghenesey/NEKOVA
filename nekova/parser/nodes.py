@@ -1275,6 +1275,40 @@ class ShapeDefinition(Node):
         return f"Shape({self.name})"
 
 
+class SchemaDefinition(Node):
+    """
+    Phase 28: unified schema — same idea as ShapeDefinition (a named,
+    reusable, validated struct) but a separate keyword and registry
+    from `shape`, using the text/number/boolean/list/dict vocabulary
+    that `think ... as schema {...}` (Phase 9) already validates
+    against, rather than shape's str/int/float/bool names. Kept as its
+    own node/keyword rather than folded into `shape` itself, so
+    existing `shape` code and its "str"/"int" vocabulary are completely
+    unaffected.
+
+        schema Person:
+            name: text
+            age:  number
+            note: text = "none"
+
+    Three uses of the same declaration:
+      1. Object type   — Person(name="Alice", age=30)
+      2. AI parser     — think "..." as Person
+      3. DB table      — db_create_from_schema(Person, "people")
+
+    fields: list of (name, type_str, default_expr_or_None) — same
+    shape as ShapeDefinition.fields, deliberately, so the AI-parser
+    pillar can reuse _validate_shape_fields/_SHAPE_TYPE_CHECKERS as-is.
+    """
+    def __init__(self, name: str, fields: list, line: int = 0):
+        self.name   = name
+        self.fields = fields   # [(field_name, type_str, default)]
+        self.line   = line
+
+    def __repr__(self):
+        return f"Schema({self.name})"
+
+
 class WatchStatement(Node):
     """
     File or expression watcher — runs body when target changes.
