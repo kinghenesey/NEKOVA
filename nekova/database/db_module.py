@@ -45,6 +45,9 @@ def load() -> dict:
         "db_update":    _db_update,
         "db_delete":    _db_delete,
         "db_count":     _db_count,
+
+        # Phase 28: unified schema — DB-table pillar
+        "db_create_from_schema": _db_create_from_schema,
     }
 
 
@@ -111,6 +114,58 @@ def _db_create(table: str, schema: str):
 
     print(f"✓ Table '{table}' ready")
     return table
+
+
+# Phase 28: unified schema field vocabulary -> the SQL type words
+# _db_create already understands. list/dict/any all map to TEXT since
+# SQLite has no native array/object column type — a schema instance's
+# list/dict fields get stored as their str() form; round-tripping them
+# back into real Python lists/dicts on read is left to the caller for
+# now (json_decode(row["field"]) works for that today).
+_SCHEMA_TO_SQL_TYPE = {
+    "text":    "text",
+    "number":  "real",
+    "boolean": "boolean",
+    "list":    "text",
+    "dict":    "text",
+    "any":     "text",
+}
+
+
+def _db_create_from_schema(schema_ctor, table: str):
+    """
+    Create a table directly from a `schema` declaration's fields —
+    the DB-table pillar of Phase 28's unified schema. schema_ctor is
+    the constructor a `schema Name: ...` block registers (the same
+    callable `Name(...)` itself resolves to); its field list is read
+    off the __nekova_schema_fields__ attribute _exec_SchemaDefinition
+    attaches for exactly this purpose, so this function needs no
+    interpreter access at all.
+
+    Usage:
+        schema Person:
+            name: text
+            age:  number
+
+        db_create_from_schema(Person, "people")
+        # equivalent to:
+        #   db_create("people", "name text, age real")
+    """
+    fields = getattr(schema_ctor, "__nekova_schema_fields__", None)
+    if fields is None:
+        raise RuntimeError(
+            "db_create_from_schema() expects a `schema` — the value "
+            "passed in has no schema fields attached. Did you mean to "
+            "pass the schema name itself, e.g. db_create_from_schema"
+            "(Person, \"people\"), not a schema instance?"
+        )
+
+    parts = []
+    for fname, ftype, _default in fields:
+        sql_type = _SCHEMA_TO_SQL_TYPE.get(ftype, "text")
+        parts.append(f"{fname} {sql_type}")
+
+    return _db_create(table, ", ".join(parts))
 
 
 def _db_drop(table: str):
