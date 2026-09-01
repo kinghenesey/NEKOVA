@@ -22,6 +22,7 @@ from nekova.parser.nodes import (
     SpeakStatement, ListenExpression, EveryStatement,
     TestBlock, ExpectStatement, ImagineStatement,
     ShapeDefinition, WatchStatement,
+    SchemaDefinition,
     # Phase 17
     YieldStatement, DecoratorStatement, ErrorDefinition, TypedTaskStatement,
     # Phase 21
@@ -3367,6 +3368,13 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         "list":  lambda v: isinstance(v, list),
         "dict":  lambda v: isinstance(v, dict),
         "any":   lambda v: True,
+        # Phase 28: schema's vocabulary — aliases onto the exact same
+        # checkers as their shape equivalents above, so `schema`
+        # fields get identical validation strictness to `shape`
+        # fields with zero duplicated logic.
+        "text":    lambda v: isinstance(v, str),
+        "number":  lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+        "boolean": lambda v: isinstance(v, bool),
     }
 
     def _validate_shape_fields(self, data, fields: list) -> list:
@@ -3453,7 +3461,13 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         # coerces the AI's response through the shape's real
         # constructor afterward, so `as User` gets the exact same
         # type validation a manual `User(...)` call would.
+        #
+        # Phase 28: `schema` gets the identical treatment — checked
+        # after shapes (so a name collision falls back to the shape,
+        # since shape came first), tracking which kind matched only
+        # so the re-prompt error message below says the right word.
         shape_name_matched = None
+        matched_kind = "shape"
         if schema is None and fmt not in ("json", "list", "bool", "text", "number", "schema"):
             shapes = getattr(self, "_shapes", {})
             # Format identifiers are lowercased by the parser (so
@@ -3466,6 +3480,15 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 schema = {fname: ftype for fname, ftype, _default in shape_fields}
                 shape_name_matched = real_name
                 fmt = "schema"
+            else:
+                schemas = getattr(self, "_schemas", {})
+                real_name = next((n for n in schemas if n.lower() == fmt), None)
+                shape_fields = schemas.get(real_name) if real_name else None
+                if shape_fields is not None:
+                    schema = {fname: ftype for fname, ftype, _default in shape_fields}
+                    shape_name_matched = real_name
+                    matched_kind = "schema"
+                    fmt = "schema"
 
         try:
             provider = get_provider()
@@ -3497,14 +3520,14 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                         break
                     if attempt == max_shape_attempts:
                         raise NEKOVARuntimeError(
-                            f"AI response for shape '{shape_name_matched}' "
+                            f"AI response for {matched_kind} '{shape_name_matched}' "
                             f"still didn't validate after "
                             f"{max_shape_attempts} re-prompt attempt(s): "
                             f"{'; '.join(errors)}"
                         )
                     correction = (
                         f"{prompt}\n\nYour previous response didn't match "
-                        f"the required shape. Problems: "
+                        f"the required {matched_kind}. Problems: "
                         f"{'; '.join(errors)}. Respond again with a "
                         f"complete, corrected JSON object with every "
                         f"field."
@@ -3518,12 +3541,11 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                     )
 
             # ask_structured's _coerce_schema already type-coerced every
-            # field against the schema built from the shape above — no
-            # need to re-run it through the shape's own constructor
-            # (which only accepts positional args, not the kwargs a
-            # dict naturally provides). Just tag it as that shape.
+            # field against the schema built from the shape/schema
+            # above — no need to re-run it through the shape's own
+            # constructor. Just tag it with the matching kind.
             if shape_name_matched is not None and isinstance(result, dict):
-                result["__shape__"] = shape_name_matched
+                result[f"__{matched_kind}__"] = shape_name_matched
         except Exception as e:
             if node.on_error is not None:
                 result = self._execute_node(node.on_error)
@@ -4423,13 +4445,19 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             return instance
 
         # Also support positional call: User("Alice", 30)
-        def _positional_constructor(*args):
+        # (**kwargs pass-through added alongside Phase 28's `schema`
+        # keyword — without it, User(name="Alice", age=30) failed
+        # with "unexpected keyword argument 'name'", since only
+        # positional args reached _constructor at all. Genuinely
+        # broken before this: any keyword-style shape construction
+        # was completely unusable, not just partially.)
+        def _positional_constructor(*args, **kwargs):
             if len(args) > len(fields):
                 raise NEKOVARuntimeError(
                     f"Shape '{shape_name}' takes {len(fields)} fields, "
                     f"got {len(args)}."
                 )
-            kw = {}
+            kw = dict(kwargs)
             for i, val in enumerate(args):
                 kw[fields[i][0]] = val
             return _constructor(**kw)
@@ -4439,6 +4467,89 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         if not hasattr(self, "_shapes"):
             self._shapes = {}
         self._shapes[shape_name] = fields
+        return None
+
+    # ── schema (Phase 28: unified schema) ────────────────────────
+
+    def _exec_SchemaDefinition(self, node: SchemaDefinition):
+        """
+        schema Person:
+            name: text
+            age:  number
+        Registers a validated constructor in the environment — same
+        mechanics as _exec_ShapeDefinition above (deliberately kept
+        as a separate method rather than shared, so shape's own
+        parsing/execution stays completely untouched), but using the
+        text/number/boolean/list/dict/any vocabulary that `think ...
+        as schema {...}` (Phase 9) and _SHAPE_TYPE_CHECKERS already
+        recognize, instead of shape's str/int/float/bool names.
+
+        The constructor function has the raw field list attached as
+        an attribute (__nekova_schema_fields__) so other code — the
+        AI-parser lookup in _exec_ThinkAsStatement below, and
+        db_create_from_schema in the database module — can introspect
+        a schema's fields without needing interpreter access.
+        """
+        schema_name = node.name
+        fields = node.fields  # [(name, type_str, default)]
+
+        TYPE_VALIDATORS = {
+            "text":    (str,   lambda v: str(v)),
+            "number":  (float, lambda v: float(v)),
+            "boolean": (bool,  lambda v: bool(v)),
+            "list":    (list,  lambda v: list(v) if not isinstance(v, list) else v),
+            "dict":    (dict,  lambda v: v if isinstance(v, dict) else {}),
+            "any":     (object, lambda v: v),
+        }
+
+        interp = self   # capture for closure
+
+        def _constructor(**kwargs):
+            instance = {}
+            for fname, ftype, fdefault in fields:
+                if fname in kwargs:
+                    raw = kwargs[fname]
+                elif fdefault is not None:
+                    raw = interp._execute_node(fdefault)
+                else:
+                    raise NEKOVARuntimeError(
+                        f"Schema '{schema_name}' requires field '{fname}'."
+                    )
+                if ftype in TYPE_VALIDATORS:
+                    py_type, coerce = TYPE_VALIDATORS[ftype]
+                    try:
+                        instance[fname] = coerce(raw)
+                    except (ValueError, TypeError):
+                        raise NEKOVARuntimeError(
+                            f"Schema '{schema_name}': field '{fname}' "
+                            f"must be {ftype}, got {type(raw).__name__}."
+                        )
+                else:
+                    instance[fname] = raw
+            instance["__schema__"] = schema_name
+            return instance
+
+        # Also support positional call: Person("Alice", 30)
+        def _positional_constructor(*args, **kwargs):
+            if len(args) > len(fields):
+                raise NEKOVARuntimeError(
+                    f"Schema '{schema_name}' takes {len(fields)} fields, "
+                    f"got {len(args)}."
+                )
+            kw = dict(kwargs)
+            for i, val in enumerate(args):
+                kw[fields[i][0]] = val
+            return _constructor(**kw)
+
+        # Attached so non-interpreter code (db_create_from_schema)
+        # can read a schema's fields from the constructor alone.
+        _positional_constructor.__nekova_schema_fields__ = fields
+        _positional_constructor.__nekova_schema_name__ = schema_name
+
+        self.env.set(schema_name, _positional_constructor)
+        if not hasattr(self, "_schemas"):
+            self._schemas = {}
+        self._schemas[schema_name] = fields
         return None
 
     # ── watch ─────────────────────────────────────────────────
