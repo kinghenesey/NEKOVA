@@ -25,6 +25,8 @@ from nekova.parser.nodes import (
     SpeakStatement, ListenExpression, EveryStatement,
     TestBlock, ExpectStatement, ImagineStatement,
     ShapeDefinition, WatchStatement,
+    # Phase 28
+    SchemaDefinition,
     # Phase 17
     YieldStatement, DecoratorStatement, ErrorDefinition, TypedTaskStatement,
     # Phase 21
@@ -377,6 +379,9 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
                 return self._parse_raise()
             if token.value == "prompt" and self._looks_like_prompt_def():
                 return self._parse_prompt()
+
+            if token.value == "schema" and self._looks_like_schema_def():
+                return self._parse_schema_def()
 
             # Tuple unpacking: a, b, c = expr
             # Peek ahead — if after the first IDENTIFIER there's a COMMA,
@@ -1519,6 +1524,68 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         nxt2 = self.tokens[self.pos + 2] if self.pos + 2 < len(self.tokens) else None
         return (nxt is not None and nxt.type == TokenType.IDENTIFIER
                 and nxt2 is not None and nxt2.type == TokenType.LPAREN)
+
+    def _looks_like_schema_def(self) -> bool:
+        """
+        Disambiguates `schema Name:` (a Phase 28 schema definition)
+        from `schema` used as an ordinary variable, e.g. `schema = {}`
+        or `show schema`. Also intentionally distinct from `think
+        "..." as schema {...}` (Phase 9) — that "schema" token is
+        consumed mid-expression inside _parse_think, never reaching
+        this statement-start dispatch at all, so there's no conflict
+        between the two uses of the word. 'schema' is a soft keyword
+        for the same reason 'prompt' is: so existing code using it as
+        a plain variable name keeps working. Only treat it as a
+        definition when it's immediately followed by `IDENTIFIER :`.
+        """
+        nxt = self.tokens[self.pos + 1] if self.pos + 1 < len(self.tokens) else None
+        nxt2 = self.tokens[self.pos + 2] if self.pos + 2 < len(self.tokens) else None
+        return (nxt is not None and nxt.type == TokenType.IDENTIFIER
+                and nxt2 is not None and nxt2.type == TokenType.COLON)
+
+    def _parse_schema_def(self):
+        """
+        Parse:
+            schema Person:
+                name: text
+                age:  number
+                note: text = "none"
+
+        Deliberately its own parse method (not shared with
+        _parse_shape) even though the two are structurally similar —
+        this one uses `name: type` (colon-separated, matching the
+        vocabulary `think ... as schema {...}` already validates
+        against) rather than shape's `name type` (space-separated,
+        Python-ish type names). Kept separate so shape's existing
+        parsing is completely untouched.
+        """
+        line = self._current().line
+        self._advance()  # consume the 'schema' identifier token
+        name = self._consume(TokenType.IDENTIFIER).value
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+
+        fields = []
+        self._consume(TokenType.INDENT)
+        while self._current().type not in (TokenType.DEDENT, TokenType.EOF):
+            if self._current().type == TokenType.NEWLINE:
+                self._advance()
+                continue
+            fname = self._consume(TokenType.IDENTIFIER).value
+            self._consume(TokenType.COLON)
+            ftype = self._consume(TokenType.IDENTIFIER).value
+            default = None
+            if self._current().type == TokenType.ASSIGN:
+                self._advance()
+                default = self._parse_expression()
+            fields.append((fname, ftype, default))
+            if self._current().type == TokenType.NEWLINE:
+                self._advance()
+        if self._current().type == TokenType.DEDENT:
+            self._advance()
+
+        return self._stamp(SchemaDefinition(name, fields, line=line), line)
 
     def _parse_prompt(self):
         """
