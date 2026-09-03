@@ -64,6 +64,7 @@ PARSE_METHOD_TO_GRAMMAR_RULES = {
     "_parse_imagine_expr":         ["imagine_expr"],
     "_parse_shape":                ["shape_def"],
     "_parse_schema_def":           ["schema_def"],
+    "_parse_agent_def":            ["agent_def"],
     "_parse_watch":                ["watch_stmt"],
     "_parse_yield":                ["yield_stmt"],
     "_parse_decorator":            ["decorator_stmt"],
