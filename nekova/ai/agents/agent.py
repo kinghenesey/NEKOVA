@@ -84,13 +84,23 @@ class Agent:
         result = agent.run("Tell me about Python")
     """
 
-    def __init__(self, name: str, goal: str = ""):
+    def __init__(self, name: str, goal: str = "", model: str = None):
         self.name   = name
         self.goal   = goal
         self.tools  = {}
         self.memory = AgentMemory()
         self.status = "idle"
         self.result = None
+        # Phase 28: per-agent model override, set via the `agent
+        # "Name": model: "..."` declaration. None means "use whatever
+        # the global `model "..."` statement (or auto-detection)
+        # would pick" — see AgentRunner.run(), which applies this
+        # unconditionally (including resetting to None) on every run,
+        # since the runner's provider is a long-lived singleton
+        # shared across every agent_run() call, not a fresh one per
+        # call — without an explicit reset, one agent's model choice
+        # would otherwise leak into the next agent's run.
+        self.model  = model
 
     def add_tool(self, name: str,
                  description: str, function):
