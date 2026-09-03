@@ -26,7 +26,7 @@ from nekova.parser.nodes import (
     TestBlock, ExpectStatement, ImagineStatement,
     ShapeDefinition, WatchStatement,
     # Phase 28
-    SchemaDefinition,
+    SchemaDefinition, AgentDefinition,
     # Phase 17
     YieldStatement, DecoratorStatement, ErrorDefinition, TypedTaskStatement,
     # Phase 21
@@ -382,6 +382,9 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
 
             if token.value == "schema" and self._looks_like_schema_def():
                 return self._parse_schema_def()
+
+            if token.value == "agent" and self._looks_like_agent_def():
+                return self._parse_agent_def()
 
             # Tuple unpacking: a, b, c = expr
             # Peek ahead — if after the first IDENTIFIER there's a COMMA,
@@ -1543,6 +1546,74 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         return (nxt is not None and nxt.type == TokenType.IDENTIFIER
                 and nxt2 is not None and nxt2.type == TokenType.COLON)
 
+    def _looks_like_agent_def(self) -> bool:
+        """
+        Disambiguates `agent "Name":` (a Phase 28 agent declaration)
+        from `agent` used as an ordinary variable, e.g. `agent = "x"`
+        or `show agent`. 'agent' is a soft keyword for the same
+        reason 'prompt'/'schema' are. The agent's display name is a
+        string (unlike schema/shape, whose name is a bare
+        identifier) — the F_STRING branch is included since
+        `agent f"Bot {n}":` is a reasonable thing to want, even
+        though every example so far uses a plain string.
+        """
+        nxt = self.tokens[self.pos + 1] if self.pos + 1 < len(self.tokens) else None
+        nxt2 = self.tokens[self.pos + 2] if self.pos + 2 < len(self.tokens) else None
+        return (nxt is not None and nxt.type in (TokenType.STRING, TokenType.F_STRING)
+                and nxt2 is not None and nxt2.type == TokenType.COLON)
+
+    def _parse_agent_def(self):
+        """
+        Parse:
+            agent "Research Assistant":
+                goal:  "Research topics thoroughly"
+                tools: [web_search, calculate]
+                model: "gpt-4o"
+
+        Field values are parsed with the ordinary expression parser
+        (so the tools list is just a normal list literal, and 'model'
+        is just a normal string expression) — no bespoke grammar
+        needed for the block body beyond `key: value` lines. One
+        wrinkle: 'model' is also a hard keyword (the top-level `model
+        "..."` statement, Phase 9), so a field key can be either an
+        IDENTIFIER or that specific keyword token — see the key-token
+        check below. Any other hard keyword used as a field name
+        would need the same treatment if a future field collides.
+        """
+        line = self._current().line
+        self._advance()  # consume the 'agent' identifier token
+        name_expr = self._parse_expression()
+        self._consume(TokenType.COLON)
+        self._expect_newline_or_eof()
+        self._skip_newlines()
+
+        fields = {}
+        self._consume(TokenType.INDENT)
+        while self._current().type not in (TokenType.DEDENT, TokenType.EOF):
+            if self._current().type == TokenType.NEWLINE:
+                self._advance()
+                continue
+            key_tok = self._current()
+            if key_tok.type == TokenType.IDENTIFIER:
+                key = key_tok.value
+            elif key_tok.type == TokenType.MODEL:
+                key = "model"
+            else:
+                raise ParseError(
+                    f"Unexpected token '{key_tok.value}' in agent "
+                    f"block — expected a field name like 'tools:' or "
+                    f"'model:'.", line=key_tok.line
+                )
+            self._advance()
+            self._consume(TokenType.COLON)
+            fields[key] = self._parse_expression()
+            if self._current().type == TokenType.NEWLINE:
+                self._advance()
+        if self._current().type == TokenType.DEDENT:
+            self._advance()
+
+        return self._stamp(AgentDefinition(name_expr, fields, line=line), line)
+
     def _parse_schema_def(self):
         """
         Parse:
@@ -1957,6 +2028,18 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
         # Captured think: let thought = think "prompt"
         if self._current().type == TokenType.THINK:
             node = self._parse_think()
+            node.variable = name
+            return self._stamp(node, line)
+
+        # Captured agent definition: let researcher = agent "Name": ...
+        # 'agent' is a soft keyword — only special-cased here (as
+        # opposed to just falling through to _parse_expression below)
+        # when it's actually followed by a definition, exactly like
+        # the bare-statement dispatch in _parse_statement above.
+        if (self._current().type == TokenType.IDENTIFIER
+                and self._current().value == "agent"
+                and self._looks_like_agent_def()):
+            node = self._parse_agent_def()
             node.variable = name
             return self._stamp(node, line)
 
