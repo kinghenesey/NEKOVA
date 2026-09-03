@@ -1309,6 +1309,51 @@ class SchemaDefinition(Node):
         return f"Schema({self.name})"
 
 
+class AgentDefinition(Node):
+    """
+    Phase 28: first-class agent declaration, replacing the old
+    function-call-only way of building an agent (agent_create +
+    agent_tool + agent_run, still supported unchanged underneath —
+    this compiles down to exactly those calls in _exec_AgentDefinition).
+
+        let researcher = agent "Research Assistant":
+            goal:  "Research topics thoroughly"
+            tools: [web_search, calculate]
+            model: "gpt-4o"
+
+        # or as a bare statement, no variable capture:
+        agent "Research Assistant":
+            tools: [web_search]
+
+    name_expr: expression for the agent's display name/registry key
+               (a string, but any expression is accepted — same
+               leniency CallExpression's own string args get)
+    fields:    dict of field_name -> expression AST node. Recognized
+               keys: "goal" (str expr), "model" (str expr), "tools"
+               (a ListLiteral expression whose *raw elements* are
+               walked directly rather than evaluated as normal code —
+               each element is either an Identifier (a plain tool
+               name) or a CallExpression whose single argument names
+               a `schema` for that tool's input — see
+               _exec_AgentDefinition for why evaluating them normally
+               wouldn't work). Unknown keys are ignored rather than
+               erroring, so this can grow without breaking programs
+               that used an older field set.
+    variable:  optional assignment target, set by _parse_let exactly
+               like ThinkAsStatement.variable — see there for the
+               established pattern this mirrors.
+    """
+    def __init__(self, name_expr, fields: dict,
+                 variable: str = None, line: int = 0):
+        self.name_expr = name_expr
+        self.fields     = fields
+        self.variable   = variable
+        self.line       = line
+
+    def __repr__(self):
+        return f"AgentDef({self.name_expr})"
+
+
 class WatchStatement(Node):
     """
     File or expression watcher — runs body when target changes.
