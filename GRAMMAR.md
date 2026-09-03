@@ -42,7 +42,7 @@ program        = { statement } ;
 
 statement      = show_stmt | think_stmt | let_stmt | const_stmt
                | if_stmt | while_stmt | repeat_stmt | for_stmt | try_stmt
-               | task_def | class_def | shape_def | schema_def | error_def | enum_def
+               | task_def | class_def | shape_def | schema_def | agent_def | error_def | enum_def
                | prompt_def | pipeline_def
                | sandbox_stmt | test_stmt | expect_stmt
                | retry_stmt | observe_stmt | mock_stmt
@@ -162,6 +162,29 @@ schema_def     = 'schema' IDENTIFIER ':' NEWLINE INDENT
                   nodes.py for why. 'schema' is a soft keyword (like
                   'prompt'): only treated as this rule when followed
                   by IDENTIFIER ':' — see _looks_like_schema_def *)
+
+agent_def      = 'agent' ( STRING | F_STRING ) ':' NEWLINE INDENT
+                   { ( IDENTIFIER | 'model' ) ':' expression NEWLINE }
+                 DEDENT ;
+               (* Phase 28: a first-class agent declaration — compiles
+                  down to the same agent_create/agent_tool calls the
+                  function-call API already had (see agents_module.py),
+                  so agents built either way interoperate freely.
+                  Recognized field keys: 'goal', 'tools' (a list
+                  literal — see AgentDefinition's docstring in
+                  nodes.py for how its elements are read), 'model'.
+                  Unknown keys are ignored, not an error, so this can
+                  grow without breaking existing programs. 'model' is
+                  also a hard keyword (the top-level `model "..."`
+                  statement) — the field-key check accepts that
+                  token specifically in addition to IDENTIFIER; any
+                  other keyword colliding with a future field name
+                  would need the same treatment. Usable as a let-RHS
+                  (let researcher = agent "...": ...) via the same
+                  .variable capture pattern think/autonomous parallel
+                  already use — see _parse_let. 'agent' is a soft
+                  keyword: only treated as this rule when followed by
+                  a string then ':' — see _looks_like_agent_def *)
 
 error_def      = 'error' IDENTIFIER ':' NEWLINE INDENT
                    { IDENTIFIER IDENTIFIER [ '=' expression ] NEWLINE }
