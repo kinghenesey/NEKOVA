@@ -40,6 +40,15 @@ class AgentRunner:
               f"starting...{Color.RESET}")
         print(f"{Color.DIM}  Task: {task}{Color.RESET}")
 
+        # Phase 28: apply this agent's model override, if any.
+        # Unconditional (not "only if agent.model is set") because
+        # self.provider is a long-lived singleton reused across every
+        # agent_run() call (see agents_module._agent_run's module-level
+        # `_runner`) — without resetting to None here, an earlier
+        # agent's model choice would silently leak into an agent that
+        # never asked for one.
+        self.provider.model = getattr(agent, "model", None)
+
         agent.status = "running"
 
         try:
