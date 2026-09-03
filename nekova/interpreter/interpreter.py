@@ -22,7 +22,7 @@ from nekova.parser.nodes import (
     SpeakStatement, ListenExpression, EveryStatement,
     TestBlock, ExpectStatement, ImagineStatement,
     ShapeDefinition, WatchStatement,
-    SchemaDefinition,
+    SchemaDefinition, AgentDefinition,
     # Phase 17
     YieldStatement, DecoratorStatement, ErrorDefinition, TypedTaskStatement,
     # Phase 21
@@ -4551,6 +4551,86 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             self._schemas = {}
         self._schemas[schema_name] = fields
         return None
+
+    # ── agent (Phase 28: first-class agent declaration) ──────────
+
+    def _exec_AgentDefinition(self, node: AgentDefinition):
+        """
+        agent "Research Assistant":
+            goal:  "Research topics thoroughly"
+            tools: [web_search, calculate]
+            model: "gpt-4o"
+
+        Compiles down to exactly the same underlying calls the old
+        function-call API uses (agent_create / agent_tool), so agents
+        built either way are fully interoperable — one declared here
+        can still be driven with agent_run("Research Assistant", ...),
+        and an agent built the old way can be referenced from here
+        too (this only ever creates a new one, but the two systems
+        share the same _agents registry either way).
+        """
+        from nekova.ai.agents_module import _agent_create, _agent_tool, _agents
+
+        agent_name = str(self._execute_node(node.name_expr))
+
+        if "goal" in node.fields:
+            _agent_create(agent_name, str(self._execute_node(node.fields["goal"])))
+        else:
+            _agent_create(agent_name)
+
+        agent = _agents[agent_name]
+
+        # 'tools:' is a list literal — its raw elements are walked
+        # directly rather than evaluated as ordinary expressions.
+        # Something like 'web_search' or 'calculate' isn't bound to
+        # a variable in the environment (it names a built-in tool,
+        # or — from Phase 28 step 3 onward — a NEKOVA task in scope),
+        # so evaluating it as a normal identifier lookup would just
+        # fail with "variable does not exist".
+        tools_expr = node.fields.get("tools")
+        if tools_expr is not None:
+            tool_nodes = getattr(tools_expr, "elements", None)
+            if tool_nodes is None:
+                raise NEKOVARuntimeError(
+                    f"Agent '{agent_name}': 'tools:' must be a list, "
+                    f"e.g. tools: [web_search, calculate]."
+                )
+            for tool_node in tool_nodes:
+                schema_name = None
+                if isinstance(tool_node, Identifier):
+                    tool_name = tool_node.name
+                elif isinstance(tool_node, CallExpression):
+                    tool_name = tool_node.name
+                    # Phase 28 step 4 will read agent._tool_schemas to
+                    # extract structured args from the task text via
+                    # schema coercion before calling this tool,
+                    # instead of handing it the entire raw task
+                    # string. Captured here now so that information
+                    # isn't lost by the time step 4 needs it — not yet
+                    # consumed anywhere (_run_with_tools is unchanged
+                    # until that step).
+                    if tool_node.args and isinstance(tool_node.args[0], Identifier):
+                        schema_name = tool_node.args[0].name
+                else:
+                    raise NEKOVARuntimeError(
+                        f"Agent '{agent_name}': each 'tools:' entry "
+                        f"must be a tool name, optionally followed by "
+                        f"a schema — e.g. calculate(CalcInput) or "
+                        f"web_search."
+                    )
+                _agent_tool(agent_name, tool_name, "")
+                if schema_name is not None:
+                    if not hasattr(agent, "_tool_schemas"):
+                        agent._tool_schemas = {}
+                    agent._tool_schemas[tool_name] = schema_name
+
+        if "model" in node.fields:
+            agent.model = str(self._execute_node(node.fields["model"]))
+
+        if node.variable:
+            self.env.set(node.variable, agent_name)
+
+        return agent_name
 
     # ── watch ─────────────────────────────────────────────────
 
