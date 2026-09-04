@@ -4618,7 +4618,41 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                         f"a schema — e.g. calculate(CalcInput) or "
                         f"web_search."
                     )
-                _agent_tool(agent_name, tool_name, "")
+                # Phase 28 step 3: if `tool_name` names a real NEKOVA
+                # task in the current scope, use that task as the
+                # tool's implementation instead of falling through to
+                # _agent_tool's built-in dict (or its generic
+                # AI-prompt fallback for anything it doesn't
+                # recognize). A task match takes priority — someone
+                # defining `task calculate(...)` themselves should get
+                # THEIR calculate, not the built-in one silently
+                # shadowing it.
+                #
+                # This only exists on the declaration-syntax path for
+                # now, not the old agent_tool(...) function — that
+                # function lives in agents_module.py with no access
+                # to any interpreter's environment, so it has no way
+                # to look a task up at all. Extending it would mean
+                # threading interpreter/environment access through the
+                # whole nekova/ai/ module tree, real scope beyond
+                # "resolve tasks as tools".
+                custom_task = None
+                try:
+                    candidate = self.env.get(tool_name)
+                    if isinstance(candidate, TaskStatement):
+                        custom_task = candidate
+                except NameError:
+                    pass
+
+                if custom_task is not None:
+                    interp = self
+                    def _make_task_tool(task_node):
+                        def _run(arg):
+                            return str(interp._call_task(task_node, [arg]))
+                        return _run
+                    agent.add_tool(tool_name, tool_name, _make_task_tool(custom_task))
+                else:
+                    _agent_tool(agent_name, tool_name, "")
                 if schema_name is not None:
                     if not hasattr(agent, "_tool_schemas"):
                         agent._tool_schemas = {}
