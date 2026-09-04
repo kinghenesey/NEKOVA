@@ -201,5 +201,61 @@ class TestAgentModelDoesNotLeak(AgentTestBase):
         self.assertIsNone(agents_module._runner.provider.model)
 
 
+class TestTaskAsToolResolution(AgentTestBase):
+    """Phase 28 step 3: tools: [...] can reference a NEKOVA task in
+    scope, not just the four built-ins. Only reachable through the
+    agent "Name": ... declaration — the old agent_tool(...) function
+    has no interpreter/environment access to resolve a task by name,
+    so this is deliberately not retrofitted onto it."""
+
+    def test_custom_task_is_called_as_the_tool(self):
+        out = run(
+            'use agents\n'
+            'task loud_echo(x):\n'
+            '    return "ECHO: " + x\n'
+            'agent "Echoer":\n'
+            '    tools: [loud_echo]\n'
+            'show agent_run("Echoer", "hello")\n'
+        )
+        self.assertIn("ECHO: ", out)
+        self.assertIn("hello", out)
+
+    def test_custom_task_takes_priority_over_builtin_of_same_name(self):
+        """A user's own `task calculate(...)` must shadow the
+        built-in calculate tool, not be silently overridden by it."""
+        out = run(
+            'use agents\n'
+            'task calculate(x):\n'
+            '    return "CUSTOM CALC RAN"\n'
+            'agent "Bot":\n'
+            '    tools: [calculate]\n'
+            'show agent_run("Bot", "2 + 2")\n'
+        )
+        self.assertIn("CUSTOM CALC RAN", out)
+
+    def test_unrecognized_name_still_falls_back_gracefully(self):
+        """Names that are neither a built-in nor a task in scope must
+        keep working exactly as before (the pre-existing generic
+        AI-prompt fallback in _agent_tool) — not error."""
+        out = run(
+            'use agents\n'
+            'agent "Bot":\n'
+            '    tools: [some_totally_unknown_name]\n'
+            'show agent_run("Bot", "hi")\n'
+        )
+        self.assertIn("some_totally_unknown_name", out)
+
+    def test_builtin_tool_unaffected_when_no_matching_task_exists(self):
+        """The task-lookup check must not interfere with ordinary
+        built-in tool resolution when there's no task shadowing it."""
+        out = run(
+            'use agents\n'
+            'agent "Bot":\n'
+            '    tools: [calculate]\n'
+            'show agent_run("Bot", "2 + 2")\n'
+        )
+        self.assertIn("calculate", out)
+
+
 if __name__ == "__main__":
     unittest.main()
