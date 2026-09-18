@@ -298,6 +298,16 @@ task parse_statement(state):
         if token["value"] == "prompt" and looks_like_prompt_def(state):
             return parse_prompt(state)
 
+        # Phase 28 soft keywords — same disambiguation approach as
+        # 'prompt' above: only treated as a declaration when the
+        # following tokens actually look like one, so code using
+        # 'schema'/'agent' as ordinary variable names keeps working.
+        if token["value"] == "schema" and looks_like_schema_def(state):
+            return parse_schema_def(state)
+
+        if token["value"] == "agent" and looks_like_agent_def(state):
+            return parse_agent_def(state)
+
         # Tuple unpacking: a, b, c = expr
         if peek_type(state, 1) == "COMMA":
             return parse_unpack(state)
@@ -355,6 +365,19 @@ task parse_let(state):
         node = parse_autonomous(state)
         node["variable"] = name
         return stamp(node, line)
+
+    # Captured agent definition (Phase 28):
+    #     let researcher = agent "Name": ...
+    # 'agent' is a soft keyword, so this only special-cases it when
+    # the following tokens actually look like a definition — otherwise
+    # it falls through to parse_expression below and 'agent' is just
+    # an ordinary identifier, same as the bare-statement dispatch in
+    # parse_statement.
+    if current(state)["type"] == "IDENTIFIER":
+        if current(state)["value"] == "agent" and looks_like_agent_def(state):
+            node = parse_agent_def(state)
+            node["variable"] = name
+            return stamp(node, line)
 
     # Captured pipeline run: let result = run pipeline name
     if current(state)["type"] == "RUN":
@@ -837,6 +860,108 @@ task parse_enum(state):
     return stamp({"type": "EnumDefinition", "name": name, "members": members}, line)
 
 # ── prompt definitions ───────────────────────────────────────────────
+
+task looks_like_schema_def(state):
+    # Phase 28. Disambiguates 'schema Name:' from 'schema' used as an
+    # ordinary variable (e.g. schema = {}, show schema). Only a
+    # definition when immediately followed by IDENTIFIER ':'.
+    # Distinct from the 'schema' that appears inside
+    # 'think "..." as schema {...}' — that one is consumed
+    # mid-expression by the think parsing path and never reaches
+    # statement dispatch, so the two uses don't conflict.
+    nxt = peek_type(state, 1)
+    nxt2 = peek_type(state, 2)
+    return nxt == "IDENTIFIER" and nxt2 == "COLON"
+
+task parse_schema_def(state):
+    # schema Person:
+    #     name: text
+    #     age:  number
+    # Structurally like parse_field_list_def (shape/error) but with
+    # colon-separated fields, and the leading keyword is a plain
+    # IDENTIFIER token rather than a dedicated keyword token — so it
+    # can't reuse that helper directly.
+    line = current(state)["line"]
+    advance(state)  # consume the 'schema' identifier token
+    name = consume(state, "IDENTIFIER")["value"]
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+
+    fields = []
+    consume(state, "INDENT")
+    while current(state)["type"] != "DEDENT" and current(state)["type"] != "EOF":
+        if current(state)["type"] == "NEWLINE":
+            advance(state)
+            continue
+        fname = consume(state, "IDENTIFIER")["value"]
+        consume(state, "COLON")
+        ftype = consume(state, "IDENTIFIER")["value"]
+        default = null
+        if current(state)["type"] == "ASSIGN":
+            advance(state)
+            default = parse_expression(state)
+        fields.append([fname, ftype, default])
+        if current(state)["type"] == "NEWLINE":
+            advance(state)
+    if current(state)["type"] == "DEDENT":
+        advance(state)
+
+    return stamp({"type": "SchemaDefinition", "name": name, "fields": fields}, line)
+
+task looks_like_agent_def(state):
+    # Phase 28. Disambiguates 'agent "Name":' from 'agent' used as an
+    # ordinary variable. The agent's name is a string (unlike
+    # schema/shape, whose name is a bare identifier).
+    nxt = peek_type(state, 1)
+    nxt2 = peek_type(state, 2)
+    is_str = nxt == "STRING" or nxt == "F_STRING"
+    return is_str and nxt2 == "COLON"
+
+task parse_agent_def(state):
+    # agent "Research Assistant":
+    #     goal:  "Research topics thoroughly"
+    #     tools: [web_search, calculate]
+    #     model: "gpt-4o"
+    # Field values are ordinary expressions, so the tools list is just
+    # a normal list literal. 'model' is also a real keyword token
+    # (the top-level `model "..."` statement), so a field key is
+    # either an IDENTIFIER or that specific token — matching the
+    # Python reference parser's own handling.
+    line = current(state)["line"]
+    advance(state)  # consume the 'agent' identifier token
+    name_expr = parse_expression(state)
+    consume(state, "COLON")
+    expect_newline_or_eof(state)
+    skip_newlines(state)
+
+    fields = {}
+    consume(state, "INDENT")
+    while current(state)["type"] != "DEDENT" and current(state)["type"] != "EOF":
+        if current(state)["type"] == "NEWLINE":
+            advance(state)
+            continue
+        key_tok = current(state)
+        if key_tok["type"] == "IDENTIFIER":
+            key = key_tok["value"]
+        else:
+            if key_tok["type"] == "MODEL":
+                key = "model"
+            else:
+                raise ("Unexpected token '" + str(key_tok["value"]) +
+                       "' in agent block — expected a field name like " +
+                       "'tools:' or 'model:'. Line " +
+                       str(key_tok["line"]) + ".")
+        advance(state)
+        consume(state, "COLON")
+        fields[key] = parse_expression(state)
+        if current(state)["type"] == "NEWLINE":
+            advance(state)
+    if current(state)["type"] == "DEDENT":
+        advance(state)
+
+    return stamp({"type": "AgentDefinition", "name_expr": name_expr,
+                  "fields": fields, "variable": null}, line)
 
 task looks_like_prompt_def(state):
     # Disambiguates 'prompt name(...):' from 'prompt' used as an
