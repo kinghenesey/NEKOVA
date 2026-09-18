@@ -2959,15 +2959,26 @@ class Parser(AsyncParserMixin, ClassParserMixin, MatchParserMixin, WebParserMixi
             greet("Sam")
             greet(name="Sam", greeting="Hi")     -- keyword arguments
             greet("Sam", greeting="Hi")          -- mixed (positional first)
+            greet(...args)                       -- spread a list as args
         A bare 'identifier = expr' inside the parens is a keyword
         argument, not a positional one — this is unambiguous here since
         a positional argument is never itself an assignment expression.
+
+        '...expr' spreads a list's items in as separate positional
+        arguments — the call-site counterpart to `task f(*rest)` on
+        the declaration side and `[...a, ...b]` in list literals.
+        Without it, a wrapper task collecting *args had no way to
+        forward them on, so decorators could only ever wrap
+        fixed-arity functions.
         """
         self._consume(TokenType.LPAREN)
         args = []
         kwargs = {}
         while self._current().type != TokenType.RPAREN:
-            if (self._current().type == TokenType.IDENTIFIER
+            if self._current().type == TokenType.ELLIPSIS:
+                self._consume(TokenType.ELLIPSIS)
+                args.append(SpreadElement(self._parse_expression()))
+            elif (self._current().type == TokenType.IDENTIFIER
                     and self._peek_is(TokenType.ASSIGN)):
                 kw_name = self._consume(TokenType.IDENTIFIER).value
                 self._consume(TokenType.ASSIGN)
