@@ -497,7 +497,20 @@ optional_chain = '?.' IDENTIFIER [ '(' [ call_args ] ')' ] ;
                (* short-circuits to null if the left side is null,
                   instead of raising *)
 
-call_args      = expression { ',' expression } ;
+call_args      = call_arg { ',' call_arg } ;
+
+call_arg       = expression
+               | IDENTIFIER '=' expression          (* keyword argument *)
+               | '...' expression ;                 (* spread *)
+               (* '...expr' spreads a list or tuple's items in as
+                  separate positional arguments — the call-site
+                  counterpart to `task f(*rest)` on the declaration
+                  side and `[...a, ...b]` in list literals. Without
+                  it a wrapper task collecting *rest had no way to
+                  forward those arguments on, so decorators could
+                  only ever wrap fixed-arity functions. Same
+                  list-or-tuple requirement as spreading into a list
+                  literal. See Interpreter._eval_call_args *)
 
 list_literal   = '[' [ list_items ] ']' ;
 list_items     = list_item { ',' list_item } ;
