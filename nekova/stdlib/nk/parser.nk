@@ -2243,7 +2243,14 @@ task parse_call_args(state):
     consume(state, "LPAREN")
     let args = []
     while current(state)["type"] != "RPAREN":
-        args.append(parse_expression(state))
+        # '...expr' spreads a list's items in as separate positional
+        # arguments — same SpreadElement node parse_list produces, so
+        # the interpreter's shared expansion handles both identically.
+        if current(state)["type"] == "ELLIPSIS":
+            advance(state)
+            args.append({"type": "SpreadElement", "expr": parse_expression(state)})
+        else:
+            args.append(parse_expression(state))
         if current(state)["type"] == "COMMA":
             advance(state)
     consume(state, "RPAREN")
@@ -2368,12 +2375,18 @@ task finish_call(state, name):
     let args = []
     kwargs = {}
     while current(state)["type"] != "RPAREN":
-        if current(state)["type"] == "IDENTIFIER" and peek_type(state, 1) == "ASSIGN":
-            kw_name = consume(state, "IDENTIFIER")["value"]
-            consume(state, "ASSIGN")
-            kwargs[kw_name] = parse_expression(state)
+        if current(state)["type"] == "ELLIPSIS":
+            # '...expr' spread — see parse_call_args / the Python
+            # parser's _finish_call for the rationale.
+            advance(state)
+            args.append({"type": "SpreadElement", "expr": parse_expression(state)})
         else:
-            args.append(parse_expression(state))
+            if current(state)["type"] == "IDENTIFIER" and peek_type(state, 1) == "ASSIGN":
+                kw_name = consume(state, "IDENTIFIER")["value"]
+                consume(state, "ASSIGN")
+                kwargs[kw_name] = parse_expression(state)
+            else:
+                args.append(parse_expression(state))
         if current(state)["type"] == "COMMA":
             advance(state)
     consume(state, "RPAREN")
