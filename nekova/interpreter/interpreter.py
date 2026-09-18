@@ -1857,6 +1857,38 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                     )
         return resolved
 
+    def _eval_call_args(self, arg_nodes):
+        """
+        Evaluate a call's positional argument nodes, expanding any
+        '...expr' spread items in place — greet(...names) passes each
+        item of `names` as its own argument.
+
+        Shared by _exec_CallExpression and _exec_MethodCall so both
+        call forms behave identically; before spread existed these
+        were two separate inline list comprehensions, which is exactly
+        the kind of duplication that lets one call form quietly gain
+        a feature the other doesn't.
+
+        The spread value must be a list or tuple — same rule, and the
+        same reasoning, as spreading into a list literal.
+        """
+        args = []
+        for node in arg_nodes:
+            if isinstance(node, SpreadElement):
+                spread_val = self._execute_node(node.expr)
+                if not isinstance(spread_val, (list, tuple)):
+                    raise NEKOVARuntimeError(
+                        f"Cannot spread '{self._to_string(spread_val)}' "
+                        f"into a call — it's a "
+                        f"{type(spread_val).__name__}, not a list.\n"
+                        f"  Example:  task wrapper(*rest):\n"
+                        f"                return fn(...rest)"
+                    )
+                args.extend(spread_val)
+            else:
+                args.append(self._execute_node(node))
+        return args
+
     def _exec_CallExpression(self, node: CallExpression):
         """
         Execute:  greet("Emmanuel")
@@ -1894,7 +1926,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             )
 
         # Evaluate all arguments
-        args = [self._execute_node(arg) for arg in node.args]
+        args = self._eval_call_args(node.args)
 
         # Built-in Python function
         if callable(callee) and not isinstance(callee, (TaskStatement, TypedTaskStatement)):
@@ -2370,7 +2402,7 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         """Execute a method call like name.upper()."""
         obj    = self._execute_node(node.object)
         method = node.method
-        args   = [self._execute_node(a) for a in node.args]
+        args   = self._eval_call_args(node.args)
 
         # Optional chaining: obj?.method() — if obj is null, the whole
         # chain short-circuits to null instead of raising.
