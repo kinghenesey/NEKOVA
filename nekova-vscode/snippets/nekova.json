@@ -300,6 +300,25 @@
     ],
     "description": "Chain AI agents"
   },
+  "Schema definition": {
+    "prefix": "schema",
+    "body": [
+      "schema ${1:Person}:",
+      "    ${2:name}: ${3:text}",
+      "    ${4:age}:  ${5:number}"
+    ],
+    "description": "Schema: object type, AI parser (think ... as), and DB table (Phase 28)"
+  },
+  "Agent declaration": {
+    "prefix": "agentdecl",
+    "body": [
+      "let ${1:researcher} = agent \"${2:Research Assistant}\":",
+      "    goal:  \"${3:What this agent is for}\"",
+      "    tools: [${4:summarize}]",
+      "    model: \"${5:mock}\""
+    ],
+    "description": "Declare an AI agent (Phase 28) — requires `use agents`"
+  },
   "Show": {
     "prefix": "show",
     "body": [
