@@ -38,3 +38,11 @@ packages = []
 strict_types = false   # enforce type hints at runtime
 show_imports = false   # print import messages
 debug        = false   # enable debug output
+
+# Parse with NEKOVA's own parser (parser.nk) instead of the Python one.
+# Same as `nekova run app.nk --self-hosted`.
+# self_hosted_parser = false
+
+# Safety cap on iterations of any single while-loop (default 10000).
+# Raise it only if a legitimate loop needs more.
+# max_loop_iterations = 10000
