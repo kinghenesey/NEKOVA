@@ -1,6 +1,6 @@
 # NEKOVA Formal Grammar (EBNF)
 
-**Version this grammar describes:** 2.0.0
+**Version this grammar describes:** 2.1.0
 **Status:** Reference — written directly against `nekova/parser/parser.py`
 and its mixins (`async_parser.py`, `class_parser.py`, `match_parser.py`,
 `web_parser.py`), not from memory or the docs site. This was the stable
