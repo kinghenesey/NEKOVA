@@ -1,7 +1,7 @@
 # NEKOVA Language — Official Roadmap
 
 **Version:** 2.1.0 · Genesis  
-**Tests:** 1,782 passing (1 skipped — no fuzz regressions saved yet) · 33 test phases  
+**Tests:** 1,818 passing (1 skipped — no fuzz regressions saved yet) · 34 test phases  
 **Status:** Active development · Phase 28 complete (`schema` keyword, `agent` declarations, call-site spread) · Phase 29 next  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
@@ -47,13 +47,13 @@ consistent meaning. Going forward:
 | **1.9.8** | 23a | ✅ Correctness & Trust Part 1 — recursion error accuracy, mock AI labeling, string+number type mismatch, near-miss variable suggestions (difflib), documented semver policy |
 | **1.9.9** | 23b + 24 | ✅ Correctness & Trust Part 2 + Language Completeness II — see "Phase 23b" and "Phase 24" sections below for the full list; combined into one release per publishing decision. |
 | **1.10.0** | 24b + 25 | ✅ Documentation Website + AI-Native Differentiators II — see "Phase 24b" and "Phase 25" sections below; combined into one release per publishing decision. |
-| **1.11.0** | 26 | ✅ Developer experience — **current**. Language Server Protocol (real autocomplete, inline errors, hover docs), `nekova fmt --diff`, multi-error parser recovery, interactive `nekova new` wizard, `nekova.lock`, `--why`, `expect_snapshot(...)`, `.env.example` scaffolding |
+| **1.11.0** | 26 | ✅ Developer experience — Language Server Protocol (real autocomplete, inline errors, hover docs), `nekova fmt --diff`, multi-error parser recovery, interactive `nekova new` wizard, `nekova.lock`, `--why`, `expect_snapshot(...)`, `.env.example` scaffolding |
 | **1.12.0** | 26b | ✅ Education layer — `nekova learn`, `nekova explain`, `nekova translate`, `nekova classroom`, `nekova help` glossary, `--simple-errors` |
 | **1.13.0** | 26c | ✅ AI-Native Differentiators III — typed AI output validation + re-prompt, probabilistic testing, dollar-denominated think budgets, model fallback chains, deterministic AI-call replay (cassettes), capability-scoped agent sandboxing, `think_stream` |
 | **2.0.0** | 27 | ✅ Parser in NEKOVA — self-hosting milestone 2. `parser.nk` (~2,400 lines) verified via AST diffing against the Python reference, including parsing its own source. Includes the published formal grammar (EBNF) and parser/lexer fuzz-testing harness in CI that were prerequisites for this phase, four profiling-driven performance passes on the self-hosted parse path (~16s → ~7.8s), and a fix for a real code-execution vulnerability in the agent system's `calculate` tool |
-| **2.1.0** | 28 | ✅ Agent system + unified schema — `schema` keyword (object type, AI parser, DB table), `agent "Name":` declarations, task-as-tool, schema-typed tool input, call-site spread `f(...args)`, `parser.nk` parity and a repo-wide parser drift guard, plus a language-wide QA sweep (`try`/`catch` error text, `shape` keyword args, agent `model:` leakage) |
-| **2.2.0** | 29 | Sandbox commercial API, `nekova teach`, deployment targets, WebSocket + middleware support in the web router |
-| **2.3.0** | 30 | Safety & performance hardening — resource-limited sandbox quotas (CPU/memory, not just time), bytecode caching, public test-coverage dashboard |
+| **2.1.0** | 28 | ✅ **current** — Agent system + unified schema — `schema` keyword (object type, AI parser, DB table), `agent "Name":` declarations, task-as-tool, schema-typed tool input, call-site spread `f(...args)`, `parser.nk` parity and a repo-wide parser drift guard, plus a language-wide QA sweep (`try`/`catch` error text, `shape` keyword args, agent `model:` leakage) |
+| **2.2.0** | 29 | Sandbox quotas (pulled forward from Phase 30) + sandbox commercial API, router middleware, static file serving, deploy targets |
+| **2.3.0** | 30 | Performance hardening — bytecode caching, public test-coverage dashboard (sandbox quotas moved up to Phase 29) |
 | **3.0.0** | 31 | Full self-hosting — interpreter in NEKOVA |
 
 Note on 1.9.9: per the original plan this was 23b alone, with Phase 24
@@ -565,25 +565,45 @@ vulnerability. Alongside it: call-site spread `f(...args)` (removing the
 decorator arity limitation), `parser.nk` parity for everything above, and
 a repo-wide drift guard so the two parsers can't silently diverge again.
 
-### Phase 29 · Sandbox API + Ecosystem — v2.2.0 📋
+### Phase 29 · Sandbox API + Web Server Completeness — v2.2.0 📋
 
-Sandbox as a deployable commercial API. `nekova teach` — AI-powered
-interactive tutorials built into the CLI. Also: middleware support in the
-web router (`route GET "/x" with auth, logging:`), WebSocket support
-alongside HTTP `route`/`serve`, built-in static file serving, database
-migrations as a language feature rather than raw `db_connect`/`query`,
-concrete one-command deploy targets (`nekova deploy --target render`), and
-marketplace package signing/verification as the package ecosystem grows.
+Scope decided after Phase 28 shipped. The original sketch bundled eight
+items; this phase takes the ones that form one dependency chain and
+defers the rest. Each step is verified (both parsers, tests, grammar
+coverage) before the next begins.
 
-### Phase 30 · Safety & Performance Hardening — v2.3.0 📋
+1. **Resource-limited sandbox quotas** — pulled forward from Phase 30.
+   CPU and memory ceilings for `sandbox strict`, not just execution
+   time. This comes first on purpose: step 4 exposes the sandbox over
+   HTTP, and a public code-execution API protected only by a timeout
+   isn't safe to ship. One constraint to design around from the start:
+   Python's `resource.setrlimit` is POSIX-only, and NEKOVA's primary
+   development platform is Windows, so enforcement has to work there
+   too (a supervised subprocess with a polled or job-object-based
+   limit), not just on Linux.
+2. **Router middleware** — `route GET "/x" with auth, logging:`. New
+   grammar, so it lands in `parser.py`, `parser.nk`, and `GRAMMAR.md`
+   together, with the drift guard watching.
+3. **Static file serving** — with path-traversal protection built in.
+4. **The sandbox HTTP API** — built on the router so it dogfoods
+   middleware (auth, rate limiting) and on step 1's quotas.
+5. **Deploy targets** — `nekova deploy --target render` alongside the
+   existing Railway target.
 
-Resource-limited sandbox quotas beyond time (CPU/memory ceilings for
-`sandbox strict`, not just execution duration — untrusted-code execution is
-an explicit stated feature and deserves real limits). Bytecode caching
-(`.nkc`) persisting compiled bytecode between runs, the way Python's
-`__pycache__` speeds up repeated execution. A public test-suite dashboard —
-"1,226 tests passing" becomes an actual trust signal, not just a number,
-once anyone can see which phases and features it actually covers.
+**Deferred out of Phase 29** (each is its own scope): WebSocket support
+(likely needs a different server layer than plain `route`/`serve`),
+database migrations as a language feature (the natural follow-on to
+Phase 28's `db_create_from_schema`), `nekova teach`, and marketplace
+package signing/verification (needs a key-management design first).
+
+### Phase 30 · Performance Hardening — v2.3.0 📋
+
+Bytecode caching (`.nkc`) persisting compiled bytecode between runs, the
+way Python's `__pycache__` speeds up repeated execution. A public
+test-suite dashboard — "1,818 tests passing" becomes an actual trust
+signal, not just a number, once anyone can see which phases and features
+it actually covers. (Resource-limited sandbox quotas, originally listed
+here, moved up to Phase 29 so the sandbox API can ship safely.)
 
 ### Phase 31 · Full Self-Hosting — v3.0.0 🎯
 
@@ -595,8 +615,8 @@ once anyone can see which phases and features it actually covers.
 
 | Metric | Value |
 |--------|-------|
-| Test phases | 33 |
-| Tests passing | 1,782 / 1,783 (1 skipped — no fuzz regressions saved yet) |
+| Test phases | 34 |
+| Tests passing | 1,818 / 1,819 (1 skipped — no fuzz regressions saved yet) |
 | Version | 2.1.0 |
 | PyPI package | `nekova-lang` |
 | VS Code extension | ✅ Published |
