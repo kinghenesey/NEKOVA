@@ -225,12 +225,16 @@ match status:
 - Two new snippets: `schema` (schema definition) and `agentdecl` (agent
   declaration). The older `agent` snippet is the pipeline-chaining form
   and is unchanged
-- Known gap, not fixed in this release: the TextMate grammar and the
-  hover/glossary text do not yet recognise `schema` or `agent` as
-  keywords. Both are soft keywords (still valid as ordinary variable
-  names), so highlighting them needs context-aware matching rather than
-  a plain keyword list. Carried over from 2.0.0 and still open: the
-  `$0.01` money-literal syntax isn't specially highlighted either
+- Syntax highlighting for the new soft keywords: `schema` and `agent`
+  are highlighted only where they begin a definition (`schema Name:`,
+  `agent "Name":`, including `let x = agent "Name":`). Previously
+  `schema` was coloured as a keyword *everywhere* — even
+  `let schema = 1` — and `agent` was never coloured. Plain variables
+  with those names are now left alone
+- Hover docs for the same two definitions (the LSP only fires on a real
+  definition, never on a variable of the same name)
+- Still open, carried over from 2.0.0: the `$0.01` money-literal syntax
+  isn't specially highlighted
 - Welcome message and status bar now report `v2.1.0`
 
 ### 2.0.0
