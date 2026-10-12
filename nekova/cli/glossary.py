@@ -162,7 +162,44 @@ GLOSSARY = {
         "example": "shape User:\n"
                     "    name str\n"
                     "    age int",
-        "see_also": ["think as"],
+        "see_also": ["think as", "schema"],
+    },
+    "schema": {
+        "summary": "Declares a typed record that works three ways at once: "
+                    "as an object type (Person(name=\"Alice\", age=30)), as "
+                    "an AI parser (think \"...\" as Person), and as a "
+                    "database table (db_create_from_schema). Field types "
+                    "are text, number, boolean, list, dict, and any. A "
+                    "soft keyword — still a valid variable name.",
+        "example": "schema Person:\n"
+                    "    name: text\n"
+                    "    age:  number\n\n"
+                    "let p = Person(name=\"Alice\", age=30)\n"
+                    "show p[\"name\"]",
+        "see_also": ["shape", "think as", "agent"],
+    },
+    "agent": {
+        "summary": "Declares an AI agent with a goal, a list of tools "
+                    "(built-ins like summarize and calculate, or your own "
+                    "tasks), and an optional model. Needs `use agents`. A "
+                    "soft keyword — still a valid variable name.",
+        "example": "use agents\n\n"
+                    "let helper = agent \"Helper\":\n"
+                    "    goal:  \"Answer questions\"\n"
+                    "    tools: [summarize]\n"
+                    "    model: \"mock\"",
+        "see_also": ["schema", "task", "use"],
+    },
+    "...": {
+        "summary": "Spreads a list or tuple into separate items — inside a "
+                    "list literal, or at a call site so a wrapper can "
+                    "forward the *args it collected. (In a declaration, "
+                    "*rest collects; at a call, ... spreads.)",
+        "example": "task logged(f):\n"
+                    "    task wrapper(*args):\n"
+                    "        return f(...args)\n"
+                    "    return wrapper",
+        "see_also": ["task"],
     },
     "error": {
         "summary": "Declares a custom error type, which can then be "
@@ -233,7 +270,7 @@ def get_topic(name: str):
         "elif": "if", "else": "if",
         "for-loop": "for", "loop": "while",
         "ai": "think", "llm": "think",
-        "pipe": "|>", "optional": "?.",
+        "pipe": "|>", "optional": "?.", "spread": "...",
     }
     key = aliases.get(key, key)
 
