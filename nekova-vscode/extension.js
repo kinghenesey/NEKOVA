@@ -294,7 +294,7 @@ function activate(context) {
     const shown = context.globalState.get('nekova.welcomeShown_2.1.0');
     if (!shown) {
         vscode.window.showInformationMessage(
-            'NEKOVA v2.1.0 — new `schema` keyword and `agent` declarations, plus call-site spread f(...args). New snippets: `schema` and `agentdecl`. Press F5 to run any .nk file.',
+            'NEKOVA v2.1.0 — new `schema` keyword and `agent` declarations, plus call-site spread f(...args). Highlighting and hover for both, plus `schema` and `agentdecl` snippets. Press F5 to run any .nk file.',
             'Open REPL', 'New Project'
         ).then(choice => {
             if (choice === 'Open REPL')    cmdOpenRepl();
