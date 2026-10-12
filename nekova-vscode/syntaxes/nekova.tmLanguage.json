@@ -1,4 +1,4 @@
-{
+﻿{
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "NEKOVA",
   "scopeName": "source.nekova",
@@ -35,6 +35,12 @@
     },
     {
       "include": "#prompt_definition"
+    },
+    {
+      "include": "#schema_definition"
+    },
+    {
+      "include": "#agent_definition"
     },
     {
       "include": "#think_using_clause"
@@ -317,6 +323,23 @@
       "name": "keyword.declaration.nekova",
       "match": "\\b(prompt)\\b(?=\\s+[a-zA-Z_][a-zA-Z0-9_]*\\s*\\()"
     },
+    "schema_definition": {
+      "comment": "Phase 28. `schema` is a soft keyword (still a valid variable name), so it is only a keyword when it begins a definition: `schema Name:`. Mirrors Parser._looks_like_schema_def.",
+      "match": "\\b(schema)\\s+([a-zA-Z_][a-zA-Z0-9_]*)(?=\\s*:)",
+      "captures": {
+        "1": {
+          "name": "keyword.declaration.nekova"
+        },
+        "2": {
+          "name": "entity.name.type.nekova"
+        }
+      }
+    },
+    "agent_definition": {
+      "comment": "Phase 28. `agent` is a soft keyword, so it is only a keyword when a quoted name and a colon follow: `agent \"Name\":`. The name itself is highlighted by the ordinary string rules. Mirrors Parser._looks_like_agent_def.",
+      "name": "keyword.declaration.nekova",
+      "match": "\\b(agent)\\b(?=\\s+f?(?:\"[^\"\\n]*\"|'[^'\\n]*')\\s*:)"
+    },
     "think_using_clause": {
       "name": "keyword.control.nekova",
       "match": "\\b(using)\\b(?=\\s*[\"'])"
@@ -335,7 +358,7 @@
     },
     "keywords_declaration": {
       "name": "keyword.declaration.nekova",
-      "match": "\\b(task|func|use|import|from|let|const|enum|async|await|class|object|error|schema|save)\\b"
+      "match": "\\b(task|func|use|import|from|let|const|enum|async|await|class|object|error|save)\\b"
     },
     "keywords_class": {
       "name": "keyword.other.class.nekova",
