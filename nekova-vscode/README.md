@@ -1,4 +1,4 @@
-﻿# NEKOVA VS Code Extension — v2.0.0
+﻿# NEKOVA VS Code Extension — v2.1.0
 
 Syntax highlighting, two branded color themes, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
@@ -217,6 +217,21 @@ match status:
 ---
 
 ## Release Notes
+
+### 2.1.0
+- Version bump for consistency with NEKOVA core v2.1.0 (Phase 28, Agent
+  System + Unified Schema: the `schema` keyword, first-class `agent`
+  declarations, and call-site spread `f(...args)`)
+- Two new snippets: `schema` (schema definition) and `agentdecl` (agent
+  declaration). The older `agent` snippet is the pipeline-chaining form
+  and is unchanged
+- Known gap, not fixed in this release: the TextMate grammar and the
+  hover/glossary text do not yet recognise `schema` or `agent` as
+  keywords. Both are soft keywords (still valid as ordinary variable
+  names), so highlighting them needs context-aware matching rather than
+  a plain keyword list. Carried over from 2.0.0 and still open: the
+  `$0.01` money-literal syntax isn't specially highlighted either
+- Welcome message and status bar now report `v2.1.0`
 
 ### 2.0.0
 - Version bump for consistency with NEKOVA core v2.0.0 (Phase 27, NEKOVA
