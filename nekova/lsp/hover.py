@@ -83,6 +83,20 @@ KEYWORD_DOCS = {
     "model":     "Explicitly selects which AI model a `think` call should use.",
 }
 
+# ── Soft keyword docs (Phase 28) ──────────────────────────────
+# `schema` and `agent` are soft keywords: the lexer emits them as
+# plain IDENTIFIER tokens (so existing code using them as variable
+# names keeps working), which means the KEYWORDS-based lookup in
+# compute_hover can never see them. They are recognized here instead,
+# by the same lookahead the parser uses — see
+# _is_soft_keyword_definition() — so hovering a *variable* that
+# happens to be named `schema` shows nothing, while hovering the
+# `schema` in `schema Person:` shows the keyword's doc.
+SOFT_KEYWORD_DOCS = {
+    "schema": "Declares a typed record. One definition works three ways: as an object type (`Person(name=\"Alice\", age=30)`), as an AI parser (`think \"...\" as Person`), and as a database table (`db_create_from_schema(Person, \"people\")`).\n\n```\nschema Person:\n    name: text\n    age:  number\n```\nField types: `text`, `number`, `boolean`, `list`, `dict`, `any`. A soft keyword — still a valid variable name everywhere a definition isn't expected.",
+    "agent":  "Declares an AI agent with a `goal:`, a `tools:` list, and an optional `model:`. Requires `use agents`.\n\n```\nuse agents\nlet helper = agent \"Helper\":\n    goal:  \"Answer questions\"\n    tools: [summarize, calculate]\n```\n`tools:` accepts the built-ins (`search`, `summarize`, `generate`, `classify`, `save`, `calculate`) and your own `task`s. Run it with `agent_run(helper, \"a task\")`. A soft keyword — still a valid variable name everywhere a definition isn't expected.",
+}
+
 # ── Builtin function docs ─────────────────────────────────────
 BUILTIN_DOCS = {
     "len":         "`len(x)` — number of items in a string, list, dict, or set.",
@@ -259,6 +273,34 @@ def _hover_for_definition(node) -> str:
     return "\n\n".join(lines)
 
 
+def _is_soft_keyword_definition(tokens, token) -> bool:
+    """
+    True if `token` (an IDENTIFIER named `schema` or `agent`) is
+    actually beginning a Phase 28 definition rather than being used as
+    an ordinary name. Deliberately the same lookahead as
+    Parser._looks_like_schema_def / _looks_like_agent_def, plus a
+    check on what precedes it: a schema definition must start a
+    statement, and an agent declaration may start one or follow the
+    `=` of `let name = agent "...":`.
+    """
+    idx = next((i for i, t in enumerate(tokens) if t is token), None)
+    if idx is None:
+        return False
+    prev = tokens[idx - 1] if idx > 0 else None
+    nxt = tokens[idx + 1] if idx + 1 < len(tokens) else None
+    nxt2 = tokens[idx + 2] if idx + 2 < len(tokens) else None
+    at_statement_start = prev is None or prev.type in (
+        TokenType.NEWLINE, TokenType.INDENT, TokenType.DEDENT)
+    if nxt is None or nxt2 is None or nxt2.type != TokenType.COLON:
+        return False
+    if token.value == "schema":
+        return at_statement_start and nxt.type == TokenType.IDENTIFIER
+    if token.value == "agent":
+        return ((at_statement_start or prev.type == TokenType.ASSIGN)
+                and nxt.type in (TokenType.STRING, TokenType.F_STRING))
+    return False
+
+
 def compute_hover(source: str, line: int, character: int):
     """
     Compute LSP hover contents for a 0-indexed (line, character)
@@ -303,6 +345,13 @@ def compute_hover(source: str, line: int, character: int):
             if defn.name == name:
                 contents = _hover_for_definition(defn)
                 break
+
+    # 1b. Soft keywords (`schema`, `agent`) — IDENTIFIER tokens that
+    #     only count as keywords when they begin a definition.
+    if (contents is None and token.type == TokenType.IDENTIFIER
+            and name in SOFT_KEYWORD_DOCS
+            and _is_soft_keyword_definition(tokens, token)):
+        contents = SOFT_KEYWORD_DOCS[name]
 
     # 2. Keywords — only for tokens that are actually that keyword
     #    (checked against the real KEYWORDS mapping), not just any
