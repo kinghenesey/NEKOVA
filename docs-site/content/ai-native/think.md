@@ -33,6 +33,8 @@ let count = think "How many legs does a spider have?" as number
 let user = think "Extract name and age from: Ada, 30" as schema {"name": "text", "age": "number"}
 ```
 
+To name a structure once and reuse it — as an object type, an AI parser, and a database table — declare it with the [`schema` keyword](schema.html).
+
 ## Inline error handling
 
 If the AI call fails, `when error:` lets you supply a fallback instead of embedding an error string in the result:
