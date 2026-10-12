@@ -1,8 +1,8 @@
 # NEKOVA Language — Official Roadmap
 
-**Version:** 2.0.0 · Genesis  
-**Tests:** 1,712 passing (1 skipped — no fuzz regressions saved yet) · 33 test phases  
-**Status:** Active development · Phase 27 complete (self-hosted parser, performance pass, agent-security fix) · Phase 28 next  
+**Version:** 2.1.0 · Genesis  
+**Tests:** 1,782 passing (1 skipped — no fuzz regressions saved yet) · 33 test phases  
+**Status:** Active development · Phase 28 complete (`schema` keyword, `agent` declarations, call-site spread) · Phase 29 next  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
 ---
@@ -51,7 +51,7 @@ consistent meaning. Going forward:
 | **1.12.0** | 26b | ✅ Education layer — `nekova learn`, `nekova explain`, `nekova translate`, `nekova classroom`, `nekova help` glossary, `--simple-errors` |
 | **1.13.0** | 26c | ✅ AI-Native Differentiators III — typed AI output validation + re-prompt, probabilistic testing, dollar-denominated think budgets, model fallback chains, deterministic AI-call replay (cassettes), capability-scoped agent sandboxing, `think_stream` |
 | **2.0.0** | 27 | ✅ Parser in NEKOVA — self-hosting milestone 2. `parser.nk` (~2,400 lines) verified via AST diffing against the Python reference, including parsing its own source. Includes the published formal grammar (EBNF) and parser/lexer fuzz-testing harness in CI that were prerequisites for this phase, four profiling-driven performance passes on the self-hosted parse path (~16s → ~7.8s), and a fix for a real code-execution vulnerability in the agent system's `calculate` tool |
-| **2.1.0** | 28 | Agent system, unified schema |
+| **2.1.0** | 28 | ✅ Agent system + unified schema — `schema` keyword (object type, AI parser, DB table), `agent "Name":` declarations, task-as-tool, schema-typed tool input, call-site spread `f(...args)`, `parser.nk` parity and a repo-wide parser drift guard, plus a language-wide QA sweep (`try`/`catch` error text, `shape` keyword args, agent `model:` leakage) |
 | **2.2.0** | 29 | Sandbox commercial API, `nekova teach`, deployment targets, WebSocket + middleware support in the web router |
 | **2.3.0** | 30 | Safety & performance hardening — resource-limited sandbox quotas (CPU/memory, not just time), bytecode caching, public test-coverage dashboard |
 | **3.0.0** | 31 | Full self-hosting — interpreter in NEKOVA |
@@ -543,7 +543,7 @@ than the lexer.
 v2.0.0 commits to backward compatibility from here per the versioning
 policy above.
 
-### Phase 28 · Agent System + Unified Schema — v2.1.0 📋
+### Phase 28 · Agent System + Unified Schema ✅ — v2.1.0
 
 ```nekova
 let researcher = agent "Research Assistant":
@@ -555,6 +555,15 @@ schema Person:
     age:  number
 # Works as AI parser, DB table, and object type simultaneously
 ```
+
+Shipped as designed, in four steps: (1) the `schema` keyword — a soft
+keyword parallel to `shape`, not merged into it; (2) `agent "Name":`
+declarations compiling to the existing `agent_create`/`agent_tool` calls;
+(3) task-as-tool resolution for `tools:` entries; (4) schema-typed tool
+input, the real fix for the design gap behind the 2.0.0 `calculate()`
+vulnerability. Alongside it: call-site spread `f(...args)` (removing the
+decorator arity limitation), `parser.nk` parity for everything above, and
+a repo-wide drift guard so the two parsers can't silently diverge again.
 
 ### Phase 29 · Sandbox API + Ecosystem — v2.2.0 📋
 
@@ -587,8 +596,8 @@ once anyone can see which phases and features it actually covers.
 | Metric | Value |
 |--------|-------|
 | Test phases | 33 |
-| Tests passing | 1,712 / 1,713 (1 skipped — no fuzz regressions saved yet) |
-| Version | 2.0.0 |
+| Tests passing | 1,782 / 1,783 (1 skipped — no fuzz regressions saved yet) |
+| Version | 2.1.0 |
 | PyPI package | `nekova-lang` |
 | VS Code extension | ✅ Published |
 | Documentation site | ✅ Live — kinghenesey.github.io/NEKOVA |
