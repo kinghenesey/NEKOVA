@@ -3,6 +3,90 @@
 All notable changes to NEKOVA are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.1.0] — Agent System + Unified Schema
+
+Phase 28. Per the versioning policy, this is a minor release: two new
+soft keywords and a new call syntax, fully backward compatible with
+2.0.x. It also rolls up every fix from a full language-wide QA sweep
+(fuzzer, manual feature sweep, self-hosted-vs-Python parser cross-check,
+dead-code scan) done after Phase 28 shipped.
+
+### Added
+
+- **`schema` keyword** — one declaration, three uses. As an *object
+  type*: `Person(name="Alice", age=30)`. As an *AI parser*: `think "..."
+  as Person` validates and coerces the model's response against it, via
+  the same lookup/coercion/re-prompt path `think ... as <ShapeName>`
+  already used. As a *DB table*: `db_create_from_schema(Person,
+  "people")`. Deliberately a separate keyword and registry from `shape`,
+  not a merge: it uses the `text`/`number`/`boolean`/`list`/`dict`/`any`
+  vocabulary that `think ... as schema {...}` already validates against,
+  not shape's `str`/`int`/`float`/`bool` names. `schema` is a soft
+  keyword — still a valid variable or parameter name everywhere a
+  definition isn't expected.
+- **`agent "Name":` declaration** — `goal:`, `tools:`, and `model:`
+  fields, usable bare or captured with `let researcher = agent "...":`.
+  Compiles to the exact same `agent_create()`/`agent_tool()` calls the
+  function-call API already used, so the two styles interoperate in both
+  directions. Requires `use agents`. `agent` is a soft keyword too.
+- **Task-as-tool resolution** — `tools: [my_custom_task]` resolves
+  against a real NEKOVA `task` in scope, not just the built-in tools. A
+  task match wins over a built-in of the same name. Scoped to the
+  declaration syntax only: the older `agent_tool(...)` function has no
+  access to the interpreter's environment to look a task up by name.
+- **Schema-typed tool input** — `tools: [calculate(CalcInput)]` hands
+  the tool only the fields that schema declares, extracted through the
+  same `_coerce_schema` machinery `think ... as Person` uses, instead of
+  the agent's entire raw plan text. This closes the design gap behind
+  the `calculate()` `eval()` vulnerability fixed in 2.0.0: that tool
+  could only ever be handed unstructured text.
+- **Call-site spread** — `f(...args)` spreads a list or tuple into
+  separate positional arguments, completing the `...` family alongside
+  `*rest` in declarations and `[...a, ...b]` in list literals. This
+  removes the decorator arity limitation: a wrapper task that collects
+  `*args` can now forward them, so one decorator wraps functions of any
+  arity. Works identically in the Python parser and `parser.nk`.
+- **`parser.nk` parity for Phase 28** — `schema`, `agent`, and the
+  `let x = agent "...":` capture form, plus call-site spread, added to
+  the self-hosted parser.
+- **Parser drift guard** — `tests/test_self_hosted_phase28_parity.py`
+  walks every `.nk` file in the repo and asserts the Python parser and
+  `parser.nk` agree on all of them. Verified to catch real drift by
+  temporarily breaking `parser.nk` and confirming the tests went red.
+
+### Fixed
+
+- **`try`/`catch` dropped the error description** for any multi-line
+  NEKOVA error. About half of all `NEKOVARuntimeError` sites use a
+  "description.\n  hint" convention, and the handler kept the last line
+  (the hint) instead of the first (the description) — a caught
+  divide-by-zero read as just "Check your divisor value."
+- **`parser.nk` had no support for `schema`/`agent`** — both were
+  written after it. Programs using them parsed correctly under the
+  Python parser but failed under `--self-hosted`.
+- **`shape` keyword-argument construction** was completely broken — only
+  positional arguments worked, so `User(name="Alice", age=30)` raised
+  "unexpected keyword argument".
+- **AI-parser results always tagged `__shape__`** regardless of whether
+  the matching registry was shapes or schemas.
+- **Agent `model:` leaked between agents.** The agent runner's provider
+  is a module-level singleton reused across every `agent_run()` call, so
+  one agent's `model:` carried into the next agent's run without an
+  explicit reset.
+- **Built-in agent tools ignored `agent.model`.** `tools:` was always
+  processed before `model:` regardless of source order, so each tool
+  captured its provider before the model was set. The provider is now
+  resolved fresh on every tool call.
+
+### Tests
+
+1,712 → 1,782 passing (1 skipped — no fuzz regressions saved yet). New
+files: `test_phase28_schema.py`, `test_phase28_agent.py`,
+`test_call_spread.py`, `test_bugfixes8.py`,
+`test_self_hosted_phase28_parity.py`. The fuzzer ran 150,000 iterations
+across five seeded batches during the sweep with zero crashes, timeouts,
+or regressions.
+
 ## [2.0.0] — NEKOVA Parser in NEKOVA
 
 Self-hosting milestone 2. Per the versioning policy below, this is a
