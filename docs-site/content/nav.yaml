@@ -35,6 +35,10 @@
   items:
     - title: think
       file: ai-native/think.md
+    - title: schema
+      file: ai-native/schema.md
+    - title: Agents
+      file: ai-native/agents.md
     - title: remember & recall
       file: ai-native/remember-recall.md
     - title: Prompt Blocks
