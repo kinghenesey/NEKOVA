@@ -49,6 +49,19 @@ dead-code scan) done after Phase 28 shipped.
 - **`parser.nk` parity for Phase 28** — `schema`, `agent`, and the
   `let x = agent "...":` capture form, plus call-site spread, added to
   the self-hosted parser.
+- **Editor and CLI awareness of `schema`/`agent`.** LSP hover shows docs
+  when you hover the `schema` in `schema Person:` or the `agent` in
+  `agent "Bot":` (including `let r = agent "Bot":`), using the same
+  lookahead the parser uses — so hovering a *variable* that happens to
+  be named `schema` correctly shows nothing. `nekova help schema`,
+  `nekova help agent`, and `nekova help spread` (alias for `...`) now
+  exist, and `shape`'s entry points at `schema`. VS Code gains `schema`
+  and `agentdecl` snippets.
+- **Docs-site pages** for `schema` and Agents, plus a "Spreading
+  arguments into a call" section in Functions & Tasks. Every example on
+  them is executed by `tests/test_docs_new_pages.py` under both parsers,
+  turning the docs site's "verify every example" rule from a manual
+  discipline into a failing build.
 - **Parser drift guard** — `tests/test_self_hosted_phase28_parity.py`
   walks every `.nk` file in the repo and asserts the Python parser and
   `parser.nk` agree on all of them. Verified to catch real drift by
@@ -56,6 +69,13 @@ dead-code scan) done after Phase 28 shipped.
 
 ### Fixed
 
+- **VS Code highlighting of `schema` and `agent`.** The TextMate grammar
+  listed `schema` in its plain keyword regex, so the word was coloured as
+  a keyword *everywhere* — `let schema = 1`, `show schema`, `task f(schema)`
+  — while `agent` was never highlighted at all. Both are now recognized
+  contextually (only when a definition follows), mirroring the parser's
+  own soft-keyword lookahead, and verified against the real
+  `vscode-textmate` engine.
 - **`try`/`catch` dropped the error description** for any multi-line
   NEKOVA error. About half of all `NEKOVARuntimeError` sites use a
   "description.\n  hint" convention, and the handler kept the last line
@@ -80,10 +100,12 @@ dead-code scan) done after Phase 28 shipped.
 
 ### Tests
 
-1,712 → 1,782 passing (1 skipped — no fuzz regressions saved yet). New
+1,712 → 1,818 passing (1 skipped — no fuzz regressions saved yet). New
 files: `test_phase28_schema.py`, `test_phase28_agent.py`,
 `test_call_spread.py`, `test_bugfixes8.py`,
-`test_self_hosted_phase28_parity.py`. The fuzzer ran 150,000 iterations
+`test_self_hosted_phase28_parity.py`, `test_phase28_tooling.py` (hover,
+glossary, TextMate grammar, snippets), and `test_docs_new_pages.py`
+(executes every example on the new docs pages). The fuzzer ran 150,000 iterations
 across five seeded batches during the sweep with zero crashes, timeouts,
 or regressions.
 
