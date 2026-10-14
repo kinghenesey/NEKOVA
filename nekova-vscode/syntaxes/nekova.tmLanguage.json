@@ -395,6 +395,11 @@
     "numbers": {
       "patterns": [
         {
+          "name": "constant.numeric.money.nekova",
+          "comment": "Dollar-amount literal (Phase 26c think budgets): $5, $0.01, $12.50. Mirrors Lexer._read_money exactly: a `$` immediately followed by digits, with an optional fractional part. No underscores, hex, or exponent.",
+          "match": "\\$\\d+(?:\\.\\d+)?"
+        },
+        {
           "name": "constant.numeric.hex.nekova",
           "match": "\\b0[xX][0-9a-fA-F_]+\\b"
         },
