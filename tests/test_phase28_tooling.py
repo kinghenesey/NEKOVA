@@ -407,6 +407,30 @@ class TestShippedJsonHasNoBom(unittest.TestCase):
                         "patches with `git apply`, not PowerShell redirection")
         self.assertGreaterEqual(checked, 4)
 
+    def test_packaging_is_guarded_by_a_prepublish_check(self):
+        """`vsce package` / `vsce publish` run the `vscode:prepublish`
+        script first, so wiring the BOM check there makes a BOM'd JSON
+        file impossible to publish — independent of anyone remembering
+        to run this test suite. (Verified end-to-end with the real vsce:
+        with a BOM the build aborts; clean, it packages.)"""
+        ext = os.path.join(REPO_ROOT, "nekova-vscode")
+        with open(os.path.join(ext, "package.json"), encoding="utf-8-sig") as f:
+            scripts = json.load(f).get("scripts", {})
+        self.assertIn("vscode:prepublish", scripts)
+        self.assertIn("check-json-bom", scripts["vscode:prepublish"])
+        script = os.path.join(ext, "scripts", "check-json-bom.js")
+        self.assertTrue(os.path.isfile(script), "prepublish script is missing")
+        with open(script, encoding="utf-8") as f:
+            body = f.read()
+        self.assertIn("0xef", body)           # actually inspects the BOM bytes
+        self.assertIn("process.exit(1)", body)  # and actually fails the build
+
+    def test_dev_script_is_kept_out_of_the_vsix(self):
+        path = os.path.join(REPO_ROOT, "nekova-vscode", ".vscodeignore")
+        with open(path, encoding="utf-8-sig") as f:
+            lines = [l.strip() for l in f]
+        self.assertIn("scripts/", lines)
+
 
 if __name__ == "__main__":
     unittest.main()
