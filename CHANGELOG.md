@@ -56,7 +56,11 @@ dead-code scan) done after Phase 28 shipped.
   be named `schema` correctly shows nothing. `nekova help schema`,
   `nekova help agent`, and `nekova help spread` (alias for `...`) now
   exist, and `shape`'s entry points at `schema`. VS Code gains `schema`
-  and `agentdecl` snippets.
+  and `agentdecl` snippets. Hover also works on the *names*: hover
+  `Person` (at its definition or any use — `Person(...)`, `think ... as
+  Person`) for its fields and defaults, or the quoted name in `agent
+  "Research Assistant":` for its goal, tools, and model; `shape`
+  definitions get the same hover.
 - **Docs-site pages** for `schema` and Agents, plus a "Spreading
   arguments into a call" section in Functions & Tasks. Every example on
   them is executed by `tests/test_docs_new_pages.py` under both parsers,
@@ -76,6 +80,15 @@ dead-code scan) done after Phase 28 shipped.
   contextually (only when a definition follows), mirroring the parser's
   own soft-keyword lookahead, and verified against the real
   `vscode-textmate` engine.
+- **`$0.01` money literals weren't highlighted as one token.** The lexer
+  has produced a single MONEY token since Phase 26c, but the grammar
+  rendered the `$` as plain text and the digits as a separately
+  coloured float or integer. A new `constant.numeric.money` rule mirrors
+  `Lexer._read_money` exactly.
+- **Hover missed the first two columns of a string.** Token hit-testing
+  assumed a token's width was `len(value)`, but a string token's value
+  excludes its quotes, so the opening quote and first character were
+  skipped.
 - **`try`/`catch` dropped the error description** for any multi-line
   NEKOVA error. About half of all `NEKOVARuntimeError` sites use a
   "description.\n  hint" convention, and the handler kept the last line
@@ -100,7 +113,7 @@ dead-code scan) done after Phase 28 shipped.
 
 ### Tests
 
-1,712 → 1,818 passing (1 skipped — no fuzz regressions saved yet). New
+1,712 → 1,836 passing (1 skipped — no fuzz regressions saved yet). New
 files: `test_phase28_schema.py`, `test_phase28_agent.py`,
 `test_call_spread.py`, `test_bugfixes8.py`,
 `test_self_hosted_phase28_parity.py`, `test_phase28_tooling.py` (hover,
