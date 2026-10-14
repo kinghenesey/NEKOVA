@@ -20,6 +20,9 @@ from nekova.parser.parser import Parser
 from nekova.parser.nodes import (
     TaskStatement, TypedTaskStatement, ClassDefinition,
     MethodDefinition, PromptStatement,
+    SchemaDefinition, ShapeDefinition, AgentDefinition,
+    StringLiteral, Identifier, CallExpression, ListLiteral,
+    BooleanLiteral,
 )
 
 # ── Keyword docs ──────────────────────────────────────────────
@@ -187,6 +190,13 @@ def _find_position_in_tokens(tokens, target_line, target_char):
         if tok.line != target_line:
             continue
         width = max(1, len(str(tok.value)))
+        if tok.type == TokenType.STRING:
+            # A STRING token's value excludes its surrounding quotes,
+            # but its column (like every token's) points just past the
+            # closing quote — so the on-screen span is two wider than
+            # len(value). Without this, hovering the opening quote or
+            # first character of a string found nothing.
+            width += 2
         lsp_start = tok.column - width - 1
         lsp_end = tok.column - 1
         if lsp_start <= target_char < lsp_end:
@@ -197,7 +207,8 @@ def _find_position_in_tokens(tokens, target_line, target_char):
 def _iter_bodies(statements):
     """
     Yield every TaskStatement/TypedTaskStatement/ClassDefinition/
-    MethodDefinition/PromptStatement reachable from `statements`,
+    MethodDefinition/PromptStatement/SchemaDefinition/ShapeDefinition/
+    AgentDefinition reachable from `statements`,
     recursing into nested task bodies, class methods, and init
     blocks — so hovering over a nested task (a closure, e.g. the
     counter-factory pattern) still finds its definition, not just
@@ -220,6 +231,9 @@ def _iter_bodies(statements):
             yield stmt
             if stmt.body:
                 yield from _iter_bodies(stmt.body)
+        elif isinstance(stmt, (SchemaDefinition, ShapeDefinition,
+                               AgentDefinition)):
+            yield stmt
 
 
 def _format_params(params) -> str:
@@ -243,11 +257,108 @@ def _format_params(params) -> str:
     return ", ".join(parts)
 
 
+def _brief_expr(expr) -> str:
+    """One-line rendering of a simple expression for hover text —
+    the literals, names, and `tool(Schema)` calls that appear in field
+    defaults and agent `tools:` lists. Anything more complex is
+    elided rather than half-rendered."""
+    if isinstance(expr, StringLiteral):
+        return f'"{expr.value}"'
+    if isinstance(expr, BooleanLiteral):
+        return "true" if expr.value else "false"
+    if isinstance(expr, Identifier):
+        return expr.name
+    if isinstance(expr, CallExpression):
+        return f"{expr.name}({', '.join(_brief_expr(a) for a in expr.args)})"
+    if isinstance(expr, ListLiteral):
+        return "[" + ", ".join(_brief_expr(e) for e in expr.elements) + "]"
+    value = getattr(expr, "value", None)
+    if isinstance(value, (int, float)):
+        return str(value)
+    return "…"
+
+
+def _hover_for_record_type(node) -> str:
+    """Hover for a `schema` (or `shape`) definition: its real field
+    list, defaults included, straight from the parsed source."""
+    kind = "schema" if isinstance(node, SchemaDefinition) else "shape"
+    sep = ":" if kind == "schema" else ""
+    rows = []
+    for fname, ftype, default in node.fields:
+        row = f"    {fname}{sep} {ftype}"
+        if default is not None:
+            row += f" = {_brief_expr(default)}"
+        rows.append(row)
+    block = f"{kind} {node.name}\n" + "\n".join(rows)
+    lines = [f"```\n{block}\n```"]
+    if kind == "schema":
+        lines.append(
+            f"Object type `{node.name}(...)` · AI parser "
+            f"`think \"...\" as {node.name}` · database table "
+            f"`db_create_from_schema({node.name}, \"table\")`")
+    else:
+        lines.append(
+            f"Object type `{node.name}(...)` · AI parser "
+            f"`think \"...\" as {node.name}`")
+    return "\n\n".join(lines)
+
+
+def _hover_for_agent(node) -> str:
+    """Hover for an `agent "Name":` declaration, from its parsed
+    goal / tools / model fields."""
+    name = (node.name_expr.value
+            if isinstance(node.name_expr, StringLiteral) else "…")
+    rows = []
+    fields = node.fields or {}
+    if "goal" in fields:
+        rows.append(f"    goal:  {_brief_expr(fields['goal'])}")
+    if "tools" in fields:
+        tools = fields["tools"]
+        shown = (", ".join(_brief_expr(e) for e in tools.elements)
+                 if isinstance(tools, ListLiteral) else _brief_expr(tools))
+        rows.append(f"    tools: {shown}")
+    if "model" in fields:
+        rows.append(f"    model: {_brief_expr(fields['model'])}")
+    block = f'agent "{name}"' + ("\n" + "\n".join(rows) if rows else "")
+    lines = [f"```\n{block}\n```"]
+    if node.variable:
+        lines.append(f"Captured as `{node.variable}` · run with "
+                     f"`agent_run({node.variable}, \"a task\")`")
+    else:
+        lines.append(f"Run with `agent_run(\"{name}\", \"a task\")`")
+    return "\n\n".join(lines)
+
+
+def _hover_for_agent_name(tokens, token):
+    """If `token` is the quoted name in an `agent "Name":` declaration,
+    return that agent's hover text; otherwise None. The preceding
+    `agent` must itself be a real declaration (same lookahead the
+    parser uses), so a string that merely follows a variable named
+    `agent` is left alone."""
+    idx = next((i for i, t in enumerate(tokens) if t is token), None)
+    if not idx:
+        return None
+    prev = tokens[idx - 1]
+    if not (prev.type == TokenType.IDENTIFIER and prev.value == "agent"
+            and _is_soft_keyword_definition(tokens, prev)):
+        return None
+    program = Parser(list(tokens)).parse_best_effort()
+    for defn in _iter_bodies(program.statements):
+        if (isinstance(defn, AgentDefinition)
+                and isinstance(defn.name_expr, StringLiteral)
+                and defn.name_expr.value == token.value):
+            return _hover_for_agent(defn)
+    return None
+
+
 def _hover_for_definition(node) -> str:
     """Build a markdown hover string for a user-defined task, prompt,
     class, or method — using its real signature and docstring
     straight from the parsed source, not a separately maintained
     description that could go stale."""
+    if isinstance(node, (SchemaDefinition, ShapeDefinition)):
+        return _hover_for_record_type(node)
+
     if isinstance(node, ClassDefinition):
         header = f"class {node.name}"
         if node.parent:
@@ -342,7 +453,7 @@ def compute_hover(source: str, line: int, character: int):
     if token.type == TokenType.IDENTIFIER:
         program = Parser(list(tokens)).parse_best_effort()
         for defn in _iter_bodies(program.statements):
-            if defn.name == name:
+            if getattr(defn, "name", None) == name:
                 contents = _hover_for_definition(defn)
                 break
 
@@ -352,6 +463,10 @@ def compute_hover(source: str, line: int, character: int):
             and name in SOFT_KEYWORD_DOCS
             and _is_soft_keyword_definition(tokens, token)):
         contents = SOFT_KEYWORD_DOCS[name]
+
+    # 1c. The quoted name in an `agent "Name":` declaration.
+    if contents is None and token.type == TokenType.STRING:
+        contents = _hover_for_agent_name(tokens, token)
 
     # 2. Keywords — only for tokens that are actually that keyword
     #    (checked against the real KEYWORDS mapping), not just any
