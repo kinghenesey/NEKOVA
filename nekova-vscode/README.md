@@ -1,4 +1,4 @@
-﻿# NEKOVA VS Code Extension — v2.1.0
+# NEKOVA VS Code Extension — v2.1.0
 
 Syntax highlighting, two branded color themes, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
@@ -243,6 +243,13 @@ match status:
 - Fixed hover hit-testing for string tokens, which was two columns
   short: the opening quote and first character of a string weren't
   hoverable
+- Packaging is now guarded against a UTF-8 BOM in any extension JSON
+  file. A BOM makes JSON invalid — it would silently disable *all*
+  syntax highlighting — and Windows tools add one on save. `vsce package`
+  and `vsce publish` now run `scripts/check-json-bom.js` first and abort
+  if they find one; `node scripts/check-json-bom.js --fix` repairs it.
+  Verified with the real `vsce`: blocked with a BOM, packages cleanly
+  without
 - Welcome message and status bar now report `v2.1.0`
 
 ### 2.0.0

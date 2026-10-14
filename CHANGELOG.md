@@ -89,6 +89,19 @@ dead-code scan) done after Phase 28 shipped.
   assumed a token's width was `len(value)`, but a string token's value
   excludes its quotes, so the opening quote and first character were
   skipped.
+- **A BOM could ship in the VS Code extension's JSON.** A UTF-8 BOM makes
+  a JSON file invalid; on `syntaxes/nekova.tmLanguage.json` it silently
+  disables all syntax highlighting. It reached the repository twice
+  (Windows tooling adds one on save) and was caught only by a test.
+  `vsce package`/`publish` now run a `vscode:prepublish` check
+  (`nekova-vscode/scripts/check-json-bom.js`) that aborts the build if any
+  extension JSON file has one; `--fix` strips it. Verified with the real
+  `vsce`.
+- **`test_env_all_excludes_home` skipped on Windows**, where `HOME` is
+  normally unset, so the "non-secret environment variables are not
+  redacted" behaviour was untested on the maintainer's own platform. It
+  now checks `USERPROFILE` when `HOME` is absent, so the suite reports the
+  same single skip on every platform.
 - **`try`/`catch` dropped the error description** for any multi-line
   NEKOVA error. About half of all `NEKOVARuntimeError` sites use a
   "description.\n  hint" convention, and the handler kept the last line
@@ -113,7 +126,7 @@ dead-code scan) done after Phase 28 shipped.
 
 ### Tests
 
-1,712 → 1,836 passing (1 skipped — no fuzz regressions saved yet). New
+1,712 → 1,838 passing (1 skipped — no fuzz regressions saved yet). New
 files: `test_phase28_schema.py`, `test_phase28_agent.py`,
 `test_call_spread.py`, `test_bugfixes8.py`,
 `test_self_hosted_phase28_parity.py`, `test_phase28_tooling.py` (hover,

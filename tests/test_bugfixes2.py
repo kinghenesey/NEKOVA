@@ -339,13 +339,17 @@ class TestEnvAllFiltering(unittest.TestCase):
 
     def test_env_all_excludes_home(self):
         import os
-        if "HOME" not in os.environ:
-            self.skipTest("HOME not set in this environment")
+        # HOME on POSIX; Windows normally has USERPROFILE instead, which
+        # used to make this test skip there and left the behaviour
+        # untested on the maintainer's own platform.
+        key = next((k for k in ("HOME", "USERPROFILE") if k in os.environ), None)
+        if key is None:
+            self.skipTest("neither HOME nor USERPROFILE is set in this environment")
         from nekova.stdlib.env_module import _all
         result = _all()
-        # HOME is not a secret — should be present, not redacted
-        self.assertIn("HOME", result)
-        self.assertNotEqual(result.get("HOME"), "[REDACTED]")
+        # A home-directory path is not a secret — present, not redacted
+        self.assertIn(key, result)
+        self.assertNotEqual(result.get(key), "[REDACTED]")
 
 
 # ── Bug 38: bare imports ──────────────────────────────────────
