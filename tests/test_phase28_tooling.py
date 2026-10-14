@@ -156,7 +156,7 @@ class TestTextMateGrammar(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        with open(GRAMMAR_PATH, encoding="utf-8") as f:
+        with open(GRAMMAR_PATH, encoding="utf-8-sig") as f:
             cls.grammar = json.load(f)
         cls.repo = cls.grammar["repository"]
 
@@ -215,7 +215,7 @@ class TestTextMateGrammar(unittest.TestCase):
 class TestSnippets(unittest.TestCase):
     def test_new_snippets_exist_and_are_valid(self):
         path = os.path.join(REPO_ROOT, "nekova-vscode", "snippets", "nekova.json")
-        with open(path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8-sig") as f:
             snippets = json.load(f)
         prefixes = set()
         for s in snippets.values():
@@ -230,7 +230,7 @@ class TestSnippets(unittest.TestCase):
         from nekova.lexer.lexer import Lexer
         from nekova.parser.parser import Parser
         path = os.path.join(REPO_ROOT, "nekova-vscode", "snippets", "nekova.json")
-        with open(path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8-sig") as f:
             snippets = json.load(f)
         for snippet in snippets.values():
             pre = snippet["prefix"]
@@ -242,6 +242,170 @@ class TestSnippets(unittest.TestCase):
             expanded = re.sub(r"\$\{\d+:([^}]*)\}", r"\1", body)
             with self.subTest(prefix=pre):
                 Parser(Lexer(expanded).tokenize()).parse()
+
+
+class TestHoverOnDefinitionNames(unittest.TestCase):
+    """Hovering the *name* in a definition (and its uses), not just the
+    keyword: `Person` in `schema Person:` and the quoted name in
+    `agent "Research Assistant":`."""
+
+    SCHEMA_SRC = (
+        "schema Person:\n"
+        "    name: text\n"
+        "    age:  number\n"
+        '    note: text = "none"\n'
+        "    ok:   boolean = true\n"
+        "\n"
+        'let p = Person(name="A", age=1)\n'
+        'let r = think "x" as Person\n'
+    )
+
+    def test_schema_name_at_definition_lists_fields(self):
+        doc = _hover(self.SCHEMA_SRC, 0, 9)
+        self.assertIn("schema Person", doc)
+        self.assertIn("name: text", doc)
+        self.assertIn("age: number", doc)
+
+    def test_defaults_are_shown(self):
+        doc = _hover(self.SCHEMA_SRC, 0, 9)
+        self.assertIn('note: text = "none"', doc)
+        self.assertIn("ok: boolean = true", doc)
+
+    def test_schema_name_at_use_sites(self):
+        for line, needle in ((6, "Person("), (7, "as Person")):
+            col = (self.SCHEMA_SRC.split("\n")[line].index(needle)
+                   + needle.index("Person") + 2)
+            with self.subTest(line=line):
+                doc = _hover(self.SCHEMA_SRC, line, col)
+                self.assertIsNotNone(doc)
+                self.assertIn("schema Person", doc)
+
+    def test_schema_hover_mentions_all_three_uses(self):
+        doc = _hover(self.SCHEMA_SRC, 0, 9)
+        self.assertIn("db_create_from_schema", doc)
+        self.assertIn("think", doc)
+
+    def test_shape_gets_the_same_treatment(self):
+        doc = _hover("shape User:\n    name str\n    age  int\n", 0, 7)
+        self.assertIn("shape User", doc)
+        self.assertIn("name str", doc)
+
+    AGENT_SRC = (
+        "use agents\n"
+        'let helper = agent "Research Assistant":\n'
+        '    goal:  "Summarize"\n'
+        "    tools: [summarize, calculate(CalcInput)]\n"
+        '    model: "mock"\n'
+        'agent "Bare":\n'
+        '    goal: "x"\n'
+    )
+
+    def test_agent_name_shows_goal_tools_model(self):
+        doc = _hover(self.AGENT_SRC, 1, 20)
+        self.assertIn('agent "Research Assistant"', doc)
+        self.assertIn('goal:  "Summarize"', doc)
+        self.assertIn("tools: summarize, calculate(CalcInput)", doc)
+        self.assertIn('model: "mock"', doc)
+
+    def test_agent_name_hover_covers_exactly_the_string(self):
+        # `let helper = agent "Research Assistant":` — the string runs
+        # from the opening quote (col 19) to the closing quote (col 38).
+        line = self.AGENT_SRC.split("\n")[1]
+        start, end = line.index('"'), line.rindex('"')
+        self.assertIsNone(_hover(self.AGENT_SRC, 1, start - 1))   # the space before
+        for col in (start, start + 1, end - 1, end):
+            with self.subTest(col=col):
+                self.assertIn('agent "Research Assistant"',
+                              _hover(self.AGENT_SRC, 1, col))
+        self.assertIsNone(_hover(self.AGENT_SRC, 1, end + 1))     # the colon
+
+    def test_captured_agent_mentions_its_variable(self):
+        doc = _hover(self.AGENT_SRC, 1, 20)
+        self.assertIn("Captured as `helper`", doc)
+
+    def test_bare_agent_hover(self):
+        doc = _hover(self.AGENT_SRC, 5, 8)
+        self.assertIn('agent "Bare"', doc)
+        self.assertIn('agent_run("Bare"', doc)
+
+    def test_string_after_a_variable_named_agent_shows_nothing(self):
+        src = 'let agent = "plain"\nshow agent "x"\n'
+        self.assertIsNone(_hover(src, 1, 12))
+
+    def test_ordinary_strings_are_unaffected(self):
+        self.assertIsNone(_hover('show "hello"\n', 0, 7))
+
+    def test_hover_survives_a_syntax_error_elsewhere(self):
+        # parse_best_effort: a definition must still be found while the
+        # rest of the file is mid-edit.
+        src = self.SCHEMA_SRC + "let broken = (\n"
+        self.assertIn("schema Person", _hover(src, 0, 9))
+
+    def test_existing_task_hover_still_works(self):
+        doc = _hover("task add(a, b):\n    return a + b\nshow add(1, 2)\n", 0, 6)
+        self.assertIn("add", doc)
+
+
+class TestMoneyLiteralHighlighting(unittest.TestCase):
+    """`$0.01` (Phase 26c budgets) was lexed as one MONEY token but
+    highlighted as a plain `$` followed by a separately-coloured
+    number. One rule now covers the whole literal."""
+
+    @classmethod
+    def setUpClass(cls):
+        with open(GRAMMAR_PATH, encoding="utf-8-sig") as f:
+            grammar = json.load(f)
+        rules = grammar["repository"]["numbers"]["patterns"]
+        cls.rule = rules[0]
+        cls.rx = re.compile(cls.rule["match"])
+
+    def test_money_rule_is_first_so_it_beats_the_digit_rules(self):
+        self.assertEqual(self.rule["name"], "constant.numeric.money.nekova")
+
+    def test_matches_what_the_lexer_calls_money(self):
+        from nekova.lexer.lexer import Lexer
+        from nekova.lexer.token_types import TokenType
+        for lit in ("$5", "$0.01", "$12.50", "$100"):
+            with self.subTest(lit=lit):
+                self.assertIsNotNone(self.rx.fullmatch(lit))
+                toks = [t for t in Lexer(f"let x = {lit}").tokenize()
+                        if t.type == TokenType.MONEY]
+                self.assertEqual(len(toks), 1)
+
+    def test_agrees_with_the_lexer_on_trailing_dot(self):
+        # `$5.` — the lexer takes `$5` as money and `.` separately.
+        self.assertEqual(self.rx.search("$5.").group(0), "$5")
+
+    def test_does_not_match_a_bare_dollar_or_other_numbers(self):
+        for s in ("$", "$abc", "5", "3.14", "0x1F"):
+            with self.subTest(s=s):
+                self.assertIsNone(self.rx.search(s))
+
+
+class TestShippedJsonHasNoBom(unittest.TestCase):
+    """A UTF-8 BOM in a JSON file is invalid JSON: JSON.parse and the
+    TextMate engine both reject it, which would break highlighting (or
+    `npm`/`vsce`, for the manifests) in the published extension. Windows
+    PowerShell's file writers add one by default; this was caught after
+    a patch was applied that way, before 2.1.0 shipped."""
+
+    def test_extension_json_files_are_bom_free(self):
+        ext = os.path.join(REPO_ROOT, "nekova-vscode")
+        checked = 0
+        for dirpath, dirnames, filenames in os.walk(ext):
+            dirnames[:] = [d for d in dirnames if d != "node_modules"]
+            for fname in filenames:
+                if fname.endswith(".json"):
+                    path = os.path.join(dirpath, fname)
+                    with open(path, "rb") as f:
+                        head = f.read(3)
+                    checked += 1
+                    self.assertNotEqual(
+                        head, b"\xef\xbb\xbf",
+                        f"{os.path.relpath(path, REPO_ROOT)} starts with a "
+                        "UTF-8 BOM; strip it (python strip_bom.py). Apply "
+                        "patches with `git apply`, not PowerShell redirection")
+        self.assertGreaterEqual(checked, 4)
 
 
 if __name__ == "__main__":
