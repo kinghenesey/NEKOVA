@@ -231,10 +231,18 @@ match status:
   `schema` was coloured as a keyword *everywhere* — even
   `let schema = 1` — and `agent` was never coloured. Plain variables
   with those names are now left alone
-- Hover docs for the same two definitions (the LSP only fires on a real
-  definition, never on a variable of the same name)
-- Still open, carried over from 2.0.0: the `$0.01` money-literal syntax
-  isn't specially highlighted
+- Hover docs for the keywords *and the names*: hover `Person` in
+  `schema Person:` — or at any later use, `Person(...)` or
+  `think ... as Person` — to see its fields and defaults; hover the
+  quoted name in `agent "Research Assistant":` to see its goal, tools,
+  and model. `shape` definitions get the same hover. The LSP only fires
+  on a real definition, never on a variable of the same name
+- `$0.01` money literals (think budgets) are now highlighted as one
+  token, scoped `constant.numeric.money`. Before, the `$` rendered as
+  plain text and the digits as a separately coloured number
+- Fixed hover hit-testing for string tokens, which was two columns
+  short: the opening quote and first character of a string weren't
+  hoverable
 - Welcome message and status bar now report `v2.1.0`
 
 ### 2.0.0
