@@ -432,5 +432,60 @@ class TestShippedJsonHasNoBom(unittest.TestCase):
         self.assertIn("scripts/", lines)
 
 
+
+class TestVsixShipsRuntimeDependencies(unittest.TestCase):
+    """`extension.js` require()s `vscode-languageclient` at load time.
+    `.vscodeignore` used to exclude all of node_modules, so the packaged
+    VSIX shipped without it and the extension threw "Cannot find module"
+    on load for every installed user — disabling the language server,
+    hover, diagnostics and all commands, while highlighting and snippets
+    (declarative) kept working, so it looked fine on a quick check.
+    F5 development can never reveal it (node_modules is always present
+    there); only installing the packaged VSIX does. Verified with the
+    real vsce before and after the fix."""
+
+    EXT = os.path.join(REPO_ROOT, "nekova-vscode")
+    BUILTINS = {"fs", "path", "os", "child_process", "util", "events",
+                "http", "https", "url", "crypto", "stream", "assert", "vscode"}
+
+    def _manifest(self):
+        with open(os.path.join(self.EXT, "package.json"), encoding="utf-8-sig") as f:
+            return json.load(f)
+
+    def test_vscodeignore_does_not_exclude_node_modules(self):
+        self.assertTrue(self._manifest().get("dependencies"),
+                        "this guard assumes the extension has runtime dependencies")
+        with open(os.path.join(self.EXT, ".vscodeignore"), encoding="utf-8-sig") as f:
+            rules = [l.strip() for l in f if l.strip() and not l.strip().startswith("#")]
+        excludes_all = [r for r in rules
+                        if re.fullmatch(r"(\*\*/)?node_modules(/(\*\*)?)?", r)]
+        reincludes = [r for r in rules if r.startswith("!") and "node_modules" in r]
+        self.assertFalse(excludes_all and not reincludes,
+                         f".vscodeignore {excludes_all} would drop runtime "
+                         "dependencies from the VSIX")
+
+    def test_every_non_builtin_require_is_a_declared_dependency(self):
+        with open(os.path.join(self.EXT, "extension.js"), encoding="utf-8-sig") as f:
+            source = f.read()
+        deps = set(self._manifest().get("dependencies", {}))
+        required = set()
+        for spec in re.findall(r"require\(\s*['\"]([^'\"]+)['\"]\s*\)", source):
+            if spec.startswith("."):
+                continue                                   # a relative file
+            parts = spec.split("/")
+            name = "/".join(parts[:2]) if spec.startswith("@") else parts[0]
+            if name not in self.BUILTINS:
+                required.add(name)
+        self.assertTrue(required, "expected extension.js to require something")
+        self.assertEqual(required - deps, set(),
+                         "extension.js require()s packages that are not declared "
+                         "in package.json `dependencies`, so they would not ship")
+
+    def test_prepublish_runs_the_runtime_dependency_check_too(self):
+        scripts = self._manifest().get("scripts", {})
+        self.assertIn("check-runtime-deps", scripts.get("vscode:prepublish", ""))
+        self.assertTrue(os.path.isfile(
+            os.path.join(self.EXT, "scripts", "check-runtime-deps.js")))
+
 if __name__ == "__main__":
     unittest.main()
