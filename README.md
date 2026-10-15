@@ -1,4 +1,4 @@
-﻿# NEKOVA Programming Language
+# NEKOVA Programming Language
 
 ### The AI-Native Programming Language by SYNEKCOT Tech
 
