@@ -1,5 +1,8 @@
-# Dependencies
-node_modules/
+# Dependencies: node_modules is deliberately NOT ignored. extension.js
+# require()s vscode-languageclient at load time, so it must ship inside
+# the VSIX. vsce packages production `dependencies` only, so dev tooling
+# (@vscode/vsce) stays out automatically. scripts/check-runtime-deps.js
+# enforces this at package time.
 npm-debug.log
 
 # Old NEKOVA files
