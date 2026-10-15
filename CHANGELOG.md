@@ -97,6 +97,21 @@ dead-code scan) done after Phase 28 shipped.
   (`nekova-vscode/scripts/check-json-bom.js`) that aborts the build if any
   extension JSON file has one; `--fix` strips it. Verified with the real
   `vsce`.
+- **The packaged VS Code extension would have crashed on load.**
+  `extension.js` `require()`s `vscode-languageclient` at load time, but
+  `.vscodeignore` excluded all of `node_modules/`, so a normal `vsce package`
+  shipped zero dependencies (30 files). Loaded the way VS Code loads it, the
+  extension threw `Cannot find module 'vscode-languageclient/node'`,
+  disabling the language server, hover, diagnostics, and every command.
+  Highlighting and snippets are declarative, so they kept working and
+  nothing looked wrong on a quick check; F5 development can't reveal it
+  either, since `node_modules` is always present there. `.vscodeignore` no
+  longer excludes `node_modules` (`vsce` already leaves out dev
+  dependencies), the VSIX now ships `vscode-languageclient` and its five
+  supporting packages (414 files), and a second `vscode:prepublish` check,
+  `scripts/check-runtime-deps.js`, aborts packaging if a runtime dependency
+  is missing or excluded. A test also fails if `extension.js` requires a
+  package that isn't a declared dependency.
 - **`test_env_all_excludes_home` skipped on Windows**, where `HOME` is
   normally unset, so the "non-secret environment variables are not
   redacted" behaviour was untested on the maintainer's own platform. It
@@ -126,7 +141,7 @@ dead-code scan) done after Phase 28 shipped.
 
 ### Tests
 
-1,712 → 1,838 passing (1 skipped — no fuzz regressions saved yet). New
+1,712 → 1,841 passing (1 skipped — no fuzz regressions saved yet). New
 files: `test_phase28_schema.py`, `test_phase28_agent.py`,
 `test_call_spread.py`, `test_bugfixes8.py`,
 `test_self_hosted_phase28_parity.py`, `test_phase28_tooling.py` (hover,
