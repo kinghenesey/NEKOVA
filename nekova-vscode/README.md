@@ -1,4 +1,4 @@
-# NEKOVA VS Code Extension — v2.1.0
+﻿# NEKOVA VS Code Extension — v2.1.0
 
 Syntax highlighting, two branded color themes, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
@@ -250,6 +250,12 @@ match status:
   if they find one; `node scripts/check-json-bom.js --fix` repairs it.
   Verified with the real `vsce`: blocked with a BOM, packages cleanly
   without
+- Fixed a packaging bug that would have crashed the extension on load for
+  every installed user: `.vscodeignore` excluded `node_modules/`, so the
+  language client library never shipped. The VSIX now includes it
+  (`vscode-languageclient` and its dependencies), and a second prepublish
+  check (`scripts/check-runtime-deps.js`) aborts packaging if a runtime
+  dependency is missing or excluded
 - Welcome message and status bar now report `v2.1.0`
 
 ### 2.0.0
