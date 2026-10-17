@@ -223,7 +223,7 @@
     "workspaceContains:nekova.toml"
   ],
   "scripts": {
-    "vscode:prepublish": "node scripts/check-json-bom.js && node scripts/check-runtime-deps.js",
+    "vscode:prepublish": "node scripts/check-json-bom.js && node scripts/check-runtime-deps.js && node scripts/check-icon.js",
     "package": "vsce package"
   },
   "devDependencies": {

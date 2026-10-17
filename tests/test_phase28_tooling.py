@@ -487,5 +487,52 @@ class TestVsixShipsRuntimeDependencies(unittest.TestCase):
         self.assertTrue(os.path.isfile(
             os.path.join(self.EXT, "scripts", "check-runtime-deps.js")))
 
+
+class TestMarketplaceIcon(unittest.TestCase):
+    """The Visual Studio Marketplace rejects an icon larger than
+    1024x1024 pixels ("The provided icon image exceeds the maximum allowed
+    dimensions"), and only says so at upload time — after a perfectly
+    successful local `vsce package`. The 2.1.0 upload was refused for a
+    1254x1254 icon. The PNG header is read directly, so no imaging library
+    is needed."""
+
+    EXT = os.path.join(REPO_ROOT, "nekova-vscode")
+    PNG_SIG = b"\x89PNG\r\n\x1a\n"
+
+    def _icon_path(self):
+        with open(os.path.join(self.EXT, "package.json"), encoding="utf-8-sig") as f:
+            icon = json.load(f).get("icon")
+        self.assertTrue(icon, "package.json declares no icon")
+        return os.path.join(self.EXT, icon)
+
+    def _dimensions(self):
+        import struct
+        with open(self._icon_path(), "rb") as f:
+            header = f.read(24)
+        self.assertEqual(header[:8], self.PNG_SIG, "icon must be a PNG")
+        return struct.unpack(">II", header[16:24])
+
+    def test_icon_is_within_marketplace_limits(self):
+        width, height = self._dimensions()
+        self.assertLessEqual(max(width, height), 1024,
+                             f"icon is {width}x{height}; the Marketplace maximum is 1024x1024")
+        self.assertGreaterEqual(min(width, height), 128,
+                                f"icon is {width}x{height}; below the 128x128 minimum")
+
+    def test_icon_is_square(self):
+        width, height = self._dimensions()
+        self.assertEqual(width, height)
+
+    def test_icon_is_not_needlessly_large_on_disk(self):
+        # A 1254px icon was 941 KB and bloated the VSIX; a 512px icon of
+        # this kind is a fraction of that.
+        self.assertLess(os.path.getsize(self._icon_path()), 500 * 1024)
+
+    def test_prepublish_checks_the_icon(self):
+        with open(os.path.join(self.EXT, "package.json"), encoding="utf-8-sig") as f:
+            scripts = json.load(f).get("scripts", {})
+        self.assertIn("check-icon", scripts.get("vscode:prepublish", ""))
+        self.assertTrue(os.path.isfile(os.path.join(self.EXT, "scripts", "check-icon.js")))
+
 if __name__ == "__main__":
     unittest.main()

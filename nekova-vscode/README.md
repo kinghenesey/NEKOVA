@@ -256,6 +256,11 @@ match status:
   (`vscode-languageclient` and its dependencies), and a second prepublish
   check (`scripts/check-runtime-deps.js`) aborts packaging if a runtime
   dependency is missing or excluded
+- Resized the extension icon from 1254x1254 to 512x512 pixels. The
+  Marketplace rejects icons over 1024x1024 (and only at upload time); the
+  new icon is visually identical and 745 KB smaller. A third prepublish
+  check (`scripts/check-icon.js`) now fails packaging if the icon is not a
+  square PNG between 128 and 1024 pixels
 - Welcome message and status bar now report `v2.1.0`
 
 ### 2.0.0

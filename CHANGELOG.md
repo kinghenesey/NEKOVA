@@ -112,6 +112,14 @@ dead-code scan) done after Phase 28 shipped.
   `scripts/check-runtime-deps.js`, aborts packaging if a runtime dependency
   is missing or excluded. A test also fails if `extension.js` requires a
   package that isn't a declared dependency.
+- **The Marketplace rejected the 2.1.0 upload: icon too large.**
+  `NekovaLogo.png` was 1254x1254 pixels; the Visual Studio Marketplace allows
+  at most 1024x1024 ("The provided icon image exceeds the maximum allowed
+  dimensions") and only says so at upload time, after a clean local
+  `vsce package`. The icon is now 512x512 — visually identical, and
+  941 KB down to 196 KB, so the VSIX is smaller too. A third
+  `vscode:prepublish` check, `scripts/check-icon.js`, now fails packaging
+  if the icon isn't a square PNG between 128 and 1024 pixels.
 - **`test_env_all_excludes_home` skipped on Windows**, where `HOME` is
   normally unset, so the "non-secret environment variables are not
   redacted" behaviour was untested on the maintainer's own platform. It
@@ -141,7 +149,7 @@ dead-code scan) done after Phase 28 shipped.
 
 ### Tests
 
-1,712 → 1,841 passing (1 skipped — no fuzz regressions saved yet). New
+1,712 → 1,845 passing (1 skipped — no fuzz regressions saved yet). New
 files: `test_phase28_schema.py`, `test_phase28_agent.py`,
 `test_call_spread.py`, `test_bugfixes8.py`,
 `test_self_hosted_phase28_parity.py`, `test_phase28_tooling.py` (hover,
