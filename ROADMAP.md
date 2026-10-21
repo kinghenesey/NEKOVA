@@ -1,8 +1,8 @@
 # NEKOVA Language — Official Roadmap
 
 **Version:** 2.1.0 · Genesis  
-**Tests:** 1,845 passing (1 skipped — no fuzz regressions saved yet) · 34 test phases  
-**Status:** Active development · Phase 28 complete (`schema` keyword, `agent` declarations, call-site spread) · Phase 29 next  
+**Tests:** 1,899 passing (1 skipped — no fuzz regressions saved yet) · 34 test phases  
+**Status:** Active development · Phase 28 complete (`schema` keyword, `agent` declarations, call-site spread) · Phase 29 in progress (step 1, sandbox quotas, done)  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
 ---
@@ -572,7 +572,7 @@ items; this phase takes the ones that form one dependency chain and
 defers the rest. Each step is verified (both parsers, tests, grammar
 coverage) before the next begins.
 
-1. **Resource-limited sandbox quotas** — pulled forward from Phase 30.
+1. ✅ **Resource-limited sandbox quotas** — pulled forward from Phase 30.
    CPU and memory ceilings for `sandbox strict`, not just execution
    time. This comes first on purpose: step 4 exposes the sandbox over
    HTTP, and a public code-execution API protected only by a timeout
@@ -581,6 +581,18 @@ coverage) before the next begins.
    development platform is Windows, so enforcement has to work there
    too (a supervised subprocess with a polled or job-object-based
    limit), not just on Linux.
+
+   **Delivered.** Every `run_sandboxed()` run executes in a supervised
+   worker process. Windows uses a Job Object (memory ceiling, CPU-time
+   limit, no child processes, kill-on-close); Linux uses `setrlimit`;
+   other POSIX platforms fall back to a polling watchdog.
+   `SandboxResult.enforced_by` reports which backend applied, so a
+   best-effort fallback is never mistaken for a guarantee. New limits
+   `max_memory_mb` and `max_cpu_seconds`, and new CLI flags
+   `--max-memory`, `--max-cpu` and `--max-time`. Scope: `run_sandboxed()`
+   and the CLI only. The in-language `sandbox strict:` block runs inside
+   the calling program, so it stays a guard rail on allowed operations,
+   not a resource boundary.
 2. **Router middleware** — `route GET "/x" with auth, logging:`. New
    grammar, so it lands in `parser.py`, `parser.nk`, and `GRAMMAR.md`
    together, with the drift guard watching.
@@ -600,7 +612,7 @@ package signing/verification (needs a key-management design first).
 
 Bytecode caching (`.nkc`) persisting compiled bytecode between runs, the
 way Python's `__pycache__` speeds up repeated execution. A public
-test-suite dashboard — "1,845 tests passing" becomes an actual trust
+test-suite dashboard — "1,899 tests passing" becomes an actual trust
 signal, not just a number, once anyone can see which phases and features
 it actually covers. (Resource-limited sandbox quotas, originally listed
 here, moved up to Phase 29 so the sandbox API can ship safely.)
@@ -616,7 +628,7 @@ here, moved up to Phase 29 so the sandbox API can ship safely.)
 | Metric | Value |
 |--------|-------|
 | Test phases | 34 |
-| Tests passing | 1,845 / 1,846 (1 skipped — no fuzz regressions saved yet) |
+| Tests passing | 1,899 / 1,900 (1 skipped — no fuzz regressions saved yet) |
 | Version | 2.1.0 |
 | PyPI package | `nekova-lang` |
 | VS Code extension | ✅ Published |
