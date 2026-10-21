@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # =============================================================
 # NEKOVA Language â€” Main Entry Point
 # =============================================================
@@ -82,6 +82,9 @@ v{NEKOVA_VERSION} · {NEKOVA_CODENAME}
 {Color.BOLD}AI-native tooling:{Color.RESET}
   nekova run <file> --record-ai <cassette.json>  Record real AI calls
   nekova run <file> --replay-ai <cassette.json>  Replay without an API key
+  nekova run <file> --sandbox                    Run in a resource-limited sandbox
+  nekova run <file> --sandbox --max-memory 128 --max-cpu 5 --max-time 10
+                                                 Limit memory (MB), CPU and wall-clock (seconds)
   think "..." as User                              Typed + validated + re-prompted
   think "..." with budget: $0.01                   Dollar-denominated budget
   think "..." using ["a", "b", "local"]           Model fallback chain
@@ -129,6 +132,9 @@ def parse_args(argv: list) -> dict:
         "debug":       False,
         "sandbox":     False,
         "sandbox_mode": "strict",
+        "max_memory":  None,
+        "max_cpu":     None,
+        "max_time":    None,
         "compile":     False,
         "version":     False,
         "help":        False,
@@ -147,7 +153,8 @@ def parse_args(argv: list) -> dict:
 
     # ── Known NEKOVA CLI flags ────────────────────────────────
     KNOWN_FLAGS = {"--debug", "--debug-ai", "--version", "--help", "--packages", "--compile", "--watch", "--quiet", "-q", "--self-hosted"}
-    KNOWN_VALUE_FLAGS = {"--install", "--uninstall"}
+    KNOWN_VALUE_FLAGS = {"--install", "--uninstall",
+                         "--max-memory", "--max-cpu", "--max-time"}
 
     argv_list = list(argv)
 
@@ -185,6 +192,14 @@ def parse_args(argv: list) -> dict:
         idx = argv_list.index("--sandbox-mode")
         if idx + 1 < len(argv_list):
             args["sandbox_mode"] = argv_list[idx + 1]
+    # Phase 29: sandbox resource limits. A missing value is kept as ""
+    # so it is reported as an invalid number instead of being ignored.
+    for _flag, _key in (("--max-memory", "max_memory"),
+                        ("--max-cpu", "max_cpu"),
+                        ("--max-time", "max_time")):
+        if _flag in argv_list:
+            idx = argv_list.index(_flag)
+            args[_key] = argv_list[idx + 1] if idx + 1 < len(argv_list) else ""
     # --template <name>
     for i, a in enumerate(argv_list):
         if a == "--template" and i + 1 < len(argv_list):
@@ -206,7 +221,11 @@ def parse_args(argv: list) -> dict:
             args["uninstall"] = argv_list[i + 1]
 
     # ── Separate positional values from flags ─────────────────
-    values = [a for a in argv_list if not a.startswith("--")]
+    # (the value after --max-memory/--max-cpu/--max-time is not a file)
+    _limit_value_idx = {i + 1 for i, a in enumerate(argv_list)
+                        if a in ("--max-memory", "--max-cpu", "--max-time")}
+    values = [a for i, a in enumerate(argv_list)
+              if not a.startswith("--") and i not in _limit_value_idx]
 
     # ── Extract script args: unknown --key value pairs ────────
     # These are --key value pairs that aren't NEKOVA CLI flags.
@@ -398,6 +417,31 @@ def main():
                 # for snapshot testing once a change is verified as
                 # correct rather than a regression.
                 os.environ["NEKOVA_UPDATE_SNAPSHOTS"] = "1"
+            # Phase 29: sandbox resource limits
+            sandbox_limits = {}
+            for _flag, _key, _name in (
+                    ("--max-memory", "max_memory", "max_memory_mb"),
+                    ("--max-cpu", "max_cpu", "max_cpu_seconds"),
+                    ("--max-time", "max_time", "max_time")):
+                _raw = args.get(_key)
+                if _raw is None:
+                    continue
+                if not args["sandbox"]:
+                    print_error(
+                        f"{_flag} only applies together with --sandbox.\n"
+                        f"  Usage: nekova run app.nk --sandbox {_flag} <number>"
+                    )
+                    sys.exit(1)
+                try:
+                    _val = float(_raw)
+                    if not (0 < _val < float("inf")):
+                        raise ValueError
+                except ValueError:
+                    print_error(
+                        f"{_flag} must be a positive number, got {_raw!r}."
+                    )
+                    sys.exit(1)
+                sandbox_limits[_name] = int(_val) if _val == int(_val) else _val
             if args["watch"]:
                 from watcher import watch
                 # resolve filepath first (may come from toml)
@@ -457,7 +501,12 @@ def main():
                 with open(filepath, "r", encoding="utf-8") as f:
                     source = f.read()
                 from nekova.sandbox.runner import run_sandboxed
-                result = run_sandboxed(source, mode=mode)
+                try:
+                    result = run_sandboxed(source, mode=mode,
+                                           limits=sandbox_limits or None)
+                except ValueError as e:
+                    print_error(f"Invalid sandbox limit: {e}")
+                    sys.exit(1)
                 if result.output:
                     print(result.output, end="")
                 if result.error:
@@ -466,6 +515,11 @@ def main():
                     print_warning(f"Violations: {result.violations}")
                 status = "safe" if result.ok else "unsafe"
                 print_info(f"[sandbox:{mode}] {status} ({result.duration:.3f}s)")
+                if result.enforced_by in ("watchdog", "wall-clock"):
+                    print_warning(
+                        "Memory/CPU limits are best-effort on this platform "
+                        f"(enforced by: {result.enforced_by})."
+                    )
                 sys.exit(0 if result.ok else 1)
             exit_code = runner.run()
             sys.exit(exit_code)
