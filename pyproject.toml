@@ -7,7 +7,7 @@ name = "nekova-lang"
 version = "2.1.0"
 description = "NEKOVA - The AI-Native Programming Language by SYNEKCOT Tech"
 authors = [
-  {name = "Emmanuel King Christopher", email = "emmanuelkingchristopher@gmail.com"}
+  {name = "Emmanuel King Christopher", email = "emmanuelkingchris@gmail.com"}
 ]
 readme = "README.md"
 license = "BUSL-1.1"

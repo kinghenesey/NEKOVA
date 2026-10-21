@@ -75,7 +75,7 @@ source over time, even if you never update.
 
 ### I run a company over $1M/year and want to offer NEKOVA hosting. What do I do?
 
-Reach out: **emmanuelkingchristopher@gmail.com**. Commercial licenses for
+Reach out: **emmanuelkingchris@gmail.com**. Commercial licenses for
 operating a competing hosted NEKOVA service are available — this is a
 conversation, not a wall.
 
