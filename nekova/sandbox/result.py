@@ -20,6 +20,11 @@ class SandboxResult:
         mode      — "strict" | "relaxed" | "custom"
         violations — list of blocked operations that were attempted
         return_value — the value of the last expression, if any
+        worker_pid — pid of the worker process the program ran in
+        enforced_by — which backend enforced the resource limits:
+                      "job-object" (Windows) and "rlimit" (Linux) are
+                      kernel-enforced; "watchdog" is best-effort;
+                      "wall-clock" means only the time limit applied
     """
     output:       str        = ""
     error:        str | None = None
@@ -28,6 +33,8 @@ class SandboxResult:
     mode:         str        = "strict"
     violations:   list       = field(default_factory=list)
     return_value: Any        = None
+    worker_pid:   int | None = None
+    enforced_by:  str | None = None
 
     @property
     def ok(self) -> bool:
