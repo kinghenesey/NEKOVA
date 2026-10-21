@@ -2998,7 +2998,13 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         def _sandbox_run(source, mode="strict", **limits):
             """Run NEKOVA source string in a sandbox, return result dict."""
-            result = _run_sandboxed(str(source), mode=str(mode))
+            # Phase 29: forward limits (max_time=, max_memory_mb=, ...)
+            # - they used to be accepted and silently ignored.
+            try:
+                result = _run_sandboxed(
+                    str(source), mode=str(mode), limits=limits or None)
+            except ValueError as e:
+                raise NEKOVARuntimeError(f"sandbox_run: {e}")
             return {
                 "output":     result.output,
                 "error":      result.error,
