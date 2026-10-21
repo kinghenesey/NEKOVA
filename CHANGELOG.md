@@ -3,6 +3,61 @@
 All notable changes to NEKOVA are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased] — Phase 29 (v2.2.0, in progress)
+
+Step 1 of 5: resource-limited sandbox quotas, pulled forward from Phase 30
+so the sandbox HTTP API (step 4) can ship safely.
+
+### Added
+
+- **Sandbox CPU and memory quotas.** `run_sandboxed()` and
+  `nekova run --sandbox` now enforce a memory ceiling and a CPU-time limit,
+  not just wall-clock time. Every sandboxed run executes in its own worker
+  process, confined by a Windows Job Object, or `setrlimit` on Linux. Other
+  POSIX platforms fall back to a polling watchdog. New limits:
+  `max_memory_mb` (default 256) and `max_cpu_seconds` (default 10).
+  `SandboxResult` gains `worker_pid` and `enforced_by` (`"job-object"`,
+  `"rlimit"`, `"watchdog"` or `"wall-clock"`) so a caller can tell a kernel
+  guarantee from a best-effort fallback.
+- **CLI flags** `--max-memory <MB>`, `--max-cpu <seconds>` and
+  `--max-time <seconds>` for `nekova run --sandbox`. Using them without
+  `--sandbox` is an error rather than being silently ignored.
+
+### Changed
+
+- Unknown limit names now raise `ValueError` (a typo such as
+  `max_memroy_mb` used to be accepted and leave the run unlimited), and
+  `max_memory_mb` must be at least 16.
+- Each sandboxed run starts a fresh worker process, which adds a fraction
+  of a second of startup (about 0.3 s measured on Linux). `SandboxResult.duration` measures the program's own
+  run time and does not include that startup.
+- A sandboxed program that calls `input()` now gets an immediate end-of-input
+  error instead of blocking on the caller's terminal.
+- `sandbox_run(code, mode, max_time=..., ...)` now forwards its limit
+  keywords to `run_sandboxed()`. It accepted and silently ignored them before.
+
+### Fixed
+
+- A sandboxed run that hit its timeout used to leave the program's thread
+  running forever, and Python offers no way to stop a thread. The worker
+  process is now killed outright.
+- Sandboxed output was buffered without a bound and only truncated after the
+  run finished, so a program that printed in a loop could exhaust memory
+  before the output cap applied. Output is now capped as it is produced,
+  and the output produced before a kill is kept.
+- Sandbox isolation (`builtins.open`, `builtins.__import__`, `sys.stdout`)
+  was patched process-wide, so overlapping runs could corrupt each other.
+  Each run now has its own process.
+- Every strict-mode run containing a `while` loop recorded a phantom `open`
+  violation, caused by the loop cap being read lazily from `nekova.toml`
+  while file access was blocked.
+
+Scope note: quotas cover `run_sandboxed()` and the CLI. The in-language
+`sandbox strict:` block runs inside the calling program, so it remains a
+guard rail on which operations are allowed, not a resource boundary.
+
+Tests: 1,845 → 1,899 passing (1 skipped — no fuzz regressions saved yet).
+
 ## [2.1.0] — Agent System + Unified Schema
 
 Phase 28. Per the versioning policy, this is a minor release: two new
