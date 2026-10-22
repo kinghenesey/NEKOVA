@@ -93,7 +93,7 @@ A program that goes over a limit is stopped and the result reports a `memory_lim
 | `watchdog` | A polling thread kills the worker. Best-effort: memory can spike between checks. |
 | `wall-clock` | Only the time limit applied. |
 
-A few details worth knowing. The CPU limit is rounded up to a whole second on Linux, and Windows checks it periodically, so a program can overshoot slightly. Every run starts a fresh worker process, which adds a fraction of a second of startup (about 0.3 s on Linux), and a program that asks for input gets an immediate end-of-input error rather than waiting on your terminal.
+A few details worth knowing. The CPU limit is rounded up to a whole second on Linux, and checked every 50 ms on Windows. In strict mode a `while` loop is stopped when it reaches 10,000 iterations, whatever your `nekova.toml` says; relaxed mode follows `[run] max_loop_iterations`. Every run starts a fresh worker process, which adds a fraction of a second of startup (about 0.3 s on Linux), and a program that asks for input gets an immediate end-of-input error rather than waiting on your terminal.
 
 ## Where this is useful
 
