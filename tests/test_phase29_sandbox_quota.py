@@ -216,6 +216,76 @@ class TestJobObjectLayout(unittest.TestCase):
         self.assertEqual(self.q.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE, 0x2000)
 
 
+class _FakeKernel32:
+    """Stands in for kernel32 so the Job Object CPU watcher's logic can
+    be exercised on any OS. Each poll reports more CPU time."""
+
+    def __init__(self, ticks_per_poll, alive=True):
+        self.polls = 0
+        self.ticks = ticks_per_poll
+        self.alive = alive
+        self.terminated = False
+
+    def QueryInformationJobObject(self, job, info_class, ref, size, ret):
+        if not self.alive:
+            return 0
+        self.polls += 1
+        ref._obj.TotalUserTime = self.polls * self.ticks
+        return 1
+
+    def TerminateJobObject(self, job, code):
+        self.terminated = True
+        return 1
+
+
+class _FakeProc:
+    killed = False
+
+    def kill(self):
+        self.killed = True
+
+
+class TestJobObjectCpuWatcher(unittest.TestCase):
+    """
+    The kernel checks a Job Object's time limit only periodically, so
+    the supervisor polls CPU accounting itself. The Win32 calls cannot
+    run off Windows, but the watcher's decisions can be tested.
+    """
+
+    def _enforcer(self, fake):
+        from nekova.sandbox.quota import JobObjectEnforcer
+        e = JobObjectEnforcer()
+        e._POLL = 0.001
+        e._k32 = fake
+        e._job = 1234
+        return e
+
+    def test_terminates_the_job_when_the_budget_is_spent(self):
+        fake, proc = _FakeKernel32(ticks_per_poll=100), _FakeProc()
+        e = self._enforcer(fake)
+        e._watch_cpu(proc, budget_100ns=1000)  # reached on the 10th poll
+        self.assertEqual(e.violation, "cpu_limit")
+        self.assertTrue(fake.terminated)
+        self.assertTrue(proc.killed)
+        self.assertEqual(fake.polls, 10)
+
+    def test_does_nothing_while_under_budget(self):
+        fake, proc = _FakeKernel32(ticks_per_poll=1), _FakeProc()
+        e = self._enforcer(fake)
+        e._stop.set()  # the supervisor is done before the budget is hit
+        e._watch_cpu(proc, budget_100ns=10 ** 12)
+        self.assertIsNone(e.violation)
+        self.assertFalse(fake.terminated)
+        self.assertFalse(proc.killed)
+
+    def test_exits_quietly_when_the_job_is_gone(self):
+        fake, proc = _FakeKernel32(1, alive=False), _FakeProc()
+        e = self._enforcer(fake)
+        e._watch_cpu(proc, budget_100ns=1)
+        self.assertIsNone(e.violation)
+        self.assertFalse(proc.killed)
+
+
 # ── supervised-process behaviour (all platforms) ─────────────
 
 class TestSupervisedRun(unittest.TestCase):
@@ -390,6 +460,56 @@ class TestParity(unittest.TestCase):
         self.assertTrue(r.ok)
 
 
+# ── while-loop cap is the sandbox's own, not the host project's ──
+
+class TestLoopCapIndependence(unittest.TestCase):
+    """
+    A project's nekova.toml can raise the while-loop cap to millions
+    (this repo's own does) or set 0 for "unbounded". A strict sandbox
+    must not inherit that: its loop guard is part of the sandbox, not
+    of the project it happens to run inside.
+    """
+
+    COUNT_TO_50K = ("let i = 0\nwhile i < 50000:\n"
+                    "    let i = i + 1\nshow i")
+
+    def setUp(self):
+        self.cwd = os.getcwd()
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        os.chdir(self.cwd)  # release the directory before deleting it
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _project_with_cap(self, cap):
+        with open(os.path.join(self.tmpdir, "nekova.toml"), "w",
+                  encoding="utf-8", newline="\n") as f:
+            f.write("[run]\nmax_loop_iterations = %d\n" % cap)
+        with open(os.path.join(self.tmpdir, "main.nk"), "w",
+                  encoding="utf-8", newline="\n") as f:
+            f.write("show 1\n")
+        os.chdir(self.tmpdir)
+
+    def test_strict_ignores_a_raised_project_cap(self):
+        self._project_with_cap(2_000_000)
+        r = run_sandboxed(self.COUNT_TO_50K, limits={"max_time": 20})
+        self.assertFalse(r.ok)
+        self.assertIn("ran too many times", r.error)
+
+    def test_strict_ignores_an_unbounded_project_cap(self):
+        self._project_with_cap(0)  # 0 means "no cap" for the project
+        r = run_sandboxed(self.COUNT_TO_50K, limits={"max_time": 20})
+        self.assertFalse(r.ok)
+        self.assertIn("ran too many times", r.error)
+
+    def test_relaxed_still_follows_the_project_cap(self):
+        self._project_with_cap(2_000_000)
+        r = run_sandboxed(self.COUNT_TO_50K, mode="relaxed",
+                          limits={"max_time": 60})
+        self.assertTrue(r.ok, r.error)
+        self.assertEqual(r.output.strip(), "50000")
+
+
 # ── hard limits actually enforced ────────────────────────────
 
 class TestHardLimits(unittest.TestCase):
@@ -421,14 +541,17 @@ class TestHardLimits(unittest.TestCase):
         self.assertEqual(r.violations, [])
 
     def test_cpu_limit_stops_a_cpu_burner_before_the_wall_clock(self):
-        start = time.monotonic()
         r = run_sandboxed(BURN, limits={"max_cpu_seconds": 1,
                                         "max_time": 30})
-        took = time.monotonic() - start
         self.assertFalse(r.safe)
         self.assertIn("cpu_limit", [v["operation"] for v in r.violations])
         self.assertIn("cpu", (r.error or "").lower())
-        self.assertLess(took, 12, "wall-clock limit fired instead of CPU")
+        # r.duration is the program's own run time (worker startup is
+        # excluded - it is slow on Windows). 1 CPU-second must stop the
+        # program long before the 30 s wall-clock limit would.
+        self.assertLess(r.duration, 10,
+                        "ran %.1fs - the wall-clock limit, not the CPU "
+                        "limit, is what stopped it" % r.duration)
         self.assertTrue(_wait_dead(r.worker_pid))
 
     def test_cpu_limit_is_not_hit_by_a_quick_program(self):
