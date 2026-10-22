@@ -30,6 +30,7 @@ import time
 _CHUNK = 16_384          # max characters per "out" frame
 _MAX_ERROR_CHARS = 10_000
 _MAX_VIOLATIONS = 200
+_STRICT_LOOP_CAP = 10000  # the interpreter's built-in while-loop default
 
 
 class _StreamingOutput:
@@ -189,14 +190,28 @@ def main():
     interp.env = sandbox_env
     interp._sandbox_mode = mode
 
-    # The while-loop cap is read lazily from nekova.toml the first time
-    # a loop runs. Resolve it now, before the open() guard is armed -
-    # otherwise that harmless read is recorded as a sandbox violation
-    # on every strict run that contains a while loop.
-    try:
-        interp._get_max_loop_iterations()
-    except Exception:
-        pass
+    # The while-loop cap normally comes from the host project's
+    # nekova.toml, read lazily the first time a loop runs.
+    #
+    #   strict  - pin it to the interpreter default. A sandbox's loop
+    #             guard must not depend on the host project's config:
+    #             a project can raise the cap to millions (the NEKOVA
+    #             repo itself does) or set 0 for "unbounded". Reading
+    #             it lazily used to hit the blocked open() and fall
+    #             back to the default by accident, and logged a
+    #             phantom "open" violation on every strict run with a
+    #             while loop. Pinning it makes that behaviour
+    #             deliberate and the violation disappear.
+    #   relaxed - file access is allowed, so read the project config
+    #             exactly as before, up front.
+    if mode == "strict":
+        interp._max_loop_iterations_cache = _STRICT_LOOP_CAP
+        interp._max_loop_iterations_resolved = True
+    else:
+        try:
+            interp._get_max_loop_iterations()
+        except Exception:
+            pass
 
     # ── Block file/system access ──────────────────────────────
     import builtins
