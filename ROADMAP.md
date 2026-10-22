@@ -1,7 +1,7 @@
 # NEKOVA Language — Official Roadmap
 
 **Version:** 2.1.0 · Genesis  
-**Tests:** 1,899 passing (1 skipped — no fuzz regressions saved yet) · 34 test phases  
+**Tests:** 1,905 passing (1 skipped — no fuzz regressions saved yet) · 34 test phases  
 **Status:** Active development · Phase 28 complete (`schema` keyword, `agent` declarations, call-site spread) · Phase 29 in progress (step 1, sandbox quotas, done)  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
@@ -612,7 +612,7 @@ package signing/verification (needs a key-management design first).
 
 Bytecode caching (`.nkc`) persisting compiled bytecode between runs, the
 way Python's `__pycache__` speeds up repeated execution. A public
-test-suite dashboard — "1,899 tests passing" becomes an actual trust
+test-suite dashboard — "1,905 tests passing" becomes an actual trust
 signal, not just a number, once anyone can see which phases and features
 it actually covers. (Resource-limited sandbox quotas, originally listed
 here, moved up to Phase 29 so the sandbox API can ship safely.)
@@ -628,7 +628,7 @@ here, moved up to Phase 29 so the sandbox API can ship safely.)
 | Metric | Value |
 |--------|-------|
 | Test phases | 34 |
-| Tests passing | 1,899 / 1,900 (1 skipped — no fuzz regressions saved yet) |
+| Tests passing | 1,905 / 1,906 (1 skipped — no fuzz regressions saved yet) |
 | Version | 2.1.0 |
 | PyPI package | `nekova-lang` |
 | VS Code extension | ✅ Published |
