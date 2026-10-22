@@ -16,8 +16,9 @@
 #                    after it has finished booting)
 #   max_cpu_seconds  CPU time the PROGRAM may use on top of the
 #                    worker's boot cost. POSIX rounds up to a whole
-#                    second; the Windows check is periodic, so it can
-#                    overshoot slightly.
+#                    second. On Windows the kernel only checks its
+#                    time limit periodically, so the supervisor also
+#                    polls the job's CPU accounting every 50 ms.
 # =============================================================
 
 import ctypes
@@ -297,14 +298,23 @@ class JobObjectEnforcer(_Enforcer):
     to Popen's: a venv's python.exe is a launcher that spawns the real
     interpreter as a child, and limiting the launcher would leave the
     real interpreter unconstrained.
+
+    The kernel enforces the per-process time limit only periodically,
+    so a CPU burner can run well past its limit before it notices. A
+    watcher thread therefore polls the job's CPU accounting and
+    terminates the job itself the moment the budget is spent; the
+    kernel limit stays in place as a backstop.
     """
     name = "job-object"
+    _POLL = 0.05
 
     def __init__(self):
         self._job = None
         self._proc_handle = None
         self._cpu_limit_100ns = None
         self._k32 = None
+        self._stop = threading.Event()
+        self._thread = None
 
     def _kernel32(self):
         k = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -372,7 +382,34 @@ class JobObjectEnforcer(_Enforcer):
             raise EnforcerError(
                 f"AssignProcessToJobObject failed "
                 f"(error {ctypes.get_last_error()})")
+
+        # Budget = what the job has accumulated right now + the
+        # allowance. Sampling at attach time means the result does not
+        # depend on whether job accounting includes CPU time spent
+        # before the process joined the job.
+        start = JOBOBJECT_BASIC_ACCOUNTING_INFORMATION()
+        if k.QueryInformationJobObject(
+                job, _JobObjectBasicAccountingInformation,
+                ctypes.byref(start), ctypes.sizeof(start), None):
+            budget = (start.TotalUserTime + start.TotalKernelTime
+                      + int(limits["max_cpu_seconds"] * 10_000_000))
+            self._thread = threading.Thread(
+                target=self._watch_cpu, args=(proc, budget), daemon=True)
+            self._thread.start()
         return {}
+
+    def _watch_cpu(self, proc, budget_100ns):
+        k, job = self._k32, self._job
+        acct = JOBOBJECT_BASIC_ACCOUNTING_INFORMATION()
+        while not self._stop.wait(self._POLL):
+            if not k.QueryInformationJobObject(
+                    job, _JobObjectBasicAccountingInformation,
+                    ctypes.byref(acct), ctypes.sizeof(acct), None):
+                return  # job is gone
+            if acct.TotalUserTime + acct.TotalKernelTime >= budget_100ns:
+                self.violation = "cpu_limit"
+                self.kill(proc)
+                return
 
     def classify_exit(self, returncode):
         # The kernel terminates a process that passes its user-time
@@ -396,6 +433,9 @@ class JobObjectEnforcer(_Enforcer):
             pass
 
     def close(self):
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=1)  # it uses the job handle
         k = self._k32
         if not k:
             return
