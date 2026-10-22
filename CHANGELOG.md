@@ -13,7 +13,8 @@ so the sandbox HTTP API (step 4) can ship safely.
 - **Sandbox CPU and memory quotas.** `run_sandboxed()` and
   `nekova run --sandbox` now enforce a memory ceiling and a CPU-time limit,
   not just wall-clock time. Every sandboxed run executes in its own worker
-  process, confined by a Windows Job Object, or `setrlimit` on Linux. Other
+  process, confined by a Windows Job Object (with the supervisor polling
+  its CPU accounting every 50 ms), or `setrlimit` on Linux. Other
   POSIX platforms fall back to a polling watchdog. New limits:
   `max_memory_mb` (default 256) and `max_cpu_seconds` (default 10).
   `SandboxResult` gains `worker_pid` and `enforced_by` (`"job-object"`,
@@ -49,14 +50,19 @@ so the sandbox HTTP API (step 4) can ship safely.
   was patched process-wide, so overlapping runs could corrupt each other.
   Each run now has its own process.
 - Every strict-mode run containing a `while` loop recorded a phantom `open`
-  violation, caused by the loop cap being read lazily from `nekova.toml`
-  while file access was blocked.
+  violation, because the loop cap was read lazily from `nekova.toml` while
+  file access was blocked. The cap is now pinned deliberately: a strict
+  sandbox always stops a `while` loop at the interpreter's default of 10,000
+  iterations and
+  never reads the host project's `nekova.toml`, so a project that raises the
+  cap (or sets it to 0, meaning unbounded) does not weaken the sandbox.
+  Relaxed mode still follows the project's `[run] max_loop_iterations`.
 
 Scope note: quotas cover `run_sandboxed()` and the CLI. The in-language
 `sandbox strict:` block runs inside the calling program, so it remains a
 guard rail on which operations are allowed, not a resource boundary.
 
-Tests: 1,845 → 1,899 passing (1 skipped — no fuzz regressions saved yet).
+Tests: 1,845 → 1,905 passing (1 skipped — no fuzz regressions saved yet).
 
 ## [2.1.0] — Agent System + Unified Schema
 
