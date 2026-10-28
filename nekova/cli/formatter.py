@@ -215,12 +215,18 @@ def _fix_operator_spacing(code: str) -> str:
     segments = _split_strings(code)
 
     result_parts = []
-    for kind, text in segments:
+    for i, (kind, text) in enumerate(segments):
         if kind == "str":
             result_parts.append(text)
         else:
-            text = _space_operators(text)
-            result_parts.append(text)
+            fixed = _space_operators(text)
+            # _space_operators drops leading whitespace, which is right at
+            # the start of a line and before punctuation (`"a" , b` ->
+            # `"a", b`) but wrong when a WORD follows a string literal:
+            # `"/x" with auth` and `"ada" and ready` must keep their space.
+            if i > 0 and text[:1].isspace() and re.match(r"[A-Za-z_]", fixed):
+                fixed = " " + fixed
+            result_parts.append(fixed)
 
     return "".join(result_parts)
 
