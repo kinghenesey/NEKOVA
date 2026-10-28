@@ -1,4 +1,4 @@
-# NEKOVA VS Code Extension — v2.1.0
+﻿# NEKOVA VS Code Extension — v2.1.0
 
 Syntax highlighting, two branded color themes, snippets, and commands for the **NEKOVA AI-Native Programming Language**.
 
@@ -14,7 +14,7 @@ Built by [SYNEKCOT Tech](https://github.com/kinghenesey/NEKOVA) 🇳🇬
 - **Two color themes — NEKOVA Dark and NEKOVA Light** — both built from NEKOVA's brand palette of green and white only. AI-native keywords (`think`, `speak`, `listen`, `imagine`, `watch`, `every`) are highlighted in the brightest green in both themes, since that's the language's whole identity. True red/amber are reserved exclusively for actual errors and warnings, so diagnostics stay visually distinct from ordinary syntax in either theme. NEKOVA Light uses a genuine pure-white (`#FFFFFF`) background, not a lightened grey. Select either via `Preferences: Color Theme → NEKOVA Dark` / `NEKOVA Light`
 - **Branded `.nk` file icon** — a simplified "nk" mark on a small dark backing, designed to stay legible at actual file-icon size (16px), not just at logo size
 - **`prompt` blocks** highlighted as a declaration (like `task`/`class`) only when genuinely defining a prompt — `prompt name(...):` — while still working correctly as an ordinary variable name elsewhere, matching NEKOVA's own soft-keyword design
-- **82 snippets** — type `think`, `task`, `route`, `obj`, `class`, `match`, `pipeline`, `parallel`, `sandbox`, `taskgen`, `decorator`, `shape`, `every`, `test`, `prompt`, `retry`, `observe`, `mock`, `pipe`, `const`, `enum`, `lettuple`, `letlist`, `letdict`, `optchain`, `setlit`, `callkw`, `thinkerr`, `taskdoc`, `converse`, `thinkshape`, `thinkbudget`, `thinkmodel`, `imaginefile`, `aiusage`, `expectsnap`, and more
+- **85 snippets** — type `think`, `task`, `route`, `obj`, `class`, `match`, `pipeline`, `parallel`, `sandbox`, `taskgen`, `decorator`, `shape`, `every`, `test`, `prompt`, `retry`, `observe`, `mock`, `pipe`, `const`, `enum`, `lettuple`, `letlist`, `letdict`, `optchain`, `setlit`, `callkw`, `thinkerr`, `taskdoc`, `converse`, `thinkshape`, `thinkbudget`, `thinkmodel`, `imaginefile`, `aiusage`, `expectsnap`, and more
 - **Run file** — press `F5` to run the active `.nk` file
 - **Watch mode** — press `Ctrl+F5` to run with `--watch` (auto-reruns on save)
 - **Format file** — press `Shift+Alt+F` to run `nekova fmt`
