@@ -5,8 +5,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased] — Phase 29 (v2.2.0, in progress)
 
-Step 1 of 5: resource-limited sandbox quotas, pulled forward from Phase 30
-so the sandbox HTTP API (step 4) can ship safely.
+Steps 1 and 2 of 5: resource-limited sandbox quotas (pulled forward from
+Phase 30 so the sandbox HTTP API in step 4 can ship safely) and router
+middleware.
 
 ### Added
 
@@ -23,6 +24,28 @@ so the sandbox HTTP API (step 4) can ship safely.
 - **CLI flags** `--max-memory <MB>`, `--max-cpu <seconds>` and
   `--max-time <seconds>` for `nekova run --sandbox`. Using them without
   `--sandbox` is an error rather than being silently ignored.
+- **Route middleware.** `route GET "/admin" with logging, auth,
+  rate_limit(10, 60):` runs the listed middleware, left to right, before the
+  handler. A middleware is a task that takes `request`: returning nothing
+  carries on, returning a response ends the request there. Entries are
+  resolved when the `route` statement runs, so a missing or wrong name fails
+  at startup, and anything other than nothing or a response is a 500 rather
+  than a guess. New grammar in `parser.py`, `parser.nk` and `GRAMMAR.md`.
+- **Built-in middleware**: `logging` (one line per request, path only, never
+  the query string or a header), `rate_limit(limit, seconds)` (per route and
+  client address, `429` with `Retry-After`, bounded memory) and `auth`
+  (`Authorization: Bearer`, constant-time comparison, token from
+  `NEKOVA_AUTH_TOKEN` or `auth("token")`, refuses to start with no token).
+  The names exist only inside a `with` clause, and a program's own definition
+  of the same name wins.
+- **`respond(status, body, headers)`**, a global that builds a response
+  anywhere (including inside middleware), and an optional status on the
+  route-body helpers: `json(data, 201)`, `text("x", 418)`, `html(page, 404)`.
+- **Request additions**: `request.remote_addr`, `request.context` with
+  `request.set_context(key, value)` for passing data from a middleware to
+  the handler, and a case-insensitive `request.get_header(name)`.
+- Editor tooling: a `routemw` snippet, and corrected hover text for `route`,
+  `with` and `respond`.
 
 ### Changed
 
@@ -36,6 +59,8 @@ so the sandbox HTTP API (step 4) can ship safely.
   error instead of blocking on the caller's terminal.
 - `sandbox_run(code, mode, max_time=..., ...)` now forwards its limit
   keywords to `run_sandboxed()`. It accepted and silently ignored them before.
+- `RouteStatement` has a new `middleware` field, always a list (empty when
+  there is no `with` clause), emitted by both parsers.
 
 ### Fixed
 
@@ -57,12 +82,18 @@ so the sandbox HTTP API (step 4) can ship safely.
   never reads the host project's `nekova.toml`, so a project that raises the
   cap (or sets it to 0, meaning unbounded) does not weaken the sandbox.
   Relaxed mode still follows the project's `[run] max_loop_iterations`.
+- `nekova fmt` glued any word that follows a string literal onto it, so
+  `if name == "ada" and ready:` became `"ada"and ready:` and
+  `route GET "/x" with auth:` lost the space before `with`.
+- The hover text for `route` showed a syntax that does not exist
+  (`route "/hello" get:`), and the README showed `request["body"]["message"]`,
+  which raises an error. The working form is `request.body["message"]`.
 
 Scope note: quotas cover `run_sandboxed()` and the CLI. The in-language
 `sandbox strict:` block runs inside the calling program, so it remains a
 guard rail on which operations are allowed, not a resource boundary.
 
-Tests: 1,845 → 1,905 passing (1 skipped — no fuzz regressions saved yet).
+Tests: 1,845 → 1,989 passing (1 skipped — no fuzz regressions saved yet).
 
 ## [2.1.0] — Agent System + Unified Schema
 
