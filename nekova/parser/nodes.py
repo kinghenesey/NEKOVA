@@ -936,16 +936,21 @@ class MatchStatement(Node):
 
 class RouteStatement(Node):
     """
-    route GET "/path":
+    route GET "/path" with auth, rate_limit(10, 60):
         <body>
-    method: HTTP method string
-    path:   URL path string
-    body:   list of statements (handler body)
+    method:     HTTP method string
+    path:       URL path string
+    body:       list of statements (handler body)
+    middleware: list of expression nodes from the optional `with`
+                clause, in source order (always a list, empty when
+                there is no clause)
     """
-    def __init__(self, method: str, path: str, body: list):
-        self.method = method
-        self.path   = path
-        self.body   = body
+    def __init__(self, method: str, path: str, body: list,
+                 middleware: list = None):
+        self.method     = method
+        self.path       = path
+        self.body       = body
+        self.middleware = middleware if middleware is not None else []
 
     def __repr__(self):
         return f"Route({self.method} {self.path})"
