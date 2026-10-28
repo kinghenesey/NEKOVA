@@ -411,8 +411,15 @@ await_expr_stmt
 ## Web DSL (Phase 7)
 
 ```ebnf
-route_stmt     = 'route' IDENTIFIER STRING block ;
+route_stmt     = 'route' IDENTIFIER STRING
+                 [ 'with' expression { ',' expression } ] block ;
                (* IDENTIFIER is the HTTP method: GET, POST, PUT, DELETE, ... *)
+               (* The 'with' entries are middleware. Each is evaluated once,
+                  when the route is declared, and must be a task, one of the
+                  built-ins (auth, logging, rate_limit), or a call that
+                  returns one, e.g. rate_limit(10, 60). They run left to
+                  right before the handler; a middleware that returns a
+                  response ends the request there. *)
 
 serve_stmt     = 'serve' [ 'port' ':' expression ] NEWLINE ;
 ```
