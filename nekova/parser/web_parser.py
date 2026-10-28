@@ -45,12 +45,21 @@ class WebParserMixin:
         path = path_tok.value
         self._advance()
 
+        # Optional middleware: `with auth, rate_limit(10, 60)`
+        middleware = []
+        if self._current().type == TokenType.WITH:
+            self._advance()
+            middleware.append(self._parse_expression())
+            while self._current().type == TokenType.COMMA:
+                self._advance()
+                middleware.append(self._parse_expression())
+
         self._consume(TokenType.COLON)
         self._skip_newlines()
 
         body = self._parse_block()
 
-        return RouteStatement(method, path, body)
+        return RouteStatement(method, path, body, middleware)
 
     def _parse_serve(self) -> ServeStatement:
         self._advance()   # consume 'serve'
