@@ -1533,11 +1533,21 @@ task parse_route(state):
     path = path_tok["value"]
     advance(state)
 
+    # Optional middleware: `with auth, rate_limit(10, 60)`
+    middleware = []
+    if current(state)["type"] == "WITH":
+        advance(state)
+        middleware.append(parse_expression(state))
+        while current(state)["type"] == "COMMA":
+            advance(state)
+            middleware.append(parse_expression(state))
+
     consume(state, "COLON")
     skip_newlines(state)
     body = parse_block(state)
 
-    return {"type": "RouteStatement", "method": method, "path": path, "body": body}
+    return {"type": "RouteStatement", "method": method, "path": path,
+            "body": body, "middleware": middleware}
 
 task parse_serve(state):
     advance(state)  # consume 'serve'
