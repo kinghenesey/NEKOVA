@@ -62,7 +62,7 @@ KEYWORD_DOCS = {
     "await":     "Waits for an async task's result before continuing.",
     "import":    "Loads tasks/variables from another .nk file: `import \"utils.nk\"` or `import square, PI from \"utils.nk\"`.",
     "use":       "Loads a stdlib module: `use database`, `use voice`, `use crypto`, etc.",
-    "route":     "Defines a web route (requires `use web`): `route \"/hello\" get:`.",
+    "route":     "Defines a web route: `route GET \"/hello\":`. Add middleware with `with`: `route GET \"/admin\" with logging, auth:`.",
     "serve":     "Starts the web server for routes defined with `route`.",
 
     # AI-native constructs — the language's flagship differentiator.
@@ -81,7 +81,7 @@ KEYWORD_DOCS = {
     "test":      "Defines a test block, typically paired with `expect` and/or `mock`.",
     "expect":    "Asserts that an expression equals an expected value inside a `test` block.",
     "shape":     "Defines a schema `think ... as <ShapeName>` can coerce its response into.",
-    "with":      "Introduces a context block, e.g. `with budget:` for AI cost/token tracking.",
+    "with":      "Introduces a context block, e.g. `with budget:` for AI cost/token tracking. After a route path it lists middleware: `route GET \"/x\" with auth, rate_limit(10, 60):`.",
     "watch":     "Watches a file or directory and re-runs on change (used by `nekova watch`-style workflows).",
     "model":     "Explicitly selects which AI model a `think` call should use.",
 }
@@ -154,6 +154,7 @@ BUILTIN_DOCS = {
     "doc":         "`doc(task)` — returns a task's docstring, if it has one.",
     "ai_usage":    "`ai_usage()` — returns AI cost/token usage tracked so far (see `with budget:`).",
     "sandbox_run": "`sandbox_run(...)` — runs code inside a sandbox programmatically.",
+    "respond":     "`respond(status, body, headers)` — builds an HTTP response, e.g. `respond(401, {\"error\": \"no\"})`. Works inside middleware as well as route bodies.",
     "file_read":   "`file_read(path)` — reads a file's contents as text.",
     "file_write":  "`file_write(path, content)` — writes text to a file, overwriting it.",
     "file_append": "`file_append(path, content)` — appends text to a file.",
