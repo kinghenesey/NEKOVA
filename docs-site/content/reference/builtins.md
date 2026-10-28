@@ -88,5 +88,6 @@ Inside a [sandbox](../advanced/sandbox.html), file access follows the sandbox's 
 | `input()` / `ask(prompt)` | Read a line from the user. |
 | `sleep(seconds)` | Pause execution. |
 | `connect(path)` | Open a database connection. |
-| `sandbox_run(code)` | Run code inside a sandbox from within a running program. |
+| `sandbox_run(code)` | Run code inside a sandbox from within a running program. Limits such as `max_time=5` and `max_memory_mb=64` can follow the code and mode. |
+| `respond(status, body, headers)` | Build an HTTP response, e.g. `respond(401, {"error": "no"})`. Works in route bodies and in [route middleware](../advanced/web-routes.html#middleware). `headers` is optional. |
 | `args` | Access command-line arguments passed to the running script. |
