@@ -1,0 +1,33 @@
+# Route middleware (Phase 29)
+#
+#   route GET "/path" with first, second, rate_limit(10, 60):
+#
+# The entries after `with` run left to right, before the handler.
+# A middleware returns nothing to carry on, or a response to stop the
+# request there. Built-in middleware: auth, logging, rate_limit.
+#
+# Run it with a token for `auth`:
+#   PowerShell:  $env:NEKOVA_AUTH_TOKEN = "change-me"; nekova run examples/web_middleware.nk
+#   bash:        NEKOVA_AUTH_TOKEN=change-me nekova run examples/web_middleware.nk
+# then:  curl -H "Authorization: Bearer change-me" http://127.0.0.1:8080/admin
+
+# Your own middleware is just a task that takes the request.
+task add_user(request):
+    request.set_context("user", "guest")
+
+task no_bots(request):
+    if "X-Bot" in request.headers:
+        return respond(403, "no bots allowed")
+
+route GET "/hello" with logging, no_bots, add_user:
+    return text("hello, " + request.context["user"])
+
+# At most 3 requests a minute from one address, then 429.
+route GET "/limited" with rate_limit(3, 60):
+    return json({"ok": true})
+
+# Order matters: logging first means rejected requests are logged too.
+route GET "/admin" with logging, auth, rate_limit(10, 60):
+    return json({"admin": true})
+
+serve port: 8080
