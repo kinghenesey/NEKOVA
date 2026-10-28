@@ -159,6 +159,14 @@
     ],
     "description": "POST route handler"
   },
+  "Route with middleware": {
+    "prefix": "routemw",
+    "body": [
+      "route GET \"${1:/path}\" with ${2:logging, auth}:",
+      "    return text(\"${3:Hello!}\")"
+    ],
+    "description": "GET route with middleware (logging, auth, rate_limit(n, seconds), or your own task)"
+  },
   "Serve": {
     "prefix": "serve",
     "body": [
