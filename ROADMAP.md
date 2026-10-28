@@ -1,8 +1,8 @@
 # NEKOVA Language — Official Roadmap
 
 **Version:** 2.1.0 · Genesis  
-**Tests:** 1,905 passing (1 skipped — no fuzz regressions saved yet) · 34 test phases  
-**Status:** Active development · Phase 28 complete (`schema` keyword, `agent` declarations, call-site spread) · Phase 29 in progress (step 1, sandbox quotas, done)  
+**Tests:** 1,989 passing (1 skipped — no fuzz regressions saved yet) · 34 test phases  
+**Status:** Active development · Phase 28 complete (`schema` keyword, `agent` declarations, call-site spread) · Phase 29 in progress (steps 1-2 done: sandbox quotas, router middleware)  
 **Built by:** Emmanuel King Christopher · SYNEKCOT Tech · Nigeria 🇳🇬
 
 ---
@@ -593,9 +593,21 @@ coverage) before the next begins.
    and the CLI only. The in-language `sandbox strict:` block runs inside
    the calling program, so it stays a guard rail on allowed operations,
    not a resource boundary.
-2. **Router middleware** — `route GET "/x" with auth, logging:`. New
+2. ✅ **Router middleware** — `route GET "/x" with auth, logging:`. New
    grammar, so it lands in `parser.py`, `parser.nk`, and `GRAMMAR.md`
    together, with the drift guard watching.
+
+   **Delivered.** `RouteStatement.middleware` in both parsers, resolved when
+   the route is declared. A middleware is a task taking `request` that
+   returns nothing (carry on) or a response (stop); the built-ins `logging`,
+   `rate_limit(limit, seconds)` and `auth` exist only inside a `with`
+   clause, and a program's own definition of the same name wins. Supporting
+   changes: the global `respond(status, body, headers)`, a status on
+   `json`/`text`/`html`, and `request.remote_addr`, `request.context`,
+   `request.set_context()` and `request.get_header()`. Not done: NEKOVA has
+   no assignment form for `object.attribute[key] = value` (or
+   `object.attribute = value` on anything but `self`), which is why a
+   middleware passes data with `request.set_context(...)`.
 3. **Static file serving** — with path-traversal protection built in.
 4. **The sandbox HTTP API** — built on the router so it dogfoods
    middleware (auth, rate limiting) and on step 1's quotas.
@@ -612,7 +624,7 @@ package signing/verification (needs a key-management design first).
 
 Bytecode caching (`.nkc`) persisting compiled bytecode between runs, the
 way Python's `__pycache__` speeds up repeated execution. A public
-test-suite dashboard — "1,905 tests passing" becomes an actual trust
+test-suite dashboard — "1,989 tests passing" becomes an actual trust
 signal, not just a number, once anyone can see which phases and features
 it actually covers. (Resource-limited sandbox quotas, originally listed
 here, moved up to Phase 29 so the sandbox API can ship safely.)
@@ -628,7 +640,7 @@ here, moved up to Phase 29 so the sandbox API can ship safely.)
 | Metric | Value |
 |--------|-------|
 | Test phases | 34 |
-| Tests passing | 1,905 / 1,906 (1 skipped — no fuzz regressions saved yet) |
+| Tests passing | 1,989 / 1,990 (1 skipped — no fuzz regressions saved yet) |
 | Version | 2.1.0 |
 | PyPI package | `nekova-lang` |
 | VS Code extension | ✅ Published |
