@@ -20,6 +20,12 @@ class NEKOVARequest:
         body     — request body (for POST/PUT)
         headers  — request headers
         json     — parsed JSON body (if Content-Type is JSON)
+        remote_addr — the client's address as the server saw it (empty
+                      if unknown). Behind a reverse proxy this is the
+                      proxy's address, not the end user's.
+        context  — a dict that lives for this one request. Middleware
+                   stores values with request.set_context("user", u)
+                   and the handler reads request.context["user"].
     """
     method:  str                  = "GET"
     path:    str                  = "/"
@@ -27,6 +33,28 @@ class NEKOVARequest:
     body:    str                  = ""
     headers: Dict[str, str]       = field(default_factory=dict)
     json:    Dict[str, Any]       = field(default_factory=dict)
+    remote_addr: str              = ""
+    context: Dict[str, Any]       = field(default_factory=dict)
+
+    def set_context(self, key: str, value) -> None:
+        """
+        Store a value for the rest of this request (see `context`).
+
+        NEKOVA has no assignment form for `request.context[key] = value`,
+        so this is how a middleware task passes data to the handler.
+        """
+        if not isinstance(key, str) or not key:
+            raise ValueError(
+                f"set_context: key must be a non-empty string, got {key!r}")
+        self.context[key] = value
+
+    def get_header(self, name: str, default: str = "") -> str:
+        """Get a request header by name, ignoring case."""
+        wanted = name.lower()
+        for key, value in self.headers.items():
+            if key.lower() == wanted:
+                return value
+        return default
 
     def get_param(self, key: str, default: str = "") -> str:
         """Get a URL query parameter by name."""
@@ -60,4 +88,5 @@ def from_flask_request(flask_request) -> NEKOVARequest:
         body=flask_request.get_data(as_text=True),
         headers=dict(flask_request.headers),
         json=json_data,
+        remote_addr=flask_request.remote_addr or "",
     )
