@@ -3015,6 +3015,12 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             }
 
         self.globals.set("sandbox_run", _sandbox_run)
+
+        # Phase 29: respond(status, body, headers) builds a response
+        # anywhere - including inside route middleware, where the
+        # route-body helpers (text/json/html) are not in scope.
+        from nekova.web.response import respond as _respond
+        self.globals.set("respond", _respond)
         # ── Math primitives (delegated to Python's math module) ──
         import math as _math
         self.globals.set("sqrt",   _math.sqrt)
@@ -3355,8 +3361,10 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
         from nekova.web import web_module as wm
         from nekova.web.request import NEKOVARequest
         from nekova.web.response import (
-            NEKOVAResponse, text_response, json_response, html_response
+            NEKOVAResponse, text_response, json_response, html_response,
+            check_status
         )
+        from nekova.web.middleware import run_chain
 
         # Ensure a server exists
         if wm._server is None:
@@ -3364,6 +3372,13 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
 
         body_stmts = node.body
         interpreter = self
+
+        # Resolve the `with` middleware now, as the route is declared:
+        # a missing or wrong entry fails at startup with a clear error
+        # instead of on the first request, and the route is never
+        # registered half-protected.
+        chain = [self._resolve_route_middleware(node, expr)
+                 for expr in getattr(node, "middleware", [])]
 
         def handler(request: NEKOVARequest):
             # Create a child env so route body has a fresh scope
@@ -3374,9 +3389,13 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
             # Expose `request` in the handler scope
             child_env.set("request", _RequestObject(request))
             # Expose response helpers
-            child_env.set("html",    lambda c: html_response(str(c)))
-            child_env.set("json",    lambda d: json_response(d))
-            child_env.set("text",    lambda c: text_response(str(c)))
+            # Each takes an optional status: json(data, 201)
+            child_env.set("html",    lambda c, status=200:
+                          html_response(str(c), check_status(status)))
+            child_env.set("json",    lambda d, status=200:
+                          json_response(d, check_status(status)))
+            child_env.set("text",    lambda c, status=200:
+                          text_response(str(c), check_status(status)))
 
             result = None
             try:
@@ -3393,7 +3412,74 @@ class Interpreter(AsyncInterpreterMixin, ClassInterpreterMixin):
                 return text_response("")
             return text_response(str(result))
 
-        wm._server.router.add(node.path, handler, methods=[node.method])
+        registered = handler
+        if chain:
+            registered = lambda request: run_chain(request, chain, handler)
+        wm._server.router.add(node.path, registered, methods=[node.method])
+
+    def _call_callable_value(self, f, args: list):
+        """Call a NEKOVA task, or a plain Python callable, with `args`."""
+        if isinstance(f, TypedTaskStatement):
+            return self._call_typed_task(f, list(args))
+        if isinstance(f, TaskStatement):
+            return self._call_task(f, list(args))
+        return f(*args)
+
+    def _resolve_route_middleware(self, node, expr):
+        """
+        Turn one entry of a route's `with` clause into a Middleware.
+
+        The built-ins (auth, logging, rate_limit) are visible only inside
+        this clause, and only where the program has not defined the same
+        name itself - they are never added to the global scope.
+        """
+        from nekova.web.middleware import (
+            BUILTIN_MIDDLEWARE, CallableMiddleware, Middleware,
+            MiddlewareFactory,
+        )
+
+        label = getattr(expr, "name", None) or type(expr).__name__
+        where = f"Route {node.method} {node.path}"
+        hint = ("Built-in middleware: "
+                + ", ".join(sorted(BUILTIN_MIDDLEWARE))
+                + ". To write your own, define a task that takes `request`.")
+
+        def bad(reason):
+            return NEKOVARuntimeError(
+                f"{where}: bad middleware '{label}'.\n  {reason}\n  {hint}")
+
+        scope = Environment(parent=self.env)
+        for name, factory in BUILTIN_MIDDLEWARE.items():
+            if name not in self.env:
+                scope.set(name, factory)
+
+        saved = self.env
+        self.env = scope
+        try:
+            value = self._execute_node(expr)
+        except (NEKOVARuntimeError, NEKOVANameError) as e:
+            raise bad(str(e).strip()) from None
+        finally:
+            self.env = saved
+
+        if isinstance(value, MiddlewareFactory):  # bare: `with logging`
+            try:
+                value = value.default()
+            except ValueError as e:
+                raise bad(str(e)) from None
+
+        if isinstance(value, Middleware):
+            return value
+        if isinstance(value, (TaskStatement, TypedTaskStatement)):
+            name = getattr(value, "name", None) or label
+            return CallableMiddleware(
+                lambda request, task=value: self._call_callable_value(
+                    task, [_RequestObject(request)]),
+                name)
+        if callable(value):
+            return CallableMiddleware(
+                lambda request, fn=value: fn(_RequestObject(request)), label)
+        raise bad(f"it is {type(value).__name__}, not a task or a built-in")
 
     def _exec_ServeStatement(self, node: ServeStatement):
         """
